@@ -1,0 +1,103 @@
+{
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "orders": "Commandes",
+    "credits": "Crédits",
+    "analytics": "Analytiques",
+    "messages": "Messages",
+    "aicoach": "AI Coach",
+    "settings": "Paramètres",
+    "logout": "Déconnexion"
+  },
+  "kpi": {
+    "total": "Total commandes",
+    "confirmed": "Confirmées",
+    "delivered": "Livrées",
+    "confirmRate": "Taux confirmation",
+    "cancelRate": "Taux annulation",
+    "revenue": "CHIFFRE D'AFFAIRES LIVRÉ",
+    "deliveredOrders": "commandes livrées",
+    "clickToView": "cliquez pour voir"
+  },
+  "chart": {
+    "orders": "Commandes",
+    "statuses": "Statuts"
+  },
+  "top": {
+    "cities": "Top villes",
+    "products": "Top produits",
+    "clients": "Top clients",
+    "sales": "ventes",
+    "orders": "commandes"
+  },
+  "orders": {
+    "title": "Commandes",
+    "total": "au total",
+    "recent": "Dernières commandes",
+    "seeAll": "Voir tout"
+  },
+  "table": {
+    "phone": "Téléphone",
+    "city": "Ville",
+    "amount": "Montant",
+    "status": "Statut"
+  },
+  "status": {
+    "all": "Tous",
+    "confirmed": "Confirmé",
+    "cancelled": "Annulé",
+    "canceled": "Annulé",
+    "pending": "En attente",
+    "delivered": "Livré",
+    "modified": "Modifié"
+  },
+  "credits": {
+    "title": "Crédits",
+    "balance": "Solde actuel",
+    "recharge": "Recharger",
+    "rechargeMsg": "Contactez-nous sur WhatsApp pour recharger instantanément.",
+    "history": "Historique des transactions",
+    "lowAlert": "Rechargez immédiatement",
+    "medAlert": "Rechargez bientôt",
+    "okAlert": "Crédits suffisants",
+    "deduct": "Déduction",
+    "rechargeType": "Recharge",
+    "date": "DATE",
+    "type": "TYPE",
+    "order": "COMMANDE",
+    "amount": "MONTANT",
+    "balanceAfter": "SOLDE APRÈS",
+    "noTx": "Aucune transaction",
+    "consumed": "Total consommé",
+    "perOrder": "5 crédits / commande livrée"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "save": "Sauvegarder",
+    "companyName": "Nom de l'entreprise",
+    "general": "Général",
+    "integrations": "Intégrations",
+    "aicoach": "AI Coach"
+  },
+  "login": {
+    "title": "Connectez-vous",
+    "email": "Email",
+    "password": "Mot de passe",
+    "submit": "Se connecter",
+    "loading": "Connexion..."
+  },
+  "loading": "Chargement...",
+  "noData": "Aucune donnée",
+  "aicoach": {
+    "noReport": "Aucun rapport disponible",
+    "noReportSub": "Votre premier rapport sera généré automatiquement",
+    "generate": "Générer un rapport"
+  },
+  "msgTypes": {
+    "confirmation": "Confirmation",
+    "reminder": "Rappel",
+    "modification": "Modification",
+    "cancellation": "Annulation",
+    "tracking": "Tracking"
+  }
+}

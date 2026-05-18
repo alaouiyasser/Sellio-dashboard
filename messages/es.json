@@ -1,0 +1,103 @@
+{
+  "nav": {
+    "dashboard": "Panel",
+    "orders": "Pedidos",
+    "credits": "Créditos",
+    "analytics": "Analíticas",
+    "messages": "Mensajes",
+    "aicoach": "AI Coach",
+    "settings": "Configuración",
+    "logout": "Cerrar sesión"
+  },
+  "kpi": {
+    "total": "Total pedidos",
+    "confirmed": "Confirmados",
+    "delivered": "Entregados",
+    "confirmRate": "Tasa confirmación",
+    "cancelRate": "Tasa cancelación",
+    "revenue": "INGRESOS ENTREGADOS",
+    "deliveredOrders": "pedidos entregados",
+    "clickToView": "clic para ver"
+  },
+  "chart": {
+    "orders": "Pedidos",
+    "statuses": "Estados"
+  },
+  "top": {
+    "cities": "Top ciudades",
+    "products": "Top productos",
+    "clients": "Top clientes",
+    "sales": "ventas",
+    "orders": "pedidos"
+  },
+  "orders": {
+    "title": "Pedidos",
+    "total": "total",
+    "recent": "Últimos pedidos",
+    "seeAll": "Ver todo"
+  },
+  "table": {
+    "phone": "Teléfono",
+    "city": "Ciudad",
+    "amount": "Monto",
+    "status": "Estado"
+  },
+  "status": {
+    "all": "Todos",
+    "confirmed": "Confirmado",
+    "cancelled": "Cancelado",
+    "canceled": "Cancelado",
+    "pending": "Pendiente",
+    "delivered": "Entregado",
+    "modified": "Modificado"
+  },
+  "credits": {
+    "title": "Créditos",
+    "balance": "Saldo actual",
+    "recharge": "Recargar",
+    "rechargeMsg": "Contáctenos en WhatsApp para recargar al instante.",
+    "history": "Historial de transacciones",
+    "lowAlert": "Recarga inmediatamente",
+    "medAlert": "Recarga pronto",
+    "okAlert": "Créditos suficientes",
+    "deduct": "Deducción",
+    "rechargeType": "Recarga",
+    "date": "FECHA",
+    "type": "TIPO",
+    "order": "PEDIDO",
+    "amount": "IMPORTE",
+    "balanceAfter": "SALDO DESPUÉS",
+    "noTx": "Sin transacciones",
+    "consumed": "Total consumido",
+    "perOrder": "5 créditos / pedido entregado"
+  },
+  "settings": {
+    "title": "Configuración",
+    "save": "Guardar",
+    "companyName": "Nombre empresa",
+    "general": "General",
+    "integrations": "Integraciones",
+    "aicoach": "AI Coach"
+  },
+  "login": {
+    "title": "Iniciar sesión",
+    "email": "Correo",
+    "password": "Contraseña",
+    "submit": "Entrar",
+    "loading": "Entrando..."
+  },
+  "loading": "Cargando...",
+  "noData": "Sin datos",
+  "aicoach": {
+    "noReport": "Sin informe disponible",
+    "noReportSub": "Su primer informe se generará automáticamente",
+    "generate": "Generar informe"
+  },
+  "msgTypes": {
+    "confirmation": "Confirmación",
+    "reminder": "Recordatorio",
+    "modification": "Modificación",
+    "cancellation": "Cancelación",
+    "tracking": "Seguimiento"
+  }
+}

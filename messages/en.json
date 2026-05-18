@@ -1,0 +1,103 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "orders": "Orders",
+    "credits": "Credits",
+    "analytics": "Analytics",
+    "messages": "Messages",
+    "aicoach": "AI Coach",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "kpi": {
+    "total": "Total orders",
+    "confirmed": "Confirmed",
+    "delivered": "Delivered",
+    "confirmRate": "Confirmation rate",
+    "cancelRate": "Cancellation rate",
+    "revenue": "DELIVERED REVENUE",
+    "deliveredOrders": "delivered orders",
+    "clickToView": "click to view"
+  },
+  "chart": {
+    "orders": "Orders",
+    "statuses": "Statuses"
+  },
+  "top": {
+    "cities": "Top cities",
+    "products": "Top products",
+    "clients": "Top clients",
+    "sales": "sales",
+    "orders": "orders"
+  },
+  "orders": {
+    "title": "Orders",
+    "total": "total",
+    "recent": "Recent orders",
+    "seeAll": "See all"
+  },
+  "table": {
+    "phone": "Phone",
+    "city": "City",
+    "amount": "Amount",
+    "status": "Status"
+  },
+  "status": {
+    "all": "All",
+    "confirmed": "Confirmed",
+    "cancelled": "Cancelled",
+    "canceled": "Cancelled",
+    "pending": "Pending",
+    "delivered": "Delivered",
+    "modified": "Modified"
+  },
+  "credits": {
+    "title": "Credits",
+    "balance": "Current balance",
+    "recharge": "Recharge",
+    "rechargeMsg": "Contact us on WhatsApp to recharge instantly.",
+    "history": "Transaction history",
+    "lowAlert": "Recharge immediately",
+    "medAlert": "Recharge soon",
+    "okAlert": "Sufficient credits",
+    "deduct": "Deduction",
+    "rechargeType": "Recharge",
+    "date": "DATE",
+    "type": "TYPE",
+    "order": "ORDER",
+    "amount": "AMOUNT",
+    "balanceAfter": "BALANCE AFTER",
+    "noTx": "No transactions",
+    "consumed": "Total consumed",
+    "perOrder": "5 credits / delivered order"
+  },
+  "settings": {
+    "title": "Settings",
+    "save": "Save",
+    "companyName": "Company name",
+    "general": "General",
+    "integrations": "Integrations",
+    "aicoach": "AI Coach"
+  },
+  "login": {
+    "title": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "loading": "Signing in..."
+  },
+  "loading": "Loading...",
+  "noData": "No data",
+  "aicoach": {
+    "noReport": "No report available",
+    "noReportSub": "Your first report will be generated automatically",
+    "generate": "Generate report"
+  },
+  "msgTypes": {
+    "confirmation": "Confirmation",
+    "reminder": "Reminder",
+    "modification": "Modification",
+    "cancellation": "Cancellation",
+    "tracking": "Tracking"
+  }
+}

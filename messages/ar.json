@@ -1,0 +1,103 @@
+{
+  "nav": {
+    "dashboard": "الرئيسية",
+    "orders": "الطلبات",
+    "credits": "الرصيد",
+    "analytics": "الإحصاءات",
+    "messages": "الرسائل",
+    "aicoach": "كوتش AI",
+    "settings": "الإعدادات",
+    "logout": "تسجيل الخروج"
+  },
+  "kpi": {
+    "total": "إجمالي الطلبات",
+    "confirmed": "مؤكدة",
+    "delivered": "مسلمة",
+    "confirmRate": "معدل التأكيد",
+    "cancelRate": "معدل الإلغاء",
+    "revenue": "رقم المعاملات المسلم",
+    "deliveredOrders": "طلبات مسلمة",
+    "clickToView": "انقر للعرض"
+  },
+  "chart": {
+    "orders": "الطلبات",
+    "statuses": "الحالات"
+  },
+  "top": {
+    "cities": "أفضل المدن",
+    "products": "أفضل المنتجات",
+    "clients": "أفضل العملاء",
+    "sales": "مبيعات",
+    "orders": "طلبات"
+  },
+  "orders": {
+    "title": "الطلبات",
+    "total": "إجمالي",
+    "recent": "آخر الطلبات",
+    "seeAll": "عرض الكل"
+  },
+  "table": {
+    "phone": "الهاتف",
+    "city": "المدينة",
+    "amount": "المبلغ",
+    "status": "الحالة"
+  },
+  "status": {
+    "confirmed": "مؤكد",
+    "cancelled": "ملغي",
+    "pending": "قيد الانتظار",
+    "delivered": "مسلم",
+    "all": "الكل",
+    "modified": "معدّل",
+    "canceled": "ملغي"
+  },
+  "credits": {
+    "title": "الرصيد",
+    "balance": "الرصيد الحالي",
+    "recharge": "إعادة الشحن",
+    "rechargeMsg": "تواصل معنا على واتساب لإعادة الشحن فوراً.",
+    "history": "سجل المعاملات",
+    "lowAlert": "أعد الشحن فوراً",
+    "medAlert": "أعد الشحن قريباً",
+    "okAlert": "الرصيد كافٍ",
+    "deduct": "خصم",
+    "rechargeType": "شحن",
+    "date": "التاريخ",
+    "type": "النوع",
+    "order": "الطلب",
+    "amount": "المبلغ",
+    "balanceAfter": "الرصيد بعد",
+    "noTx": "لا توجد معاملات",
+    "consumed": "إجمالي المستهلك",
+    "perOrder": "5 رصيد / طلب مسلم"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "save": "حفظ",
+    "companyName": "اسم الشركة",
+    "general": "عام",
+    "integrations": "التكاملات",
+    "aicoach": "كوتش AI"
+  },
+  "login": {
+    "title": "تسجيل الدخول",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "submit": "دخول",
+    "loading": "جاري الدخول..."
+  },
+  "loading": "جاري التحميل...",
+  "noData": "لا توجد بيانات",
+  "aicoach": {
+    "noReport": "لا يوجد تقرير",
+    "noReportSub": "سيتم إنشاء أول تقرير تلقائياً",
+    "generate": "إنشاء تقرير"
+  },
+  "msgTypes": {
+    "confirmation": "تأكيد",
+    "reminder": "تذكير",
+    "modification": "تعديل",
+    "cancellation": "إلغاء",
+    "tracking": "تتبع"
+  }
+}
