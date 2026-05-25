@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase'
 import { useLang } from '@/components/layout/LanguageProvider'
 import { toast } from 'sonner'
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+const API = typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:3001'
 
 const cardStyle: React.CSSProperties = {
   background: 'var(--card)', border: '1px solid var(--border)',
