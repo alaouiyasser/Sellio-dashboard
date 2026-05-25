@@ -82,6 +82,9 @@ export default function WizardOnboarding({ tenantId, onComplete }: WizardProps) 
       if (data.ok && data.qrcode?.base64) {
         setQrCode(data.qrcode.base64)
         setStep(5)
+      } else if (data.ok && data.qrcode?.instance?.state === 'open') {
+        toast.success('✅ WhatsApp déjà connecté!')
+        onComplete()
       } else {
         toast.error(data.error ?? 'Erreur de connexion')
       }
