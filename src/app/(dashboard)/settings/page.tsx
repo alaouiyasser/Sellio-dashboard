@@ -27,201 +27,128 @@ const TABS_KEYS = [
 ]
 
 // ─── WhatsApp Tab ─────────────────────────────────────────────────────────────
+interface Instance {
+  instance_key: string
+  phone_number: string
+  status: string
+  messages_today: number
+  daily_limit: number
+}
+
 function WhatsAppTab({ tenantId }: { tenantId: string }) {
-  const [status, setStatus]     = useState<'online' | 'offline' | 'connecting' | null>(null)
-  const [qrCode, setQrCode]     = useState<string | null>(null)
-  const [loading, setLoading]   = useState(false)
-  const [phone, setPhone]       = useState('')
-  const pollRef                 = useRef<NodeJS.Timeout | null>(null)
+  const [instances, setInstances] = useState<Instance[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [qrCodes, setQrCodes]     = useState<Record<string, string>>({})
+  const [showAdd, setShowAdd]     = useState(false)
+  const [newPhone, setNewPhone]   = useState('')
+  const [adding, setAdding]       = useState(false)
+  const pollRef = useRef<Record<string, NodeJS.Timeout>>({})
 
-  // ── Fetch current status on mount ──
-  useEffect(() => {
-    fetchStatus()
-    return () => { if (pollRef.current) clearInterval(pollRef.current) }
-  }, [tenantId])
+  useEffect(() => { fetchInstances(); return () => Object.values(pollRef.current).forEach(clearInterval) }, [tenantId])
 
-  async function fetchStatus() {
+  async function fetchInstances() {
     try {
-      const res  = await fetch(`${API}/api/whatsapp/${tenantId}/instance/status`)
+      const res = await fetch(`${API}/api/whatsapp/${tenantId}/instances`)
       const data = await res.json()
-      if (data.ok) setStatus(data.db.status)
-    } catch {}
+      if (data.ok) setInstances(data.instances)
+    } catch {} finally { setLoading(false) }
   }
 
-  // ── Poll every 5s while QR is shown ──
-  function startPolling() {
-    if (pollRef.current) clearInterval(pollRef.current)
-    pollRef.current = setInterval(async () => {
-      try {
-        const res  = await fetch(`${API}/api/whatsapp/${tenantId}/instance/status`)
-        const data = await res.json()
-        if (data.ok && data.db.status === 'online') {
-          setStatus('online')
-          setQrCode(null)
-          clearInterval(pollRef.current!)
-          toast.success('✅ WhatsApp connecté avec succès!')
-        }
-      } catch {}
-    }, 5000)
-  }
-
-  async function handleConnect() {
-    if (!phone) { toast.error('Entrez votre numéro WhatsApp'); return }
-    setLoading(true)
+  async function handleAdd() {
+    if (!newPhone) { toast.error('أدخل الرقم'); return }
+    setAdding(true)
     try {
-      const res  = await fetch(`${API}/api/whatsapp/${tenantId}/instance/create`, {
+      const res = await fetch(`${API}/api/whatsapp/${tenantId}/instance/create`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone_number: phone }),
+        body: JSON.stringify({ phone_number: newPhone }),
       })
       const data = await res.json()
       if (data.ok && data.qrcode?.base64) {
-        setQrCode(data.qrcode.base64)
-        setStatus('connecting')
-        startPolling()
-        toast('📱 Scannez le QR code avec WhatsApp')
-      } else {
-        toast.error(data.error ?? 'Erreur lors de la création')
-      }
-    } catch (err: any) {
-      toast.error(err.message)
-    } finally {
-      setLoading(false)
-    }
+        setQrCodes(q => ({ ...q, [newPhone]: data.qrcode.base64 }))
+        setShowAdd(false)
+        setNewPhone('')
+        await fetchInstances()
+        toast('📱 سكان الـ QR Code')
+      } else { toast.error(data.error ?? 'Erreur') }
+    } catch (err: any) { toast.error(err.message) } finally { setAdding(false) }
   }
 
-  async function handleReset() {
-    setLoading(true)
+  async function handleReset(instanceKey: string) {
     try {
-      const res  = await fetch(`${API}/api/whatsapp/${tenantId}/instance/reset`, {
+      const res = await fetch(`${API}/api/whatsapp/${tenantId}/instance/reset`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ purge_queue: false }),
       })
       const data = await res.json()
-      if (data.ok) {
-        setQrCode(data.qrcode?.base64 ?? null)
-        setStatus('connecting')
-        startPolling()
-        toast('🔄 Session réinitialisée — scannez le nouveau QR code')
+      if (data.ok && data.qrcode?.base64) {
+        setQrCodes(q => ({ ...q, [instanceKey]: data.qrcode.base64 }))
+        toast('🔄 Session réinitialisée')
+        await fetchInstances()
       }
-    } catch (err: any) {
-      toast.error(err.message)
-    } finally {
-      setLoading(false)
-    }
+    } catch (err: any) { toast.error(err.message) }
   }
 
-  const statusColor = status === 'online' ? '#22c55e' : status === 'connecting' ? '#f59e0b' : '#ef4444'
-  const statusLabel = status === 'online' ? 'Connecté' : status === 'connecting' ? 'En attente de scan...' : 'Déconnecté'
+  const statusColor = (s: string) => s === 'online' ? '#22c55e' : s === 'connecting' ? '#f59e0b' : '#ef4444'
+
+  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Chargement...</div>
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* Status Badge */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
-        borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg)',
-      }}>
-        <div style={{
-          width: 10, height: 10, borderRadius: '50%',
-          background: statusColor,
-          boxShadow: `0 0 8px ${statusColor}`,
-        }} />
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-          {statusLabel}
-        </span>
-        {status === 'online' && (
-          <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>
-            Votre WhatsApp est actif ✓
-          </span>
-        )}
-      </div>
-
-      {/* QR Code Display */}
-      {qrCode && (
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
-          padding: 24, borderRadius: 16,
-          background: 'rgba(139,154,53,0.05)',
-          border: '1px solid rgba(139,154,53,0.2)',
+      {/* Instances list */}
+      {instances.map(inst => (
+        <div key={inst.instance_key} style={{
+          padding: 16, borderRadius: 12,
+          background: 'var(--bg)', border: '1px solid var(--border)',
         }}>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0, textAlign: 'center' }}>
-            Ouvrez WhatsApp → Appareils connectés → Connecter un appareil
-          </p>
-          <div style={{
-            padding: 12, background: '#fff', borderRadius: 12,
-            boxShadow: '0 4px 24px rgba(0,0,0,0.15)',
-          }}>
-            <img src={qrCode} alt="QR Code WhatsApp" width={200} height={200} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' as const }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: statusColor(inst.status), flexShrink: 0 }} />
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{inst.phone_number}</span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{inst.messages_today}/{inst.daily_limit} auj.</span>
+            <button onClick={() => handleReset(inst.instance_key)} style={{
+              padding: '6px 12px', borderRadius: 8, border: '1px solid #ef4444',
+              background: 'transparent', color: '#ef4444', fontSize: 12, cursor: 'pointer',
+            }}>🔄 Reset</button>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              width: 8, height: 8, borderRadius: '50%', background: '#f59e0b',
-              animation: 'pulse 1.5s infinite',
-            }} />
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              En attente du scan...
-            </span>
-          </div>
+          {qrCodes[inst.instance_key] && (
+            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
+              <div style={{ padding: 10, background: '#fff', borderRadius: 10 }}>
+                <img src={qrCodes[inst.instance_key]} width={180} height={180} alt="QR" />
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      ))}
 
-      {/* Connect Form */}
-      {status !== 'online' && !qrCode && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <label style={labelStyle}>Numéro WhatsApp à connecter</label>
-          <input
-            style={inputStyle}
-            value={phone}
-            placeholder="+212600000000"
-            onChange={e => setPhone(e.target.value)}
-          />
-          <button
-            onClick={handleConnect}
-            disabled={loading}
-            style={{
-              padding: '11px 24px', borderRadius: 10,
-              background: '#25D366', color: '#fff', border: 'none',
-              fontSize: 14, fontWeight: 600, cursor: 'pointer',
-              opacity: loading ? 0.7 : 1, display: 'flex',
-              alignItems: 'center', gap: 8, justifyContent: 'center',
-            }}
-          >
-            {loading ? 'Connexion...' : '📱 Connecter WhatsApp'}
+      {/* Add new number */}
+      {showAdd ? (
+        <div style={{ display: 'flex', gap: 10 }}>
+          <input value={newPhone} onChange={e => setNewPhone(e.target.value)} placeholder="+212600000000"
+            style={{ flex: 1, padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, outline: 'none' }} />
+          <button onClick={handleAdd} disabled={adding} style={{ padding: '10px 16px', borderRadius: 8, background: '#25D366', color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+            {adding ? '...' : '📱 Ajouter'}
           </button>
+          <button onClick={() => setShowAdd(false)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer' }}>✕</button>
         </div>
-      )}
-
-      {/* Reset Button */}
-      {(status === 'online' || qrCode) && (
-        <button
-          onClick={handleReset}
-          disabled={loading}
-          style={{
-            padding: '10px 20px', borderRadius: 10,
-            background: 'transparent', color: '#ef4444',
-            border: '1px solid #ef4444',
-            fontSize: 13, fontWeight: 500, cursor: 'pointer',
-            opacity: loading ? 0.7 : 1,
-          }}
-        >
-          🔄 Réinitialiser la session
+      ) : (
+        <button onClick={() => setShowAdd(true)} style={{
+          padding: '11px', borderRadius: 10, border: '1px dashed var(--border)',
+          background: 'transparent', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer',
+          width: '100%',
+        }}>
+          + إضافة رقم WhatsApp جديد
         </button>
       )}
 
-      <div style={{
-        padding: 14, borderRadius: 10,
-        background: 'rgba(139,154,53,0.05)',
-        border: '1px solid rgba(139,154,53,0.15)',
-        fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6,
-      }}>
-        ⚠️ En cas de bannissement, votre queue sera automatiquement suspendue et vous recevrez une alerte Telegram.
+      <div style={{ padding: 12, borderRadius: 10, background: 'rgba(139,154,53,0.05)', border: '1px solid rgba(139,154,53,0.15)', fontSize: 12, color: 'var(--text-muted)' }}>
+        ⚠️ إلا تبانت رسالة → Sellio يبعت على الرقم التالي أوتوماتيك
       </div>
     </div>
   )
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-export default function SettingsPage() {
+
+export default function SettingsPage(): React.ReactElement {
   const supabase = createClient()
   const { t }    = useLang()
   const TABS     = TABS_KEYS.map(tab => ({
