@@ -27,7 +27,7 @@ const TABS_KEYS = [
 ]
 
 // ─── WhatsApp Tab ─────────────────────────────────────────────────────────────
-interface Instance {
+interface WaInstance {
   instance_key: string
   phone_number: string
   status: string
@@ -36,21 +36,20 @@ interface Instance {
 }
 
 function WhatsAppTab({ tenantId }: { tenantId: string }) {
-  const [instances, setInstances] = useState<Instance[]>([])
+  const [instances, setInstances] = useState<WaInstance[]>([])
   const [loading, setLoading]     = useState(true)
-  const [qrCodes, setQrCodes]     = useState<Record<string, string>>({})
+  const [activeQR, setActiveQR]   = useState<string | null>(null)
   const [showAdd, setShowAdd]     = useState(false)
   const [newPhone, setNewPhone]   = useState('')
   const [adding, setAdding]       = useState(false)
-  const pollRef = useRef<Record<string, NodeJS.Timeout>>({})
 
-  useEffect(() => { fetchInstances(); return () => Object.values(pollRef.current).forEach(clearInterval) }, [tenantId])
+  useEffect(() => { fetchInstances() }, [tenantId])
 
   async function fetchInstances() {
     try {
       const res = await fetch(`${API}/api/whatsapp/${tenantId}/instances`)
       const data = await res.json()
-      if (data.ok) setInstances(data.instances)
+      if (data.ok) setInstances(data.instances ?? [])
     } catch {} finally { setLoading(false) }
   }
 
@@ -64,12 +63,18 @@ function WhatsAppTab({ tenantId }: { tenantId: string }) {
       })
       const data = await res.json()
       if (data.ok && data.qrcode?.base64) {
-        setQrCodes(q => ({ ...q, [data.instanceKey]: data.qrcode.base64 }))
+        setActiveQR(data.qrcode.base64)
         setShowAdd(false)
         setNewPhone('')
         await fetchInstances()
         toast('📱 سكان الـ QR Code')
-      } else { toast.error(data.error ?? 'Erreur') }
+      } else if (data.ok && data.qrcode?.instance?.state === 'open') {
+        toast.success('✅ WhatsApp déjà connecté!')
+        setShowAdd(false)
+        await fetchInstances()
+      } else {
+        toast.error(data.error ?? 'Erreur de connexion')
+      }
     } catch (err: any) { toast.error(err.message) } finally { setAdding(false) }
   }
 
@@ -81,46 +86,41 @@ function WhatsAppTab({ tenantId }: { tenantId: string }) {
       })
       const data = await res.json()
       if (data.ok && data.qrcode?.base64) {
-        setQrCodes(q => ({ ...q, [instanceKey]: data.qrcode.base64 }))
+        setActiveQR(data.qrcode.base64)
         toast('🔄 Session réinitialisée')
         await fetchInstances()
       }
     } catch (err: any) { toast.error(err.message) }
   }
 
-  const statusColor = (s: string) => s === 'online' ? '#22c55e' : s === 'connecting' ? '#f59e0b' : '#ef4444'
+  const dot = (s: string) => s === 'online' ? '#22c55e' : s === 'connecting' ? '#f59e0b' : '#ef4444'
 
   if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Chargement...</div>
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* Instances list */}
       {instances.map(inst => (
-        <div key={inst.instance_key} style={{
-          padding: 16, borderRadius: 12,
-          background: 'var(--bg)', border: '1px solid var(--border)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' as const }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: statusColor(inst.status), flexShrink: 0 }} />
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{inst.phone_number}</span>
+        <div key={inst.instance_key} style={{ padding: 16, borderRadius: 12, background: 'var(--bg)', border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: dot(inst.status), flexShrink: 0 }} />
+            <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{inst.phone_number}</span>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{inst.messages_today}/{inst.daily_limit} auj.</span>
-            <button onClick={() => handleReset(inst.instance_key)} style={{
-              padding: '6px 12px', borderRadius: 8, border: '1px solid #ef4444',
-              background: 'transparent', color: '#ef4444', fontSize: 12, cursor: 'pointer',
-            }}>🔄 Reset</button>
+            <button onClick={() => handleReset(inst.instance_key)} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: 12, cursor: 'pointer' }}>🔄 Reset</button>
           </div>
-          {qrCodes[inst.instance_key] && (
-            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
-              <div style={{ padding: 10, background: '#fff', borderRadius: 10 }}>
-                <img src={qrCodes[inst.instance_key]} width={180} height={180} alt="QR" />
-              </div>
-            </div>
-          )}
         </div>
       ))}
 
-      {/* Add new number */}
+      {activeQR && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 20, borderRadius: 12, background: 'var(--bg)', border: '1px solid var(--border)' }}>
+          <p style={{ fontSize: 13, color: 'var(--text)', margin: 0 }}>📱 سكان الـ QR Code بـ WhatsApp</p>
+          <div style={{ padding: 10, background: '#fff', borderRadius: 10 }}>
+            <img src={activeQR} width={200} height={200} alt='QR' />
+          </div>
+          <button onClick={() => setActiveQR(null)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer' }}>✕ إغلاق</button>
+        </div>
+      )}
+
       {showAdd ? (
         <div style={{ display: 'flex', gap: 10 }}>
           <input value={newPhone} onChange={e => setNewPhone(e.target.value)} placeholder="+212600000000"
@@ -131,11 +131,7 @@ function WhatsAppTab({ tenantId }: { tenantId: string }) {
           <button onClick={() => setShowAdd(false)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer' }}>✕</button>
         </div>
       ) : (
-        <button onClick={() => setShowAdd(true)} style={{
-          padding: '11px', borderRadius: 10, border: '1px dashed var(--border)',
-          background: 'transparent', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer',
-          width: '100%',
-        }}>
+        <button onClick={() => setShowAdd(true)} style={{ padding: 11, borderRadius: 10, border: '1px dashed var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer', width: '100%' }}>
           + إضافة رقم WhatsApp جديد
         </button>
       )}
