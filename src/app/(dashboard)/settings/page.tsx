@@ -64,7 +64,7 @@ function WhatsAppTab({ tenantId }: { tenantId: string }) {
       })
       const data = await res.json()
       if (data.ok && data.qrcode?.base64) {
-        setQrCodes(q => ({ ...q, [newPhone]: data.qrcode.base64 }))
+        setQrCodes(q => ({ ...q, [data.instanceKey]: data.qrcode.base64 }))
         setShowAdd(false)
         setNewPhone('')
         await fetchInstances()
