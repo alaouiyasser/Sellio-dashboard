@@ -34,6 +34,8 @@ export default function SignupPage() {
       const result = await res.json()
       if (!result.ok) { toast.error(result.error ?? 'Erreur'); return }
 
+      // Auto sign in after signup
+      await supabase.auth.signInWithPassword({ email, password })
       toast.success('✅ Compte créé! Bienvenue sur Sellio 🚀')
       router.push('/orders')
     } catch (err: any) {
