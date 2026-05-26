@@ -35,7 +35,7 @@ export default function SignupPage() {
       if (!result.ok) { toast.error(result.error ?? 'Erreur'); return }
 
       toast.success('✅ Compte créé! Bienvenue sur Sellio 🚀')
-      router.push('/dashboard')
+      router.push('/orders')
     } catch (err: any) {
       toast.error(err.message)
     } finally {
