@@ -79,6 +79,11 @@ export default function LoginPage() {
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
         </div>
+
+        <div style={{ textAlign: 'center', fontSize: 13, color: '#6B7B8D', marginTop: 16 }}>
+          Pas encore de compte?{' '}
+          <a href="/signup" style={{ color: '#8B9A35', textDecoration: 'none' }}>Créer un compte gratuit ��</a>
+        </div>
       </div>
     </div>
   )
