@@ -307,28 +307,12 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {activeTab === 'integrations' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div>
-                <label style={labelStyle}>Téléphone propriétaire</label>
-                <input style={inputStyle} value={settings.owner_phone}
-                  placeholder="+212600000000"
-                  onChange={e => setSettings(s => ({ ...s, owner_phone: e.target.value }))} />
-              </div>
-              <div>
-                <label style={labelStyle}>Prestataire de livraison</label>
-                <select value={settings.delivery_provider}
-                  onChange={e => setSettings(s => ({ ...s, delivery_provider: e.target.value }))}
-                  style={{ ...inputStyle, cursor: 'pointer' }}>
-                  <option value="maystro">Maystro</option>
-                  <option value="yalidine">Yalidine</option>
-                </select>
-              </div>
-            </div>
-          )}
+
 
           {activeTab === 'whatsapp' && tenantId && (
-            <WhatsAppTab tenantId={tenantId} />
+            hasInstance
+              ? <WhatsAppTab tenantId={tenantId} />
+              : <WizardOnboarding tenantId={tenantId} onComplete={() => setHasInstance(true)} />
           )}
 
           {activeTab === 'ai' && (
