@@ -35,6 +35,108 @@ interface WaInstance {
   daily_limit: number
 }
 
+function IntegrationsTab({ tenantId, settings, setSettings }: {
+  tenantId: string
+  settings: any
+  setSettings: (fn: (s: any) => any) => void
+}) {
+  const [savingStore, setSavingStore] = useState(false)
+  const [savingDelivery, setSavingDelivery] = useState(false)
+
+  async function handleSaveStore() {
+    if (!settings.store_type || !settings.store_url || !settings.webhook_secret || !settings.access_token) {
+      toast.error('Tous les champs store sont obligatoires'); return
+    }
+    setSavingStore(true)
+    try {
+      const res = await fetch('/api/onboarding/credentials', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId, provider: settings.store_type, credentials: {
+          store_url: settings.store_url, webhook_secret: settings.webhook_secret, access_token: settings.access_token
+        }})
+      })
+      const d = await res.json()
+      if (d.ok) toast.success('✅ Boutique sauvegardée')
+      else toast.error(d.error)
+    } catch { toast.error('Erreur') } finally { setSavingStore(false) }
+  }
+
+  async function handleSaveDelivery() {
+    setSavingDelivery(true)
+    try {
+      const res = await fetch('/api/onboarding/credentials', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId, provider: 'tenant', credentials: { delivery_provider: settings.delivery_provider }})
+      })
+      await res.json()
+      toast.success('✅ Livraison sauvegardée')
+    } catch { toast.error('Erreur') } finally { setSavingDelivery(false) }
+  }
+
+  const inp: React.CSSProperties = {
+    width: '100%', padding: '10px 14px', borderRadius: 8,
+    border: '1px solid var(--border)', background: 'var(--bg)',
+    color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' as const, marginBottom: 10
+  }
+  const section: React.CSSProperties = {
+    padding: 16, borderRadius: 12, border: '1px solid var(--border)', marginBottom: 16
+  }
+
+  return (
+    <div>
+      {/* Store */}
+      <div style={section}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>🛍️ Boutique</div>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+          {(['shopify', 'youcan'] as const).map(t => (
+            <button key={t} onClick={() => setSettings((s: any) => ({ ...s, store_type: t }))} style={{
+              padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+              border: `2px solid ${settings.store_type === t ? '#8B9A35' : 'var(--border)'}`,
+              background: settings.store_type === t ? 'rgba(139,154,53,0.1)' : 'transparent',
+              color: settings.store_type === t ? '#8B9A35' : 'var(--text-muted)'
+            }}>{t === 'shopify' ? '🛒 Shopify' : '🏪 YouCan'}</button>
+          ))}
+        </div>
+        <input style={inp} placeholder="URL boutique" value={settings.store_url ?? ''} onChange={e => setSettings((s: any) => ({ ...s, store_url: e.target.value }))} />
+        <input style={inp} placeholder="Webhook Secret" type="password" value={settings.webhook_secret ?? ''} onChange={e => setSettings((s: any) => ({ ...s, webhook_secret: e.target.value }))} />
+        <input style={inp} placeholder="Access Token" value={settings.access_token ?? ''} onChange={e => setSettings((s: any) => ({ ...s, access_token: e.target.value }))} />
+        {settings.store_type && (
+          <div style={{ fontSize: 11, color: '#8B9A35', marginBottom: 10 }}>
+            📌 Webhook: https://sellio-production-ccf6.up.railway.app/webhook/{tenantId}/{settings.store_type}
+          </div>
+        )}
+        <button onClick={handleSaveStore} disabled={savingStore} style={{ padding: '9px 18px', borderRadius: 8, background: '#8B9A35', color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          {savingStore ? '...' : '💾 Sauvegarder'}
+        </button>
+      </div>
+
+      {/* Delivery */}
+      <div style={section}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>🚚 Livraison</div>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+          {(['maystro', 'yalidin'] as const).map(p => (
+            <button key={p} onClick={() => setSettings((s: any) => ({ ...s, delivery_provider: p }))} style={{
+              padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+              border: `2px solid ${settings.delivery_provider === p ? '#8B9A35' : 'var(--border)'}`,
+              background: settings.delivery_provider === p ? 'rgba(139,154,53,0.1)' : 'transparent',
+              color: settings.delivery_provider === p ? '#8B9A35' : 'var(--text-muted)'
+            }}>{p === 'maystro' ? '📦 Maystro' : '🚀 Yalidin'}</button>
+          ))}
+        </div>
+        <button onClick={handleSaveDelivery} disabled={savingDelivery} style={{ padding: '9px 18px', borderRadius: 8, background: '#8B9A35', color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          {savingDelivery ? '...' : '💾 Sauvegarder'}
+        </button>
+      </div>
+
+      {/* WhatsApp Instances */}
+      <div style={section}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>📱 WhatsApp</div>
+        <WhatsAppTab tenantId={tenantId} />
+      </div>
+    </div>
+  )
+}
+
 function WhatsAppTab({ tenantId }: { tenantId: string }) {
   const [instances, setInstances] = useState<WaInstance[]>([])
   const [loading, setLoading]     = useState(true)
@@ -149,7 +251,7 @@ export default function SettingsPage(): React.ReactElement {
   const { t }    = useLang()
   const TABS     = TABS_KEYS.map(tab => ({
     key: tab.key,
-    label: tab.icon + ' ' + (tab.key === 'whatsapp' ? 'WhatsApp' : t(tab.tk)),
+    label: tab.icon + ' ' + (tab.key === 'whatsapp' ? 'Intégrations' : t(tab.tk)),
   }))
 
   const [loading,   setLoading]   = useState(true)
@@ -305,7 +407,7 @@ export default function SettingsPage(): React.ReactElement {
 
           {activeTab === 'whatsapp' && tenantId && (
             hasInstance
-              ? <WhatsAppTab tenantId={tenantId} />
+              ? <IntegrationsTab tenantId={tenantId} settings={settings} setSettings={setSettings} />
               : <WizardOnboarding tenantId={tenantId} onComplete={() => setHasInstance(true)} />
           )}
 
