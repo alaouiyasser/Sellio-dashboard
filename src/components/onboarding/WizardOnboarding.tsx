@@ -74,6 +74,10 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
     if (!d.ok) throw new Error(d.error)
   }
 
+  function validatePhone(phone: string): boolean {
+    return /^\+[1-9]\d{7,14}$/.test(phone.trim())
+  }
+
   function validateStoreUrl(url: string) {
     return url.includes('.myshopify.com') || url.includes('.youcan.shop') || url.includes('http')
   }
@@ -119,6 +123,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
 
   async function handleWhatsApp() {
     if (!waPhone || !waAge) return
+    if (!validatePhone(waPhone)) { toast.error('Format invalide — ex: +212776168329'); return }
     setLoading(true)
     try {
       const supabase = createClient()
@@ -345,7 +350,10 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
             placeholder='+212600000000' style={input} />
           <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
             <button onClick={() => setStep(3)} style={backBtn}>← Retour</button>
-            <button onClick={() => setStep(5)} disabled={!ownerPhone} style={nextBtn(!!ownerPhone)}>
+            <button onClick={() => {
+              if (!validatePhone(ownerPhone)) { toast.error('Format invalide — ex: +212600000000'); return; }
+              setStep(5);
+            }} disabled={!ownerPhone} style={nextBtn(!!ownerPhone && validatePhone(ownerPhone))}>
               Suivant →
             </button>
           </div>
