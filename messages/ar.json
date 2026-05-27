@@ -1,132 +1,145 @@
 {
-  "nav": {
-    "dashboard": "الرئيسية",
-    "orders": "الطلبات",
-    "credits": "الرصيد",
-    "analytics": "الإحصاءات",
-    "messages": "الرسائل",
-    "aicoach": "كوتش AI",
-    "settings": "الإعدادات",
-    "logout": "تسجيل الخروج"
-  },
-  "kpi": {
-    "total": "إجمالي الطلبات",
-    "confirmed": "مؤكدة",
-    "delivered": "مسلمة",
-    "confirmRate": "معدل التأكيد",
-    "cancelRate": "معدل الإلغاء",
-    "revenue": "رقم المعاملات المسلم",
-    "deliveredOrders": "طلبات مسلمة",
-    "clickToView": "انقر للعرض"
-  },
-  "chart": {
-    "orders": "الطلبات",
-    "statuses": "الحالات"
-  },
-  "top": {
-    "cities": "أفضل المدن",
-    "products": "أفضل المنتجات",
-    "clients": "أفضل العملاء",
-    "sales": "مبيعات",
-    "orders": "طلبات"
-  },
-  "orders": {
-    "title": "الطلبات",
-    "total": "إجمالي",
-    "recent": "آخر الطلبات",
-    "seeAll": "عرض الكل"
-  },
-  "table": {
-    "phone": "الهاتف",
-    "city": "المدينة",
-    "amount": "المبلغ",
-    "status": "الحالة"
-  },
-  "status": {
-    "confirmed": "مؤكد",
-    "cancelled": "ملغي",
-    "pending": "قيد الانتظار",
-    "delivered": "مسلم",
-    "all": "الكل",
-    "modified": "معدّل",
-    "canceled": "ملغي"
-  },
-  "credits": {
-    "title": "الرصيد",
-    "balance": "الرصيد الحالي",
-    "recharge": "إعادة الشحن",
-    "rechargeMsg": "تواصل معنا على واتساب لإعادة الشحن فوراً.",
-    "history": "سجل المعاملات",
-    "lowAlert": "أعد الشحن فوراً",
-    "medAlert": "أعد الشحن قريباً",
-    "okAlert": "الرصيد كافٍ",
-    "deduct": "خصم",
-    "rechargeType": "شحن",
-    "date": "التاريخ",
-    "type": "النوع",
-    "order": "الطلب",
-    "amount": "المبلغ",
-    "balanceAfter": "الرصيد بعد",
-    "noTx": "لا توجد معاملات",
-    "consumed": "إجمالي المستهلك",
-    "perOrder": "5 رصيد / طلب مسلم"
-  },
-  "settings": {
-    "title": "الإعدادات",
-    "save": "حفظ",
-    "companyName": "اسم الشركة",
-    "general": "عام",
-    "integrations": "التكاملات",
-    "aicoach": "كوتش AI"
-  },
-  "login": {
-    "title": "تسجيل الدخول",
-    "email": "البريد الإلكتروني",
-    "password": "كلمة المرور",
-    "submit": "دخول",
-    "loading": "جاري الدخول..."
-  },
-  "loading": "جاري التحميل...",
-  "noData": "لا توجد بيانات",
-  "aicoach": {
-    "noReport": "لا يوجد تقرير",
-    "noReportSub": "سيتم إنشاء أول تقرير تلقائياً",
-    "generate": "إنشاء تقرير"
-  },
-  "msgTypes": {
-    "confirmation": "تأكيد",
-    "reminder": "تذكير",
-    "modification": "تعديل",
-    "cancellation": "إلغاء",
-    "tracking": "تتبع"
-  },
-  "wizard": {
-    "step1_title": "شحال طلبية كتجيك فـ النهار؟",
-    "step1_sub": "باش نحددو الـ config المناسبة ليك",
-    "step2_title": "شحال عمر رقم WhatsApp ديالك؟",
-    "step2_sub": "الأرقام الجديدة عندها حد يومي أقل باش تتحمى من الـ ban",
-    "step3_title": "رقم هاتفك للتواصل",
-    "step3_sub": "باش نتواصلو معاك إلا كان عندنا شي مشكل",
-    "step4_title": "رقم WhatsApp ديال المتجر",
-    "step4_sub": "هاد الرقم غادي يبعت الرسائل للزبائن ديالك",
-    "step5_title": "سكان الـ QR Code",
-    "step5_sub": "افتح WhatsApp → الأجهزة المتصلة → ربط جهاز",
-    "next": "التالي →",
-    "back": "← رجع",
-    "daily_limit": "الحد اليومي",
-    "need_extra": "غادي تحتاج رقم إضافي بعد",
-    "days": "أيام",
-    "connecting": "جاري الاتصال...",
-    "scan_btn": "📱 سكان QR Code",
-    "done_btn": "✅ سكانت — كمل للـ Dashboard",
-    "config_title": "Config ديالك",
-    "lt50": "📦 أقل من 50 طلبية/يوم",
-    "50_150": "📦 50 → 150 طلبية/يوم",
-    "150_300": "📦 150 → 300 طلبية/يوم",
-    "gt300": "�� أكثر من 300 طلبية/يوم",
-    "age_new": "🆕 رقم جديد (أقل من أسبوع)",
-    "age_1_2": "📅 أسبوع → أسبوعين",
-    "age_2_4": "📆 أسبوعين → شهر",
-    "age_old": "✅ أكثر من شهر"
-  }
+    "nav": {
+        "dashboard": "الرئيسية",
+        "orders": "الطلبات",
+        "credits": "الرصيد",
+        "analytics": "الإحصاءات",
+        "messages": "الرسائل",
+        "aicoach": "كوتش AI",
+        "settings": "الإعدادات",
+        "logout": "تسجيل الخروج"
+    },
+    "kpi": {
+        "total": "إجمالي الطلبات",
+        "confirmed": "مؤكدة",
+        "delivered": "مسلمة",
+        "confirmRate": "معدل التأكيد",
+        "cancelRate": "معدل الإلغاء",
+        "revenue": "رقم المعاملات المسلم",
+        "deliveredOrders": "طلبات مسلمة",
+        "clickToView": "انقر للعرض"
+    },
+    "chart": {
+        "orders": "الطلبات",
+        "statuses": "الحالات"
+    },
+    "top": {
+        "cities": "أفضل المدن",
+        "products": "أفضل المنتجات",
+        "clients": "أفضل العملاء",
+        "sales": "مبيعات",
+        "orders": "طلبات"
+    },
+    "orders": {
+        "title": "الطلبات",
+        "total": "إجمالي",
+        "recent": "آخر الطلبات",
+        "seeAll": "عرض الكل"
+    },
+    "table": {
+        "phone": "الهاتف",
+        "city": "المدينة",
+        "amount": "المبلغ",
+        "status": "الحالة"
+    },
+    "status": {
+        "confirmed": "مؤكد",
+        "cancelled": "ملغي",
+        "pending": "قيد الانتظار",
+        "delivered": "مسلم",
+        "all": "الكل",
+        "modified": "معدّل",
+        "canceled": "ملغي"
+    },
+    "credits": {
+        "title": "الرصيد",
+        "balance": "الرصيد الحالي",
+        "recharge": "إعادة الشحن",
+        "rechargeMsg": "تواصل معنا على واتساب لإعادة الشحن فوراً.",
+        "history": "سجل المعاملات",
+        "lowAlert": "أعد الشحن فوراً",
+        "medAlert": "أعد الشحن قريباً",
+        "okAlert": "الرصيد كافٍ",
+        "deduct": "خصم",
+        "rechargeType": "شحن",
+        "date": "التاريخ",
+        "type": "النوع",
+        "order": "الطلب",
+        "amount": "المبلغ",
+        "balanceAfter": "الرصيد بعد",
+        "noTx": "لا توجد معاملات",
+        "consumed": "إجمالي المستهلك",
+        "perOrder": "5 رصيد / طلب مسلم"
+    },
+    "settings": {
+        "title": "الإعدادات",
+        "save": "حفظ",
+        "companyName": "اسم الشركة",
+        "general": "عام",
+        "integrations": "التكاملات",
+        "aicoach": "كوتش AI"
+    },
+    "login": {
+        "title": "تسجيل الدخول",
+        "email": "البريد الإلكتروني",
+        "password": "كلمة المرور",
+        "submit": "دخول",
+        "loading": "جاري الدخول..."
+    },
+    "loading": "جاري التحميل...",
+    "noData": "لا توجد بيانات",
+    "aicoach": {
+        "noReport": "لا يوجد تقرير",
+        "noReportSub": "سيتم إنشاء أول تقرير تلقائياً",
+        "generate": "إنشاء تقرير"
+    },
+    "msgTypes": {
+        "confirmation": "تأكيد",
+        "reminder": "تذكير",
+        "modification": "تعديل",
+        "cancellation": "إلغاء",
+        "tracking": "تتبع"
+    },
+    "wizard": {
+        "step1_title": "شحال طلبية كتجيك فـ النهار؟",
+        "step1_sub": "باش نحددو الـ config المناسبة ليك",
+        "step2_title": "شحال عمر رقم WhatsApp ديالك؟",
+        "step2_sub": "الأرقام الجديدة عندها حد يومي أقل باش تتحمى من الـ ban",
+        "step3_title": "رقم هاتفك للتواصل",
+        "step3_sub": "باش نتواصلو معاك إلا كان عندنا شي مشكل",
+        "step4_title": "رقم WhatsApp ديال المتجر",
+        "step4_sub": "هاد الرقم غادي يبعت الرسائل للزبائن ديالك",
+        "step5_title": "سكان الـ QR Code",
+        "step5_sub": "افتح WhatsApp → الأجهزة المتصلة → ربط جهاز",
+        "next": "التالي →",
+        "back": "← رجع",
+        "daily_limit": "الحد اليومي",
+        "need_extra": "غادي تحتاج رقم إضافي بعد",
+        "days": "أيام",
+        "connecting": "جاري الاتصال...",
+        "scan_btn": "📱 سكان QR Code",
+        "done_btn": "✅ سكانت — كمل للـ Dashboard",
+        "config_title": "Config ديالك",
+        "lt50": "📦 أقل من 50 طلبية/يوم",
+        "50_150": "📦 50 → 150 طلبية/يوم",
+        "150_300": "📦 150 → 300 طلبية/يوم",
+        "gt300": "�� أكثر من 300 طلبية/يوم",
+        "age_new": "🆕 رقم جديد (أقل من أسبوع)",
+        "age_1_2": "📅 أسبوع → أسبوعين",
+        "age_2_4": "📆 أسبوعين → شهر",
+        "age_old": "✅ أكثر من شهر"
+    },
+    "integrations": {
+        "title": "التكاملات",
+        "store": "المتجر",
+        "store_connected": "متصل ✅",
+        "delivery": "التوصيل",
+        "whatsapp": "واتساب",
+        "msg_count": "رسالة",
+        "disconnect": "قطع الاتصال",
+        "add_number": "+ إضافة رقم واتساب",
+        "save": "💾 حفظ",
+        "qr_scan": "امسح رمز QR عبر واتساب",
+        "close": "✕ إغلاق"
+    }
 }

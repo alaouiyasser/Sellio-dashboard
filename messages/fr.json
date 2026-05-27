@@ -1,132 +1,145 @@
 {
-  "nav": {
-    "dashboard": "Tableau de bord",
-    "orders": "Commandes",
-    "credits": "Crédits",
-    "analytics": "Analytiques",
-    "messages": "Messages",
-    "aicoach": "AI Coach",
-    "settings": "Paramètres",
-    "logout": "Déconnexion"
-  },
-  "kpi": {
-    "total": "Total commandes",
-    "confirmed": "Confirmées",
-    "delivered": "Livrées",
-    "confirmRate": "Taux confirmation",
-    "cancelRate": "Taux annulation",
-    "revenue": "CHIFFRE D'AFFAIRES LIVRÉ",
-    "deliveredOrders": "commandes livrées",
-    "clickToView": "cliquez pour voir"
-  },
-  "chart": {
-    "orders": "Commandes",
-    "statuses": "Statuts"
-  },
-  "top": {
-    "cities": "Top villes",
-    "products": "Top produits",
-    "clients": "Top clients",
-    "sales": "ventes",
-    "orders": "commandes"
-  },
-  "orders": {
-    "title": "Commandes",
-    "total": "au total",
-    "recent": "Dernières commandes",
-    "seeAll": "Voir tout"
-  },
-  "table": {
-    "phone": "Téléphone",
-    "city": "Ville",
-    "amount": "Montant",
-    "status": "Statut"
-  },
-  "status": {
-    "all": "Tous",
-    "confirmed": "Confirmé",
-    "cancelled": "Annulé",
-    "canceled": "Annulé",
-    "pending": "En attente",
-    "delivered": "Livré",
-    "modified": "Modifié"
-  },
-  "credits": {
-    "title": "Crédits",
-    "balance": "Solde actuel",
-    "recharge": "Recharger",
-    "rechargeMsg": "Contactez-nous sur WhatsApp pour recharger instantanément.",
-    "history": "Historique des transactions",
-    "lowAlert": "Rechargez immédiatement",
-    "medAlert": "Rechargez bientôt",
-    "okAlert": "Crédits suffisants",
-    "deduct": "Déduction",
-    "rechargeType": "Recharge",
-    "date": "DATE",
-    "type": "TYPE",
-    "order": "COMMANDE",
-    "amount": "MONTANT",
-    "balanceAfter": "SOLDE APRÈS",
-    "noTx": "Aucune transaction",
-    "consumed": "Total consommé",
-    "perOrder": "5 crédits / commande livrée"
-  },
-  "settings": {
-    "title": "Paramètres",
-    "save": "Sauvegarder",
-    "companyName": "Nom de l'entreprise",
-    "general": "Général",
-    "integrations": "Intégrations",
-    "aicoach": "AI Coach"
-  },
-  "login": {
-    "title": "Connectez-vous",
-    "email": "Email",
-    "password": "Mot de passe",
-    "submit": "Se connecter",
-    "loading": "Connexion..."
-  },
-  "loading": "Chargement...",
-  "noData": "Aucune donnée",
-  "aicoach": {
-    "noReport": "Aucun rapport disponible",
-    "noReportSub": "Votre premier rapport sera généré automatiquement",
-    "generate": "Générer un rapport"
-  },
-  "msgTypes": {
-    "confirmation": "Confirmation",
-    "reminder": "Rappel",
-    "modification": "Modification",
-    "cancellation": "Annulation",
-    "tracking": "Tracking"
-  },
-  "wizard": {
-    "step1_title": "Combien de commandes par jour ?",
-    "step1_sub": "Pour configurer la solution adaptée",
-    "step2_title": "Quel est l'âge de votre numéro WhatsApp ?",
-    "step2_sub": "Les nouveaux numéros ont une limite journalière pour éviter le ban",
-    "step3_title": "Votre numéro de contact",
-    "step3_sub": "Pour vous contacter en cas de problème",
-    "step4_title": "Numéro WhatsApp de la boutique",
-    "step4_sub": "Ce numéro enverra les messages à vos clients",
-    "step5_title": "Scannez le QR Code",
-    "step5_sub": "Ouvrez WhatsApp → Appareils connectés → Connecter un appareil",
-    "next": "Suivant →",
-    "back": "← Retour",
-    "daily_limit": "Limite journalière",
-    "need_extra": "Vous aurez besoin d'un numéro supplémentaire dans",
-    "days": "jours",
-    "connecting": "Connexion en cours...",
-    "scan_btn": "📱 Scanner le QR Code",
-    "done_btn": "✅ Scanné — Accéder au Dashboard",
-    "config_title": "Votre configuration",
-    "lt50": "📦 Moins de 50 commandes/jour",
-    "50_150": "📦 50 → 150 commandes/jour",
-    "150_300": "📦 150 → 300 commandes/jour",
-    "gt300": "📦 Plus de 300 commandes/jour",
-    "age_new": "🆕 Nouveau (moins d'une semaine)",
-    "age_1_2": "📅 1 → 2 semaines",
-    "age_2_4": "📆 2 → 4 semaines",
-    "age_old": "✅ Plus d'un mois"
-  }
+    "nav": {
+        "dashboard": "Tableau de bord",
+        "orders": "Commandes",
+        "credits": "Crédits",
+        "analytics": "Analytiques",
+        "messages": "Messages",
+        "aicoach": "AI Coach",
+        "settings": "Paramètres",
+        "logout": "Déconnexion"
+    },
+    "kpi": {
+        "total": "Total commandes",
+        "confirmed": "Confirmées",
+        "delivered": "Livrées",
+        "confirmRate": "Taux confirmation",
+        "cancelRate": "Taux annulation",
+        "revenue": "CHIFFRE D'AFFAIRES LIVRÉ",
+        "deliveredOrders": "commandes livrées",
+        "clickToView": "cliquez pour voir"
+    },
+    "chart": {
+        "orders": "Commandes",
+        "statuses": "Statuts"
+    },
+    "top": {
+        "cities": "Top villes",
+        "products": "Top produits",
+        "clients": "Top clients",
+        "sales": "ventes",
+        "orders": "commandes"
+    },
+    "orders": {
+        "title": "Commandes",
+        "total": "au total",
+        "recent": "Dernières commandes",
+        "seeAll": "Voir tout"
+    },
+    "table": {
+        "phone": "Téléphone",
+        "city": "Ville",
+        "amount": "Montant",
+        "status": "Statut"
+    },
+    "status": {
+        "all": "Tous",
+        "confirmed": "Confirmé",
+        "cancelled": "Annulé",
+        "canceled": "Annulé",
+        "pending": "En attente",
+        "delivered": "Livré",
+        "modified": "Modifié"
+    },
+    "credits": {
+        "title": "Crédits",
+        "balance": "Solde actuel",
+        "recharge": "Recharger",
+        "rechargeMsg": "Contactez-nous sur WhatsApp pour recharger instantanément.",
+        "history": "Historique des transactions",
+        "lowAlert": "Rechargez immédiatement",
+        "medAlert": "Rechargez bientôt",
+        "okAlert": "Crédits suffisants",
+        "deduct": "Déduction",
+        "rechargeType": "Recharge",
+        "date": "DATE",
+        "type": "TYPE",
+        "order": "COMMANDE",
+        "amount": "MONTANT",
+        "balanceAfter": "SOLDE APRÈS",
+        "noTx": "Aucune transaction",
+        "consumed": "Total consommé",
+        "perOrder": "5 crédits / commande livrée"
+    },
+    "settings": {
+        "title": "Paramètres",
+        "save": "Sauvegarder",
+        "companyName": "Nom de l'entreprise",
+        "general": "Général",
+        "integrations": "Intégrations",
+        "aicoach": "AI Coach"
+    },
+    "login": {
+        "title": "Connectez-vous",
+        "email": "Email",
+        "password": "Mot de passe",
+        "submit": "Se connecter",
+        "loading": "Connexion..."
+    },
+    "loading": "Chargement...",
+    "noData": "Aucune donnée",
+    "aicoach": {
+        "noReport": "Aucun rapport disponible",
+        "noReportSub": "Votre premier rapport sera généré automatiquement",
+        "generate": "Générer un rapport"
+    },
+    "msgTypes": {
+        "confirmation": "Confirmation",
+        "reminder": "Rappel",
+        "modification": "Modification",
+        "cancellation": "Annulation",
+        "tracking": "Tracking"
+    },
+    "wizard": {
+        "step1_title": "Combien de commandes par jour ?",
+        "step1_sub": "Pour configurer la solution adaptée",
+        "step2_title": "Quel est l'âge de votre numéro WhatsApp ?",
+        "step2_sub": "Les nouveaux numéros ont une limite journalière pour éviter le ban",
+        "step3_title": "Votre numéro de contact",
+        "step3_sub": "Pour vous contacter en cas de problème",
+        "step4_title": "Numéro WhatsApp de la boutique",
+        "step4_sub": "Ce numéro enverra les messages à vos clients",
+        "step5_title": "Scannez le QR Code",
+        "step5_sub": "Ouvrez WhatsApp → Appareils connectés → Connecter un appareil",
+        "next": "Suivant →",
+        "back": "← Retour",
+        "daily_limit": "Limite journalière",
+        "need_extra": "Vous aurez besoin d'un numéro supplémentaire dans",
+        "days": "jours",
+        "connecting": "Connexion en cours...",
+        "scan_btn": "📱 Scanner le QR Code",
+        "done_btn": "✅ Scanné — Accéder au Dashboard",
+        "config_title": "Votre configuration",
+        "lt50": "📦 Moins de 50 commandes/jour",
+        "50_150": "📦 50 → 150 commandes/jour",
+        "150_300": "📦 150 → 300 commandes/jour",
+        "gt300": "📦 Plus de 300 commandes/jour",
+        "age_new": "🆕 Nouveau (moins d'une semaine)",
+        "age_1_2": "📅 1 → 2 semaines",
+        "age_2_4": "📆 2 → 4 semaines",
+        "age_old": "✅ Plus d'un mois"
+    },
+    "integrations": {
+        "title": "Intégrations",
+        "store": "Boutique",
+        "store_connected": "Connectée ✅",
+        "delivery": "Livraison",
+        "whatsapp": "WhatsApp",
+        "msg_count": "msg",
+        "disconnect": "Déconnecter",
+        "add_number": "+ Ajouter un numéro WhatsApp",
+        "save": "💾 Sauvegarder",
+        "qr_scan": "Scannez le QR Code avec WhatsApp",
+        "close": "✕ Fermer"
+    }
 }
