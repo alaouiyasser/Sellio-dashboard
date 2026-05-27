@@ -37,7 +37,7 @@ export default function SignupPage() {
       // Auto sign in after signup
       await supabase.auth.signInWithPassword({ email, password })
       toast.success('✅ Compte créé! Bienvenue sur Sellio 🚀')
-      window.location.href = '/orders'
+      window.location.href = '/onboarding'
     } catch (err: any) {
       toast.error(err.message)
     } finally {

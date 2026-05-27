@@ -159,7 +159,7 @@ export default function SettingsPage(): React.ReactElement {
   const [hasInstance, setHasInstance] = useState(false)
   const [settings,  setSettings]  = useState({
     company_name: '', owner_phone: '',
-    delivery_provider: 'maystro', ai_coach_frequency: 'weekly',
+    delivery_provider: 'maystro', ai_coach_frequency: 'weekly', store_type: 'shopify' as 'shopify' | 'youcan', store_url: '', webhook_secret: '', access_token: '',
   })
 
   useEffect(() => { fetchSettings() }, [])
@@ -237,6 +237,45 @@ export default function SettingsPage(): React.ReactElement {
                   placeholder="+212600000000"
                   onChange={e => setSettings(s => ({ ...s, owner_phone: e.target.value }))} />
               </div>
+              {/* Store Integration */}
+              <div style={{ padding: 16, borderRadius: 12, border: '1px solid var(--border)', background: 'rgba(139,154,53,0.03)' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>🛍️ Boutique e-commerce</div>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+                  {(['shopify', 'youcan'] as const).map(t => (
+                    <button key={t} onClick={() => setSettings(s => ({ ...s, store_type: t }))}
+                      style={{ padding: '8px 18px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                        border: `2px solid ${settings.store_type === t ? '#8B9A35' : 'var(--border)'}`,
+                        background: settings.store_type === t ? 'rgba(139,154,53,0.1)' : 'transparent',
+                        color: settings.store_type === t ? '#8B9A35' : 'var(--text-muted)' }}>
+                      {t === 'shopify' ? '🛒 Shopify' : '🏪 YouCan'}
+                    </button>
+                  ))}
+                </div>
+                <input style={inputStyle} placeholder={settings.store_type === 'youcan' ? 'ma-boutique.youcan.shop' : 'ma-boutique.myshopify.com'}
+                  value={settings.store_url ?? ''} onChange={e => setSettings(s => ({ ...s, store_url: e.target.value }))} />
+                <input style={inputStyle} placeholder="Webhook Secret" type="password"
+                  value={settings.webhook_secret ?? ''} onChange={e => setSettings(s => ({ ...s, webhook_secret: e.target.value }))} />
+                <input style={inputStyle} placeholder="Access Token (pour sync catalogue) — optionnel"
+                  value={settings.access_token ?? ''} onChange={e => setSettings(s => ({ ...s, access_token: e.target.value }))} />
+                {settings.store_type && tenantId && (
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 12px', borderRadius: 8, background: 'var(--bg)', marginTop: -4, marginBottom: 8 }}>
+                    📌 Webhook URL: <span style={{ color: '#8B9A35' }}>https://sellio-production-ccf6.up.railway.app/webhook/{tenantId}/{settings.store_type}</span>
+                  </div>
+                )}
+                <button onClick={async () => {
+                  if (!settings.store_type || !settings.store_url || !settings.webhook_secret) return
+                  try {
+                    const res = await fetch('/api/onboarding/credentials', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ tenantId, provider: settings.store_type, credentials: { store_url: settings.store_url, webhook_secret: settings.webhook_secret, access_token: settings.access_token ?? '' } }) })
+                    const d = await res.json()
+                    if (d.ok) toast.success('✅ Boutique sauvegardée')
+                    else toast.error(d.error)
+                  } catch { toast.error('Erreur') }
+                }} style={{ padding: '10px 20px', borderRadius: 8, background: '#8B9A35', color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  💾 Sauvegarder
+                </button>
+              </div>
+
               <div>
                 <label style={labelStyle}>Prestataire de livraison</label>
                 <select value={settings.delivery_provider}
