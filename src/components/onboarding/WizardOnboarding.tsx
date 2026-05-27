@@ -271,10 +271,18 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
           </div>
 
           <div style={{ padding: 12, borderRadius: 10, background: 'rgba(139,154,53,0.05)', border: '1px solid rgba(139,154,53,0.15)', marginBottom: 20, fontSize: 12, color: 'var(--text-muted)' }}>
-            📌 Webhook URL à configurer dans {storeType === 'shopify' ? 'Shopify' : 'YouCan'}:<br />
-            <code style={{ color: '#8B9A35', fontSize: 11 }}>
-              https://sellio-production-ccf6.up.railway.app/webhook/{tenantId}/{storeType}
-            </code>
+            📌 Webhook URL à configurer dans {storeType === 'shopify' ? 'Shopify' : 'YouCan'}:
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+              <code style={{ color: '#8B9A35', fontSize: 11, flex: 1, wordBreak: 'break-all' }}>
+                https://sellio-production-ccf6.up.railway.app/webhook/{tenantId}/{storeType}
+              </code>
+              <button onClick={() => {
+                navigator.clipboard.writeText(`https://sellio-production-ccf6.up.railway.app/webhook/${tenantId}/${storeType}`)
+                toast.success('✅ Copié!')
+              }} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #8B9A35', background: 'transparent', color: '#8B9A35', fontSize: 11, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                📋 Copier
+              </button>
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
