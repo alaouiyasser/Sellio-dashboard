@@ -22,7 +22,6 @@ const labelStyle: React.CSSProperties = {
 
 const TABS_KEYS = [
   { key: 'general',      icon: '🏢', tk: 'settings.general' },
-  { key: 'integrations', icon: '🔗', tk: 'settings.integrations' },
   { key: 'whatsapp',     icon: '📱', tk: 'WhatsApp' },
   { key: 'ai',           icon: '🧠', tk: 'settings.aicoach' },
 ]
@@ -228,7 +227,7 @@ export default function SettingsPage() {
   const { t }    = useLang()
   const TABS     = TABS_KEYS.map(tab => ({
     key: tab.key,
-    label: tab.icon + ' ' + (tab.key === 'whatsapp' ? 'WhatsApp' : t(tab.tk)),
+    label: tab.icon + ' ' + (tab.key === 'whatsapp' ? 'Intégrations' : t(tab.tk)),
   }))
 
   const [loading,   setLoading]   = useState(true)
