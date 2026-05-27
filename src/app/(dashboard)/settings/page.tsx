@@ -231,6 +231,7 @@ export default function SettingsPage() {
   }))
 
   const [loading,   setLoading]   = useState(true)
+  const [hasInstance, setHasInstance] = useState(false)
   const [saving,    setSaving]    = useState(false)
   const [activeTab, setActiveTab] = useState('general')
   const [tenantId,  setTenantId]  = useState<string | null>(null)
@@ -241,10 +242,21 @@ export default function SettingsPage() {
 
   useEffect(() => { fetchSettings() }, [])
 
+  async function checkInstance(tid: string) {
+    try {
+      const res = await fetch(`${API}/api/whatsapp/${tid}/instances`)
+      const data = await res.json()
+      if (data.ok && data.instances?.some((i: any) => i.status === 'online')) {
+        setHasInstance(true)
+      }
+    } catch {}
+  }
+
   async function fetchSettings() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     setTenantId(user.id)
+    checkInstance(user.id)
     const { data } = await supabase
       .from('tenants').select('company_name, owner_phone, delivery_provider, ai_coach_frequency')
       .eq('id', user.id).single()
