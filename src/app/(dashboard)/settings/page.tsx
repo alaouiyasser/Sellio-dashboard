@@ -1,13 +1,14 @@
 'use client'
-import WizardOnboarding from '@/components/onboarding/WizardOnboarding'
 
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import Topbar from '@/components/layout/Topbar'
 import { useLang } from '@/components/layout/LanguageProvider'
 import { toast } from 'sonner'
+import WizardOnboarding from '@/components/onboarding/WizardOnboarding'
 
-const API = typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:3001'
+
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '10px 14px', borderRadius: 10,
@@ -21,246 +22,222 @@ const labelStyle: React.CSSProperties = {
 
 const TABS_KEYS = [
   { key: 'general',      icon: '🏢', tk: 'settings.general' },
+  { key: 'integrations', icon: '🔗', tk: 'settings.integrations' },
   { key: 'whatsapp',     icon: '📱', tk: 'WhatsApp' },
   { key: 'ai',           icon: '🧠', tk: 'settings.aicoach' },
 ]
 
 // ─── WhatsApp Tab ─────────────────────────────────────────────────────────────
-interface WaInstance {
-  instance_key: string
-  phone_number: string
-  status: string
-  messages_today: number
-  daily_limit: number
-}
-
-function IntegrationsTab({ tenantId, settings, setSettings }: {
-  tenantId: string
-  settings: any
-  setSettings: (fn: (s: any) => any) => void
-}) {
-  const [savingStore, setSavingStore] = useState(false)
-  const [savingDelivery, setSavingDelivery] = useState(false)
-
-  async function handleSaveStore() {
-    if (!settings.store_type || !settings.store_url || !settings.webhook_secret || !settings.access_token) {
-      toast.error('Tous les champs store sont obligatoires'); return
-    }
-    setSavingStore(true)
-    try {
-      const res = await fetch('/api/onboarding/credentials', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenantId, provider: settings.store_type, credentials: {
-          store_url: settings.store_url, webhook_secret: settings.webhook_secret, access_token: settings.access_token
-        }})
-      })
-      const d = await res.json()
-      if (d.ok) toast.success('✅ Boutique sauvegardée')
-      else toast.error(d.error)
-    } catch { toast.error('Erreur') } finally { setSavingStore(false) }
-  }
-
-  async function handleSaveDelivery() {
-    setSavingDelivery(true)
-    try {
-      const res = await fetch('/api/onboarding/credentials', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenantId, provider: 'tenant', credentials: { delivery_provider: settings.delivery_provider }})
-      })
-      await res.json()
-      toast.success('✅ Livraison sauvegardée')
-    } catch { toast.error('Erreur') } finally { setSavingDelivery(false) }
-  }
-
-  const inp: React.CSSProperties = {
-    width: '100%', padding: '10px 14px', borderRadius: 8,
-    border: '1px solid var(--border)', background: 'var(--bg)',
-    color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' as const, marginBottom: 10
-  }
-  const section: React.CSSProperties = {
-    padding: 16, borderRadius: 12, border: '1px solid var(--border)', marginBottom: 16
-  }
-
-  return (
-    <div>
-      {/* Store */}
-      <div style={section}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>🛍️ Boutique</div>
-        <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-          {(['shopify', 'youcan'] as const).map(t => (
-            <button key={t} onClick={() => setSettings((s: any) => ({ ...s, store_type: t }))} style={{
-              padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
-              border: `2px solid ${settings.store_type === t ? '#8B9A35' : 'var(--border)'}`,
-              background: settings.store_type === t ? 'rgba(139,154,53,0.1)' : 'transparent',
-              color: settings.store_type === t ? '#8B9A35' : 'var(--text-muted)'
-            }}>{t === 'shopify' ? '🛒 Shopify' : '🏪 YouCan'}</button>
-          ))}
-        </div>
-        <input style={inp} placeholder="URL boutique" value={settings.store_url ?? ''} onChange={e => setSettings((s: any) => ({ ...s, store_url: e.target.value }))} />
-        <input style={inp} placeholder="Webhook Secret" type="password" value={settings.webhook_secret ?? ''} onChange={e => setSettings((s: any) => ({ ...s, webhook_secret: e.target.value }))} />
-        <input style={inp} placeholder="Access Token" value={settings.access_token ?? ''} onChange={e => setSettings((s: any) => ({ ...s, access_token: e.target.value }))} />
-        {settings.store_type && (
-          <div style={{ fontSize: 11, color: '#8B9A35', marginBottom: 10 }}>
-            📌 Webhook: https://sellio-production-ccf6.up.railway.app/webhook/{tenantId}/{settings.store_type}
-          </div>
-        )}
-        <button onClick={handleSaveStore} disabled={savingStore} style={{ padding: '9px 18px', borderRadius: 8, background: '#8B9A35', color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-          {savingStore ? '...' : '💾 Sauvegarder'}
-        </button>
-      </div>
-
-      {/* Delivery */}
-      <div style={section}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>🚚 Livraison</div>
-        <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-          {(['maystro', 'yalidin'] as const).map(p => (
-            <button key={p} onClick={() => setSettings((s: any) => ({ ...s, delivery_provider: p }))} style={{
-              padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
-              border: `2px solid ${settings.delivery_provider === p ? '#8B9A35' : 'var(--border)'}`,
-              background: settings.delivery_provider === p ? 'rgba(139,154,53,0.1)' : 'transparent',
-              color: settings.delivery_provider === p ? '#8B9A35' : 'var(--text-muted)'
-            }}>{p === 'maystro' ? '📦 Maystro' : '🚀 Yalidin'}</button>
-          ))}
-        </div>
-        <button onClick={handleSaveDelivery} disabled={savingDelivery} style={{ padding: '9px 18px', borderRadius: 8, background: '#8B9A35', color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-          {savingDelivery ? '...' : '💾 Sauvegarder'}
-        </button>
-      </div>
-
-      {/* WhatsApp Instances */}
-      <div style={section}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>📱 WhatsApp</div>
-        <WhatsAppTab tenantId={tenantId} />
-      </div>
-    </div>
-  )
-}
-
 function WhatsAppTab({ tenantId }: { tenantId: string }) {
-  const [instances, setInstances] = useState<WaInstance[]>([])
-  const [loading, setLoading]     = useState(true)
-  const [activeQR, setActiveQR]   = useState<string | null>(null)
-  const [showAdd, setShowAdd]     = useState(false)
-  const [newPhone, setNewPhone]   = useState('')
-  const [adding, setAdding]       = useState(false)
+  const [status, setStatus]     = useState<'online' | 'offline' | 'connecting' | null>(null)
+  const [qrCode, setQrCode]     = useState<string | null>(null)
+  const [loading, setLoading]   = useState(false)
+  const [phone, setPhone]       = useState('')
+  const pollRef                 = useRef<NodeJS.Timeout | null>(null)
+  const [hasInstance, setHasInstance] = useState(false)
 
-  useEffect(() => { fetchInstances() }, [tenantId])
+  // ── Fetch current status on mount ──
+  useEffect(() => {
+    fetchStatus()
+    return () => { if (pollRef.current) clearInterval(pollRef.current) }
+  }, [tenantId])
 
-  async function fetchInstances() {
+  async function fetchStatus() {
     try {
-      const res = await fetch(`${API}/api/whatsapp/${tenantId}/instances`)
+      const res  = await fetch(`${API}/api/whatsapp/${tenantId}/instance/status`)
       const data = await res.json()
-      if (data.ok) setInstances(data.instances ?? [])
-    } catch {} finally { setLoading(false) }
+      if (data.ok) setStatus(data.db.status)
+    } catch {}
   }
 
-  async function handleAdd() {
-    if (!newPhone) { toast.error('أدخل الرقم'); return }
-    setAdding(true)
+  // ── Poll every 5s while QR is shown ──
+  function startPolling() {
+    if (pollRef.current) clearInterval(pollRef.current)
+    pollRef.current = setInterval(async () => {
+      try {
+        const res  = await fetch(`${API}/api/whatsapp/${tenantId}/instance/status`)
+        const data = await res.json()
+        if (data.ok && data.db.status === 'online') {
+          setStatus('online')
+          setQrCode(null)
+          clearInterval(pollRef.current!)
+          toast.success('✅ WhatsApp connecté avec succès!')
+        }
+      } catch {}
+    }, 5000)
+  }
+
+  async function handleConnect() {
+    if (!phone) { toast.error('Entrez votre numéro WhatsApp'); return }
+    setLoading(true)
     try {
-      const res = await fetch(`${API}/api/whatsapp/${tenantId}/instance/create`, {
+      const res  = await fetch(`${API}/api/whatsapp/${tenantId}/instance/create`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone_number: newPhone }),
+        body: JSON.stringify({ phone_number: phone }),
       })
       const data = await res.json()
       if (data.ok && data.qrcode?.base64) {
-        setActiveQR(data.qrcode.base64)
-        setShowAdd(false)
-        setNewPhone('')
-        await fetchInstances()
-        toast('📱 سكان الـ QR Code')
-      } else if (data.ok && data.qrcode?.instance?.state === 'open') {
-        toast.success('✅ WhatsApp déjà connecté!')
-        setShowAdd(false)
-        await fetchInstances()
+        setQrCode(data.qrcode.base64)
+        setStatus('connecting')
+        startPolling()
+        toast('📱 Scannez le QR code avec WhatsApp')
       } else {
-        toast.error(data.error ?? 'Erreur de connexion')
+        toast.error(data.error ?? 'Erreur lors de la création')
       }
-    } catch (err: any) { toast.error(err.message) } finally { setAdding(false) }
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  async function handleReset(instanceKey: string) {
+  async function handleReset() {
+    setLoading(true)
     try {
-      const res = await fetch(`${API}/api/whatsapp/${tenantId}/instance/reset`, {
+      const res  = await fetch(`${API}/api/whatsapp/${tenantId}/instance/reset`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ purge_queue: false }),
       })
       const data = await res.json()
-      if (data.ok && data.qrcode?.base64) {
-        setActiveQR(data.qrcode.base64)
-        toast('🔄 Session réinitialisée')
-        await fetchInstances()
+      if (data.ok) {
+        setQrCode(data.qrcode?.base64 ?? null)
+        setStatus('connecting')
+        startPolling()
+        toast('🔄 Session réinitialisée — scannez le nouveau QR code')
       }
-    } catch (err: any) { toast.error(err.message) }
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const dot = (s: string) => s === 'online' ? '#22c55e' : s === 'connecting' ? '#f59e0b' : '#ef4444'
-
-  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Chargement...</div>
+  const statusColor = status === 'online' ? '#22c55e' : status === 'connecting' ? '#f59e0b' : '#ef4444'
+  const statusLabel = status === 'online' ? 'Connecté' : status === 'connecting' ? 'En attente de scan...' : 'Déconnecté'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-      {instances.map(inst => (
-        <div key={inst.instance_key} style={{ padding: 16, borderRadius: 12, background: 'var(--bg)', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: dot(inst.status), flexShrink: 0 }} />
-            <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{inst.phone_number}</span>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{inst.messages_today}/{inst.daily_limit} auj.</span>
-            <button onClick={() => handleReset(inst.instance_key)} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: 12, cursor: 'pointer' }}>🔄 Reset</button>
-          </div>
-        </div>
-      ))}
+      {/* Status Badge */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
+        borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg)',
+      }}>
+        <div style={{
+          width: 10, height: 10, borderRadius: '50%',
+          background: statusColor,
+          boxShadow: `0 0 8px ${statusColor}`,
+        }} />
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+          {statusLabel}
+        </span>
+        {status === 'online' && (
+          <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>
+            Votre WhatsApp est actif ✓
+          </span>
+        )}
+      </div>
 
-      {activeQR && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 20, borderRadius: 12, background: 'var(--bg)', border: '1px solid var(--border)' }}>
-          <p style={{ fontSize: 13, color: 'var(--text)', margin: 0 }}>📱 سكان الـ QR Code بـ WhatsApp</p>
-          <div style={{ padding: 10, background: '#fff', borderRadius: 10 }}>
-            <img src={activeQR} width={200} height={200} alt='QR' />
+      {/* QR Code Display */}
+      {qrCode && (
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
+          padding: 24, borderRadius: 16,
+          background: 'rgba(139,154,53,0.05)',
+          border: '1px solid rgba(139,154,53,0.2)',
+        }}>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0, textAlign: 'center' }}>
+            Ouvrez WhatsApp → Appareils connectés → Connecter un appareil
+          </p>
+          <div style={{
+            padding: 12, background: '#fff', borderRadius: 12,
+            boxShadow: '0 4px 24px rgba(0,0,0,0.15)',
+          }}>
+            <img src={qrCode} alt="QR Code WhatsApp" width={200} height={200} />
           </div>
-          <button onClick={() => setActiveQR(null)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer' }}>✕ إغلاق</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 8, height: 8, borderRadius: '50%', background: '#f59e0b',
+              animation: 'pulse 1.5s infinite',
+            }} />
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              En attente du scan...
+            </span>
+          </div>
         </div>
       )}
 
-      {showAdd ? (
-        <div style={{ display: 'flex', gap: 10 }}>
-          <input value={newPhone} onChange={e => setNewPhone(e.target.value)} placeholder="+212600000000"
-            style={{ flex: 1, padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, outline: 'none' }} />
-          <button onClick={handleAdd} disabled={adding} style={{ padding: '10px 16px', borderRadius: 8, background: '#25D366', color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-            {adding ? '...' : '📱 Ajouter'}
+      {/* Connect Form */}
+      {status !== 'online' && !qrCode && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <label style={labelStyle}>Numéro WhatsApp à connecter</label>
+          <input
+            style={inputStyle}
+            value={phone}
+            placeholder="+212600000000"
+            onChange={e => setPhone(e.target.value)}
+          />
+          <button
+            onClick={handleConnect}
+            disabled={loading}
+            style={{
+              padding: '11px 24px', borderRadius: 10,
+              background: '#25D366', color: '#fff', border: 'none',
+              fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              opacity: loading ? 0.7 : 1, display: 'flex',
+              alignItems: 'center', gap: 8, justifyContent: 'center',
+            }}
+          >
+            {loading ? 'Connexion...' : '📱 Connecter WhatsApp'}
           </button>
-          <button onClick={() => setShowAdd(false)} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer' }}>✕</button>
         </div>
-      ) : (
-        <button onClick={() => setShowAdd(true)} style={{ padding: 11, borderRadius: 10, border: '1px dashed var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer', width: '100%' }}>
-          + إضافة رقم WhatsApp جديد
+      )}
+
+      {/* Reset Button */}
+      {(status === 'online' || qrCode) && (
+        <button
+          onClick={handleReset}
+          disabled={loading}
+          style={{
+            padding: '10px 20px', borderRadius: 10,
+            background: 'transparent', color: '#ef4444',
+            border: '1px solid #ef4444',
+            fontSize: 13, fontWeight: 500, cursor: 'pointer',
+            opacity: loading ? 0.7 : 1,
+          }}
+        >
+          🔄 Réinitialiser la session
         </button>
       )}
 
-      <div style={{ padding: 12, borderRadius: 10, background: 'rgba(139,154,53,0.05)', border: '1px solid rgba(139,154,53,0.15)', fontSize: 12, color: 'var(--text-muted)' }}>
-        ⚠️ إلا تبانت رسالة → Sellio يبعت على الرقم التالي أوتوماتيك
+      <div style={{
+        padding: 14, borderRadius: 10,
+        background: 'rgba(139,154,53,0.05)',
+        border: '1px solid rgba(139,154,53,0.15)',
+        fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6,
+      }}>
+        ⚠️ En cas de bannissement, votre queue sera automatiquement suspendue et vous recevrez une alerte Telegram.
       </div>
     </div>
   )
 }
 
-
-export default function SettingsPage(): React.ReactElement {
+// ─── Main Page ────────────────────────────────────────────────────────────────
+export default function SettingsPage() {
   const supabase = createClient()
   const { t }    = useLang()
   const TABS     = TABS_KEYS.map(tab => ({
     key: tab.key,
-    label: tab.icon + ' ' + (tab.key === 'whatsapp' ? 'Intégrations' : t(tab.tk)),
+    label: tab.icon + ' ' + (tab.key === 'whatsapp' ? 'WhatsApp' : t(tab.tk)),
   }))
 
   const [loading,   setLoading]   = useState(true)
   const [saving,    setSaving]    = useState(false)
   const [activeTab, setActiveTab] = useState('general')
   const [tenantId,  setTenantId]  = useState<string | null>(null)
-  const [hasInstance, setHasInstance] = useState(false)
   const [settings,  setSettings]  = useState({
     company_name: '', owner_phone: '',
-    delivery_provider: 'maystro', ai_coach_frequency: 'weekly', store_type: 'shopify' as 'shopify' | 'youcan', store_url: '', webhook_secret: '', access_token: '',
+    delivery_provider: 'maystro', ai_coach_frequency: 'weekly',
   })
 
   useEffect(() => { fetchSettings() }, [])
@@ -271,17 +248,10 @@ export default function SettingsPage(): React.ReactElement {
     setTenantId(user.id)
     const { data } = await supabase
       .from('tenants').select('company_name, owner_phone, delivery_provider, ai_coach_frequency')
-      .eq('id', user.id).maybeSingle()
-    if (!data) {
-      // Tenant ما تخلقش — نعاودو نخلقوه
-      await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, storeName: user.email?.split('@')[0] ?? 'Ma Boutique', email: user.email }),
-      })
-    }
+      .eq('id', user.id).single()
     if (data) setSettings(s => ({ ...s, ...data }))
     setLoading(false)
+   
   }
 
   async function handleSave() {
@@ -289,14 +259,7 @@ export default function SettingsPage(): React.ReactElement {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Non authentifié')
-      const { id: _userId } = await supabase.auth.getUser().then(r => ({ id: r.data.user?.id }))
-      const tenantFields = {
-        company_name: settings.company_name,
-        owner_phone: settings.owner_phone,
-        delivery_provider: settings.delivery_provider,
-        ai_coach_frequency: settings.ai_coach_frequency,
-      }
-      const { error } = await supabase.from('tenants').update(tenantFields).eq('id', user.id)
+      const { error } = await supabase.from('tenants').update(settings).eq('id', user.id)
       if (error) throw error
       toast.success('Paramètres sauvegardés ✓')
     } catch (err: any) {
@@ -353,45 +316,6 @@ export default function SettingsPage(): React.ReactElement {
                   placeholder="+212600000000"
                   onChange={e => setSettings(s => ({ ...s, owner_phone: e.target.value }))} />
               </div>
-              {/* Store Integration */}
-              <div style={{ padding: 16, borderRadius: 12, border: '1px solid var(--border)', background: 'rgba(139,154,53,0.03)' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>🛍️ Boutique e-commerce</div>
-                <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                  {(['shopify', 'youcan'] as const).map(t => (
-                    <button key={t} onClick={() => setSettings(s => ({ ...s, store_type: t }))}
-                      style={{ padding: '8px 18px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
-                        border: `2px solid ${settings.store_type === t ? '#8B9A35' : 'var(--border)'}`,
-                        background: settings.store_type === t ? 'rgba(139,154,53,0.1)' : 'transparent',
-                        color: settings.store_type === t ? '#8B9A35' : 'var(--text-muted)' }}>
-                      {t === 'shopify' ? '🛒 Shopify' : '🏪 YouCan'}
-                    </button>
-                  ))}
-                </div>
-                <input style={inputStyle} placeholder={settings.store_type === 'youcan' ? 'ma-boutique.youcan.shop' : 'ma-boutique.myshopify.com'}
-                  value={settings.store_url ?? ''} onChange={e => setSettings(s => ({ ...s, store_url: e.target.value }))} />
-                <input style={inputStyle} placeholder="Webhook Secret" type="password"
-                  value={settings.webhook_secret ?? ''} onChange={e => setSettings(s => ({ ...s, webhook_secret: e.target.value }))} />
-                <input style={inputStyle} placeholder="Access Token (pour sync catalogue) — optionnel"
-                  value={settings.access_token ?? ''} onChange={e => setSettings(s => ({ ...s, access_token: e.target.value }))} />
-                {settings.store_type && tenantId && (
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 12px', borderRadius: 8, background: 'var(--bg)', marginTop: -4, marginBottom: 8 }}>
-                    📌 Webhook URL: <span style={{ color: '#8B9A35' }}>https://sellio-production-ccf6.up.railway.app/webhook/{tenantId}/{settings.store_type}</span>
-                  </div>
-                )}
-                <button onClick={async () => {
-                  if (!settings.store_type || !settings.store_url || !settings.webhook_secret) return
-                  try {
-                    const res = await fetch('/api/onboarding/credentials', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ tenantId, provider: settings.store_type, credentials: { store_url: settings.store_url, webhook_secret: settings.webhook_secret, access_token: settings.access_token ?? '' } }) })
-                    const d = await res.json()
-                    if (d.ok) toast.success('✅ Boutique sauvegardée')
-                    else toast.error(d.error)
-                  } catch { toast.error('Erreur') }
-                }} style={{ padding: '10px 20px', borderRadius: 8, background: '#8B9A35', color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                  💾 Sauvegarder
-                </button>
-              </div>
-
               <div>
                 <label style={labelStyle}>Prestataire de livraison</label>
                 <select value={settings.delivery_provider}
@@ -405,13 +329,8 @@ export default function SettingsPage(): React.ReactElement {
           )}
 
           {activeTab === 'whatsapp' && tenantId && (
-            hasInstance
-              ? <IntegrationsTab tenantId={tenantId} settings={settings} setSettings={setSettings} />
-              : <WizardOnboarding tenantId={tenantId} onComplete={() => setHasInstance(true)} />
+            <WhatsAppTab tenantId={tenantId} />
           )}
-
-
-
 
           {activeTab === 'ai' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -450,4 +369,3 @@ export default function SettingsPage(): React.ReactElement {
     </div>
   )
 }
-

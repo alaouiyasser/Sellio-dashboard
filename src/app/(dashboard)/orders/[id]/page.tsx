@@ -245,7 +245,8 @@ export default function OrderDetailPage() {
                 {[
                   { label: 'Nom',          value: order.customer_name ?? '—' },
                   { label: 'Téléphone',    value: order.customer_phone ?? '—' },
-                  { label: 'Ville',        value: order.shipping_address ?? order.city ?? '—' },
+                  { label: 'Ville', value: (() => { try { const a = typeof order.shipping_address === 'string' ? JSON.parse(order.shipping_address) : order.shipping_address; return a?.city ?? a?.address ?? '—' } catch { return '—' } })() },
+                  { label: 'Adresse', value: (() => { try { const a = typeof order.shipping_address === 'string' ? JSON.parse(order.shipping_address) : order.shipping_address; return a?.address ?? '—' } catch { return '—' } })() },
                   { label: 'Montant',      value: order.total_price ? `${Number(order.total_price).toLocaleString()} MAD` : '—' },
                 ].map(f => (
                   <div key={f.label} style={{ padding: '12px 14px', background: 'var(--bg)', borderRadius: 10 }}>
@@ -294,12 +295,12 @@ export default function OrderDetailPage() {
                     borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none',
                   }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600 }}>{item.title ?? item.name ?? '—'}</div>
-                      {item.variant && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Variante: {item.variant}</div>}
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{item.productName ?? item.title ?? item.name ?? '—'}</div>
+                      {(item.variantName ?? item.variant) && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Variante: {item.variantName ?? item.variant}</div>}
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>x{item.quantity ?? 1}</div>
-                      <div style={{ fontSize: 13, color: OLIVE, fontWeight: 700 }}>{item.price} MAD</div>
+                      <div style={{ fontSize: 13, color: OLIVE, fontWeight: 700 }}>{item.unitPrice ?? item.price} MAD</div>
                     </div>
                   </div>
                 ))}
