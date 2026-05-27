@@ -45,7 +45,6 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
 
   // Delivery
   const [deliveryProvider, setDeliveryProvider] = useState<'maystro' | 'yalidin' | null>(null)
-  const [deliveryKey, setDeliveryKey] = useState('')
   const [agencyId, setAgencyId] = useState('')
 
   // WhatsApp
@@ -104,14 +103,9 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
   }
 
   async function handleSaveDelivery() {
-    if (!deliveryProvider || !deliveryKey) return
+    if (!deliveryProvider) return
     setLoading(true)
     try {
-      const creds: Record<string, string> = { api_key: deliveryKey.trim() }
-      if (deliveryProvider === 'yalidin' && agencyId) creds.agency_id = agencyId.trim()
-      await saveCredentials('delivery', { provider: deliveryProvider, ...creds })
-
-      // save provider slug to tenants
       const supabase = createClient()
       await supabase.from('tenants').update({ delivery_provider: deliveryProvider }).eq('id', tenantId)
 
@@ -304,11 +298,6 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
 
           {deliveryProvider && (
             <>
-              <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-                API Key
-              </label>
-              <input value={deliveryKey} onChange={e => setDeliveryKey(e.target.value)}
-                placeholder='Votre clé API' style={input} />
 
               {deliveryProvider === 'yalidin' && (
                 <>
@@ -325,8 +314,8 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
           <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
             <button onClick={() => setStep(2)} style={backBtn}>← Retour</button>
             <button onClick={handleSaveDelivery}
-              disabled={loading || !deliveryProvider || !deliveryKey}
-              style={nextBtn(!!deliveryProvider && !!deliveryKey && !loading)}>
+              disabled={loading || !deliveryProvider}
+              style={nextBtn(!!deliveryProvider && !loading)}>
               {loading ? 'Enregistrement...' : 'Suivant →'}
             </button>
           </div>
