@@ -21,7 +21,6 @@ const labelStyle: React.CSSProperties = {
 
 const TABS_KEYS = [
   { key: 'general',      icon: '🏢', tk: 'settings.general' },
-  { key: 'integrations', icon: '🔗', tk: 'settings.integrations' },
   { key: 'whatsapp',     icon: '📱', tk: 'WhatsApp' },
   { key: 'ai',           icon: '🧠', tk: 'settings.aicoach' },
 ]
