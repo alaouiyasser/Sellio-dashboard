@@ -88,6 +88,17 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
     if (webhookSecret.length < 8) {
       toast.error('Webhook Secret trop court (min 8 caractères)'); return
     }
+    // Validate access token
+    setLoading(true)
+    try {
+      const res = await fetch('/api/validate/store', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storeType, storeUrl, accessToken })
+      })
+      const d = await res.json()
+      if (!d.ok) { toast.error(`❌ ${d.error}`); setLoading(false); return }
+      toast.success(`✅ ${d.storeName ?? 'Boutique'} connectée!`)
+    } catch { toast.error('Erreur de connexion'); setLoading(false); return }
     setLoading(true)
     try {
       await saveCredentials(storeType, {
