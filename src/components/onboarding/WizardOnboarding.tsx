@@ -37,6 +37,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
   const [step, setStep] = useState(1)
 
   // Store
+  const [logo, setLogo] = useState<string | null>(null)
   const [storeType, setStoreType] = useState<'shopify' | 'youcan' | null>(null)
   const [storeUrl, setStoreUrl] = useState('')
   const [webhookSecret, setWebhookSecret] = useState('')
@@ -74,8 +75,20 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
     if (!d.ok) throw new Error(d.error)
   }
 
+  function validateStoreUrl(url: string) {
+    return url.includes('.myshopify.com') || url.includes('.youcan.shop') || url.includes('http')
+  }
+
   async function handleSaveStore() {
-    if (!storeType || !storeUrl || !webhookSecret) return
+    if (!storeType || !storeUrl || !webhookSecret || !accessToken) {
+      toast.error('Tous les champs sont obligatoires'); return
+    }
+    if (!validateStoreUrl(storeUrl)) {
+      toast.error('URL invalide — ex: ma-boutique.myshopify.com'); return
+    }
+    if (webhookSecret.length < 8) {
+      toast.error('Webhook Secret trop court (min 8 caractères)'); return
+    }
     setLoading(true)
     try {
       await saveCredentials(storeType, {
@@ -225,10 +238,32 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
             placeholder='Clé secrète webhook' style={input} />
 
           <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-            Access Token (pour sync catalogue) <span style={{ color: '#6B7B8D' }}>— optionnel</span>
+            Access Token <span style={{ color: '#e74c3c', fontSize: 11 }}>* obligatoire</span>
           </label>
           <input value={accessToken} onChange={e => setAccessToken(e.target.value)}
-            placeholder='shpat_...' style={input} />
+            placeholder={storeType === 'shopify' ? 'shpat_xxxxxxxxxxxx' : 'Token API YouCan'} style={input} />
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '6px 10px', borderRadius: 8, background: 'rgba(0,0,0,0.15)', marginBottom: 12 }}>
+            {storeType === 'shopify'
+              ? '📌 Shopify Admin → Apps → Develop apps → Create app → Admin API access token'
+              : '📌 YouCan → Paramètres → API → Générer token'}
+          </div>
+          <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+            Logo de la boutique <span style={{ color: '#6B7B8D', fontSize: 11 }}>— optionnel</span>
+          </label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+            {logo && <img src={logo} alt="logo" style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'cover', border: '2px solid #8B9A35' }} />}
+            <label style={{ padding: '8px 16px', borderRadius: 8, border: '1px dashed var(--border)', cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)' }}>
+              📁 Choisir un fichier
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                const reader = new FileReader()
+                reader.onload = ev => setLogo(ev.target?.result as string)
+                reader.readAsDataURL(file)
+              }} />
+            </label>
+            {logo && <button onClick={() => setLogo(null)} style={{ fontSize: 11, color: '#e74c3c', background: 'none', border: 'none', cursor: 'pointer' }}>✕ Supprimer</button>}
+          </div>
 
           <div style={{ padding: 12, borderRadius: 10, background: 'rgba(139,154,53,0.05)', border: '1px solid rgba(139,154,53,0.15)', marginBottom: 20, fontSize: 12, color: 'var(--text-muted)' }}>
             📌 Webhook URL à configurer dans {storeType === 'shopify' ? 'Shopify' : 'YouCan'}:<br />
