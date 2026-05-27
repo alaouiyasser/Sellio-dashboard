@@ -170,7 +170,15 @@ export default function SettingsPage(): React.ReactElement {
     setTenantId(user.id)
     const { data } = await supabase
       .from('tenants').select('company_name, owner_phone, delivery_provider, ai_coach_frequency')
-      .eq('id', user.id).single()
+      .eq('id', user.id).maybeSingle()
+    if (!data) {
+      // Tenant ما تخلقش — نعاودو نخلقوه
+      await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, storeName: user.email?.split('@')[0] ?? 'Ma Boutique', email: user.email }),
+      })
+    }
     if (data) setSettings(s => ({ ...s, ...data }))
     setLoading(false)
   }
