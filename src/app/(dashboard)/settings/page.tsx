@@ -188,7 +188,14 @@ export default function SettingsPage(): React.ReactElement {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Non authentifié')
-      const { error } = await supabase.from('tenants').update(settings).eq('id', user.id)
+      const { id: _userId } = await supabase.auth.getUser().then(r => ({ id: r.data.user?.id }))
+      const tenantFields = {
+        company_name: settings.company_name,
+        owner_phone: settings.owner_phone,
+        delivery_provider: settings.delivery_provider,
+        ai_coach_frequency: settings.ai_coach_frequency,
+      }
+      const { error } = await supabase.from('tenants').update(tenantFields).eq('id', user.id)
       if (error) throw error
       toast.success('Paramètres sauvegardés ✓')
     } catch (err: any) {
