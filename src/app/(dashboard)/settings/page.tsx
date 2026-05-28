@@ -294,7 +294,6 @@ function IntegrationsManagement({ tenantId, settings, setSettings }: {
           <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("integrations.store_connected")}</span>
         </div>
       </div>
-      </div>
 
       {/* Delivery */}
       <div style={sec}>
