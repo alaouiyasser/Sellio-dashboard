@@ -118,7 +118,7 @@ export default function OrdersPage() {
                     onClick={() => window.location.href = `/orders/${order.id}`}>
                     <td style={{ padding: '14px 20px', fontSize: 12, color: '#8B9A35', fontWeight: 600 }}>#{order.id?.slice(0, 8)}</td>
                     <td style={{ padding: '14px 20px', fontSize: 13, color: 'var(--text)' }}>{order.customer_phone}</td>
-                    <td className='hide-on-mobile' style={{ padding: '14px 20px', fontSize: 13, color: 'var(--text-muted)' }}>{order.shipping_address ?? order.city ?? '—'}</td>
+                    <td className='hide-on-mobile' style={{ padding: '14px 20px', fontSize: 13, color: 'var(--text-muted)' }}>{(() => { try { const a = typeof order.shipping_address === 'string' ? JSON.parse(order.shipping_address) : order.shipping_address; return a?.city ?? '—' } catch { return order.city ?? '—' } })()}</td>
                     <td style={{ padding: '14px 20px', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{order.total_price ? `${order.total_price} MAD` : '—'}</td>
                     <td style={{ padding: '14px 20px' }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 6, background: s.bg, color: s.color, fontSize: 12, fontWeight: 600 }}>

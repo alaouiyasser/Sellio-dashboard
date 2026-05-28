@@ -35,9 +35,10 @@ export default function AnalyticsPage() {
       else if (o.status === 'canceled' || o.status === 'cancelled') { x++; if (o.cancellation_reason) reasons[o.cancellation_reason] = (reasons[o.cancellation_reason] ?? 0) + 1 }
       else if (o.status === 'pending') p++
       else if (o.status === 'delivered') d++
-      const city = o.shipping_address ?? o.city
+      const addr = o.shipping_address ? (typeof o.shipping_address === 'string' ? (() => { try { return JSON.parse(o.shipping_address) } catch { return null } })() : o.shipping_address) : null
+      const city = addr?.city ?? o.city
       if (city) cities[city] = (cities[city] ?? 0) + 1
-      parseItems(o.items).forEach((item: any) => { const name = item.title ?? item.name ?? 'Produit'; products[name] = (products[name] ?? 0) + (item.quantity ?? 1) })
+      parseItems(o.items).forEach((item: any) => { const name = item.productName ?? item.title ?? item.name ?? 'Produit'; products[name] = (products[name] ?? 0) + (item.quantity ?? 1) })
     })
     setConfirmed(c); setCancelled(x); setPending(p); setDelivered(d)
     setCancelReasons(Object.entries(reasons).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value).slice(0,5))

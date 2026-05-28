@@ -55,11 +55,7 @@ export default function CreditsPage() {
             </div>
           </div>
 
-          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 24 }}>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>{t('credits.consumed') ?? 'Total consommé'}</div>
-            <div style={{ fontSize: 36, fontWeight: 800, color: 'var(--text)' }}>{totalSpent.toLocaleString()}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>{t('credits.perOrder')}</div>
-          </div>
+
 
           <div style={{ background: 'linear-gradient(135deg, #1B2D3E, #2A4560)', border: '1px solid #8B9A3540', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
@@ -88,7 +84,7 @@ export default function CreditsPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: 'var(--sidebar)' }}>
-                {[t('credits.date'), t('credits.type'), t('credits.order'), t('credits.amount'), t('credits.balanceAfter')].map(h => (
+                {[t('credits.date'), t('credits.type'), t('credits.order'), t('credits.amount')].map(h => (
                   <th key={h} style={{ padding: '10px 20px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
                 ))}
               </tr>
