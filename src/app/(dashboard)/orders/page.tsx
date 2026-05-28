@@ -32,7 +32,26 @@ export default function OrdersPage() {
     { key: 'modified',  label: t('status.modified') },
   ]
 
-  useEffect(() => { fetchOrders() }, [statusFilter])
+  useEffect(() => {
+    fetchOrders()
+    
+    // Realtime subscription
+    let channel: any = null
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      channel = supabase
+        .channel('orders-realtime')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `tenant_id=eq.${user.id}`
+        }, () => { fetchOrders() })
+        .subscribe()
+    })
+    
+    return () => { if (channel) supabase.removeChannel(channel) }
+  }, [statusFilter])
 
   async function fetchOrders() {
     setLoading(true)
