@@ -89,7 +89,7 @@ export default function AnalyticsPage() {
           </div>
         </div>
         <div style={{ background:'var(--card)', border:'1px solid var(--border)', borderRadius:16, padding:20 }}>
-          <div style={{ fontWeight:600, fontSize:14, marginBottom:16, color:'var(--text)' }}>��️ Top villes</div>
+          <div style={{ fontWeight:600, fontSize:14, marginBottom:16, color:'var(--text)' }}>Top villes</div>
           {topCities.length === 0 ? <div style={{ color:'var(--text-muted)', fontSize:13 }}>—</div> : <ResponsiveContainer width="100%" height={180}><BarChart data={topCities} margin={{ top:5, right:10, left:0, bottom:5 }}><XAxis dataKey="name" tick={{ fontSize:11, fill:'var(--text-muted)' }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize:11, fill:'var(--text-muted)' }} axisLine={false} tickLine={false} width={25} /><Tooltip contentStyle={{ background:'var(--card)', border:'1px solid var(--border)', borderRadius:8, fontSize:12, color:'var(--text)' }} /><Bar dataKey="value" fill={OLIVE} radius={[6,6,0,0]} /></BarChart></ResponsiveContainer>}
         </div>
         <div style={{ background:'var(--card)', border:'1px solid var(--border)', borderRadius:16, padding:20 }}>
