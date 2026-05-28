@@ -305,7 +305,7 @@ function IntegrationsManagement({ tenantId, settings, setSettings }: {
 
       {/* Delivery */}
       <div style={sec}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>🚚 {t("integrations.delivery")}</div>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "var(--text)" }}>{t("integrations.delivery")}</div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           {(["maystro", "yalidin"] as const).map(p => (
             <button key={p} onClick={() => setSettings((s: any) => ({ ...s, delivery_provider: p }))} style={{
@@ -323,12 +323,12 @@ function IntegrationsManagement({ tenantId, settings, setSettings }: {
 
       {/* WhatsApp */}
       <div style={sec}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>📱 {t("integrations.whatsapp")}</div>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "var(--text)" }}>{t("integrations.whatsapp")}</div>
         {instances.map(inst => (
           <div key={inst.instance_key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
             <div style={{ width: 10, height: 10, borderRadius: "50%", background: dot(inst.status), flexShrink: 0 }} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>{inst.phone_number}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{inst.phone_number}</div>
               <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{inst.messages_today}/{inst.daily_limit} {t("integrations.msg_count")}</div>
             </div>
             <button onClick={() => handleDisconnect(inst.instance_key)} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #ef4444", background: "transparent", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>
