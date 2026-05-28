@@ -363,6 +363,147 @@ function IntegrationsManagement({ tenantId, settings, setSettings }: {
   )
 }
 
+
+// ─── Integrations Management ──────────────────────────────────────────────────
+function IntegrationsManagement({ tenantId, settings, setSettings }: {
+  tenantId: string; settings: any; setSettings: (fn: (s: any) => any) => void
+}) {
+  const { t } = useLang()
+  const supabase = createClient()
+  const [instances, setInstances] = useState<any[]>([])
+  const [activeQR, setActiveQR] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [showAddPhone, setShowAddPhone] = useState(false)
+  const [newPhone, setNewPhone] = useState("")
+
+  useEffect(() => { fetchInstances() }, [tenantId])
+
+  async function fetchInstances() {
+    const { data } = await supabase.from("whatsapp_instances")
+      .select("instance_key,phone_number,status,messages_today,daily_limit")
+      .eq("tenant_id", tenantId)
+    setInstances(data ?? [])
+  }
+
+  async function handleDisconnect(key: string) {
+    await supabase.from("whatsapp_instances").update({ status: "offline" }).eq("instance_key", key)
+    fetchInstances()
+    toast.success("✅ Déconnecté")
+  }
+
+  async function handleAddNumber() {
+    if (!newPhone || !/^\+[1-9]\d{7,14}$/.test(newPhone)) {
+      toast.error("Format invalide — ex: +212600000000"); return
+    }
+    try {
+      const res = await fetch(`${API}/api/whatsapp/${tenantId}/instance/create`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone_number: newPhone })
+      })
+      const data = await res.json()
+      if (data.ok && data.qrcode?.base64) {
+        setActiveQR(data.qrcode.base64)
+        setShowAddPhone(false)
+        setNewPhone("")
+        await fetchInstances()
+      } else { toast.error(data.error ?? "Erreur") }
+    } catch { toast.error("Erreur connexion") }
+  }
+
+  async function saveDelivery() {
+    setSaving(true)
+    try {
+      await supabase.from("tenants").update({ delivery_provider: settings.delivery_provider }).eq("id", tenantId)
+      toast.success("✅ Livraison sauvegardée")
+    } catch { toast.error("Erreur") } finally { setSaving(false) }
+  }
+
+  const dot = (s: string) => s === "online" ? "#22c55e" : s === "connecting" ? "#f59e0b" : "#ef4444"
+  const sec: React.CSSProperties = { padding: 16, borderRadius: 12, border: "1px solid var(--border)", marginBottom: 16 }
+  const inp: React.CSSProperties = { flex: 1, padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 13, outline: "none" }
+
+  return (
+    <div>
+      {/* Store */}
+      <div style={sec}>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>🛍️ {t("integrations.store")}</div>
+        <div style={{ display: "flex", gap: 10 }}>
+          {(["shopify", "youcan"] as const).map(p => (
+            <button key={p} onClick={() => setSettings((s: any) => ({ ...s, store_type: p }))} style={{
+              padding: "7px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600,
+              border: `2px solid ${settings.store_type === p ? "#8B9A35" : "var(--border)"}`,
+              background: settings.store_type === p ? "rgba(139,154,53,0.1)" : "transparent",
+              color: settings.store_type === p ? "#8B9A35" : "var(--text-muted)"
+            }}>{p === "shopify" ? "🛒 Shopify" : "🏪 YouCan"}</button>
+          ))}
+        </div>
+        {settings.store_type && (
+          <div style={{ fontSize: 11, color: "#8B9A35", marginTop: 10 }}>
+            ✅ {t("integrations.store_connected")}
+          </div>
+        )}
+      </div>
+
+      {/* Delivery */}
+      <div style={sec}>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>🚚 {t("integrations.delivery")}</div>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          {(["maystro", "yalidin"] as const).map(p => (
+            <button key={p} onClick={() => setSettings((s: any) => ({ ...s, delivery_provider: p }))} style={{
+              padding: "7px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600,
+              border: `2px solid ${settings.delivery_provider === p ? "#8B9A35" : "var(--border)"}`,
+              background: settings.delivery_provider === p ? "rgba(139,154,53,0.1)" : "transparent",
+              color: settings.delivery_provider === p ? "#8B9A35" : "var(--text-muted)"
+            }}>{p === "maystro" ? "📦 Maystro" : "🚀 Yalidin"}</button>
+          ))}
+          <button onClick={saveDelivery} disabled={saving} style={{ padding: "7px 14px", borderRadius: 8, background: "#8B9A35", color: "#fff", border: "none", fontSize: 12, cursor: "pointer" }}>
+            {saving ? "..." : "💾"}
+          </button>
+        </div>
+      </div>
+
+      {/* WhatsApp */}
+      <div style={sec}>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>📱 {t("integrations.whatsapp")}</div>
+        {instances.map(inst => (
+          <div key={inst.instance_key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: dot(inst.status), flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{inst.phone_number}</div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{inst.messages_today}/{inst.daily_limit} {t("integrations.msg_count")}</div>
+            </div>
+            <button onClick={() => handleDisconnect(inst.instance_key)} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #ef4444", background: "transparent", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>
+              {t("integrations.disconnect")}
+            </button>
+          </div>
+        ))}
+
+        {activeQR && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, marginTop: 16 }}>
+            <p style={{ fontSize: 13, color: "var(--text)", margin: 0 }}>📱 Scannez avec WhatsApp</p>
+            <div style={{ padding: 10, background: "#fff", borderRadius: 10 }}>
+              <img src={activeQR} width={180} height={180} alt="QR" />
+            </div>
+            <button onClick={() => setActiveQR(null)} style={{ fontSize: 12, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer" }}>✕ {t("integrations.close")}</button>
+          </div>
+        )}
+
+        {showAddPhone ? (
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <input value={newPhone} onChange={e => setNewPhone(e.target.value)} placeholder="+212600000000" style={inp} />
+            <button onClick={handleAddNumber} style={{ padding: "9px 14px", borderRadius: 8, background: "#25D366", color: "#fff", border: "none", fontSize: 13, cursor: "pointer" }}>📱</button>
+            <button onClick={() => setShowAddPhone(false)} style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "transparent", color: "var(--text-muted)", cursor: "pointer" }}>✕</button>
+          </div>
+        ) : (
+          <button onClick={() => setShowAddPhone(true)} style={{ marginTop: 12, width: "100%", padding: 10, borderRadius: 8, border: "1px dashed var(--border)", background: "transparent", color: "var(--text-muted)", fontSize: 13, cursor: "pointer" }}>
+            {t("integrations.add_number")}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function SettingsPage() {
   const supabase = createClient()
   const { t }    = useLang()
