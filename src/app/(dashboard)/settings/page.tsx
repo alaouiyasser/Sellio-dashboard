@@ -285,22 +285,15 @@ function IntegrationsManagement({ tenantId, settings, setSettings }: {
     <div>
       {/* Store */}
       <div style={sec}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>🛍️ {t("integrations.store")}</div>
-        <div style={{ display: "flex", gap: 10 }}>
-          {(["shopify", "youcan"] as const).map(p => (
-            <button key={p} onClick={() => setSettings((s: any) => ({ ...s, store_type: p }))} style={{
-              padding: "7px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600,
-              border: `2px solid ${settings.store_type === p ? "#8B9A35" : "var(--border)"}`,
-              background: settings.store_type === p ? "rgba(139,154,53,0.1)" : "transparent",
-              color: settings.store_type === p ? "#8B9A35" : "var(--text-muted)"
-            }}>{p === "shopify" ? "🛒 Shopify" : "🏪 YouCan"}</button>
-          ))}
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "var(--text)" }}>{t("integrations.store")}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ padding: "6px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+            background: "rgba(139,154,53,0.1)", color: "#8B9A35", border: "1px solid rgba(139,154,53,0.3)" }}>
+            {settings.store_type === "youcan" ? "YouCan" : "Shopify"}
+          </span>
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("integrations.store_connected")}</span>
         </div>
-        {settings.store_type && (
-          <div style={{ fontSize: 11, color: "#8B9A35", marginTop: 10 }}>
-            ✅ {t("integrations.store_connected")}
-          </div>
-        )}
+      </div>
       </div>
 
       {/* Delivery */}
@@ -313,7 +306,7 @@ function IntegrationsManagement({ tenantId, settings, setSettings }: {
               border: `2px solid ${settings.delivery_provider === p ? "#8B9A35" : "var(--border)"}`,
               background: settings.delivery_provider === p ? "rgba(139,154,53,0.1)" : "transparent",
               color: settings.delivery_provider === p ? "#8B9A35" : "var(--text-muted)"
-            }}>{p === "maystro" ? "📦 Maystro" : "🚀 Yalidin"}</button>
+            }}>{p === "maystro" ? "Maystro" : "Yalidin"}</button>
           ))}
           <button onClick={saveDelivery} disabled={saving} style={{ padding: "7px 14px", borderRadius: 8, background: "#8B9A35", color: "#fff", border: "none", fontSize: 12, cursor: "pointer" }}>
             {saving ? "..." : "💾"}
