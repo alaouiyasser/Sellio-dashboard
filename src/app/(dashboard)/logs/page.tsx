@@ -25,6 +25,7 @@ export default function LogsPage() {
 
   const TYPES = [
     { key: 'all',          label: t('status.all') },
+    { key: 'sent', label: 'Envoyé' },
     { key: 'confirmation', label: t('msgTypes.confirmation') },
     { key: 'reminder',     label: t('msgTypes.reminder') },
     { key: 'modification', label: t('msgTypes.modification') },
