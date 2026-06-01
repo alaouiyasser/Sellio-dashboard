@@ -10,6 +10,8 @@ const STATUS_CONFIG: Record<string, { label: Record<string, string>; bg: string;
   pending:   { label: { fr: 'En attente', en: 'Pending',   ar: 'قيد الانتظار', es: 'Pendiente'   }, bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
   cancelled: { label: { fr: 'Annulé',     en: 'Cancelled', ar: 'ملغي',         es: 'Cancelado'   }, bg: 'rgba(239,68,68,0.15)',  color: '#EF4444' },
   delivered: { label: { fr: 'Livré',      en: 'Delivered', ar: 'مسلم',         es: 'Entregado'   }, bg: 'rgba(139,154,53,0.15)', color: '#8B9A35' },
+ awaiting_delivery_check: { label: { fr: 'En attente confirmation', en: 'Awaiting confirmation', ar: 'في انتظار التأكيد', es: 'Esperando confirmación' }, bg: 'rgba(99,102,241,0.15)', color: '#6366F1' },
+ delivery_issue: { label: { fr: 'Problème livraison', en: 'Delivery issue', ar: 'مشكل التوصيل', es: 'Problema entrega' }, bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
   modified:  { label: { fr: 'Modifié',    en: 'Modified',  ar: 'معدل',         es: 'Modificado'  }, bg: 'rgba(99,102,241,0.15)', color: '#6366F1' },
 }
 
