@@ -13,6 +13,11 @@ const STATUS_CONFIG: Record<string, { label: Record<string, string>; bg: string;
  awaiting_delivery_check: { label: { fr: 'En attente confirmation', en: 'Awaiting confirmation', ar: 'في انتظار التأكيد', es: 'Esperando confirmación' }, bg: 'rgba(99,102,241,0.15)', color: '#6366F1' },
  delivery_issue: { label: { fr: 'Problème livraison', en: 'Delivery issue', ar: 'مشكل التوصيل', es: 'Problema entrega' }, bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
   modified:  { label: { fr: 'Modifié',    en: 'Modified',  ar: 'معدل',         es: 'Modificado'  }, bg: 'rgba(99,102,241,0.15)', color: '#6366F1' },
+  sent:      { label: { fr: 'En attente', en: 'Pending',   ar: 'قيد الانتظار', es: 'Pendiente'   }, bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
+  canceled:  { label: { fr: 'Annulé',     en: 'Cancelled', ar: 'ملغي',         es: 'Cancelado'   }, bg: 'rgba(239,68,68,0.15)',  color: '#EF4444' },
+  returned:  { label: { fr: 'Retourné',   en: 'Returned',  ar: 'مرتجع',        es: 'Devuelto'    }, bg: 'rgba(249,115,22,0.15)', color: '#F97316' },
+  in_delivery: { label: { fr: 'En livraison', en: 'In delivery', ar: 'جاري التوصيل', es: 'En reparto' }, bg: 'rgba(59,130,246,0.15)', color: '#3B82F6' },
+  delivery_unconfirmed: { label: { fr: 'Non confirmé', en: 'Unconfirmed', ar: 'غير مؤكد', es: 'Sin confirmar' }, bg: 'rgba(156,163,175,0.15)', color: '#9CA3AF' },
 }
 
 export default function OrdersPage() {
