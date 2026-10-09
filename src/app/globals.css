@@ -39,6 +39,14 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-foreground: var(--brand-accent-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -55,32 +63,40 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: #1652F0;
+  --primary-foreground: #FFFFFF;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: #DC2626;
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --ring: #1652F0;
+  --chart-1: #1652F0;
+  --chart-2: #4F46E5;
+  --chart-3: #FFDE59;
+  --chart-4: #16A34A;
+  --chart-5: #F59E0B;
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary: #1652F0;
+  --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-ring: #1652F0;
+  --brand: #1652F0;
+  --brand-foreground: #FFFFFF;
+  --brand-accent: #FFDE59;
+  --brand-accent-foreground: #1A1F36;
+  --success: #16A34A;
+  --success-foreground: #FFFFFF;
+  --warning: #F59E0B;
+  --warning-foreground: #1A1F36;
 }
 
 .dark {
@@ -90,31 +106,39 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: #4D7CFF;
+  --primary-foreground: #FFFFFF;
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  --destructive: #F87171;
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --ring: #4D7CFF;
+  --chart-1: #4D7CFF;
+  --chart-2: #A5B4FC;
+  --chart-3: #FFDE59;
+  --chart-4: #22C55E;
+  --chart-5: #FBBF24;
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary: #4D7CFF;
+  --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: #4D7CFF;
+  --brand: #4D7CFF;
+  --brand-foreground: #FFFFFF;
+  --brand-accent: #FFDE59;
+  --brand-accent-foreground: #1A1F36;
+  --success: #22C55E;
+  --success-foreground: #062014;
+  --warning: #FBBF24;
+  --warning-foreground: #1A1F36;
 }
 
 @layer base {
@@ -129,25 +153,32 @@
   }
 }
 :root {
-  --bg: #F9F8F3;
+  --bg: #F7F8FC;
   --sidebar: #FFFFFF;
-  --olive-glow: rgba(139,154,53,0.08);
+  --olive-glow: rgba(22,82,240,0.06);
   --card: #FFFFFF;
-  --border: #E8EDF2;
-  --text: #1B2D3E;
-  --text-muted: #8A9BB0;
+  --border: #E6E8F2;
+  --text: #1A1F36;
+  --text-muted: #6B7280;
 }
 
 [data-theme="dark"] {
-  --bg: #0C1117;
-  --sidebar: #0F1721;
-  --olive-glow: rgba(139,154,53,0.15);
-  --card: #131B24;
-  --border: #1E2D3E;
-  --text: #E8EDF2;
-  --text-muted: #6B7B8D;
+  --bg: #0E1014;
+  --sidebar: #14171C;
+  --olive-glow: rgba(77,124,255,0.12);
+  --card: #181B21;
+  --border: #262B33;
+  --text: #E6E8EE;
+  --text-muted: #9AA0AC;
+  --brand: #4D7CFF;
+  --brand-foreground: #FFFFFF;
+  --brand-accent: #FFDE59;
+  --success: #22C55E;
+  --warning: #FBBF24;
+  --destructive: #F87171;
 }
 
+/* GARDDU KOLSHI MN HNA L T7T KIF KAN — media queries + layout */
 /* ── Mobile Responsive ─────────────────── */
 @media (max-width: 768px) {
   .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }
@@ -226,7 +257,7 @@
 /* Topbar mobile */
 @media (max-width: 768px) {
   .topbar-subtitle { display: none !important; }
-  .topbar-lang { display: none !important; }
+  .topbar-lang { display: inline-flex !important; }
   .topbar-right { gap: 8px !important; }
   .topbar-header { padding: 0 12px !important; }
 }

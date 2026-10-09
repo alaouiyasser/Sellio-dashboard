@@ -15,9 +15,11 @@ export default function OnboardingPage() {
       const { data: tenant } = await supabase
         .from('tenants')
         .select('id')
-        .eq('email', data.user.email)
-        .single()
-      if (tenant) setTenantId(tenant.id)
+        .eq('id', data.user.id)
+        .maybeSingle()
+      if (tenant) { setTenantId(tenant.id); return }
+      console.error('[onboarding] no tenant row for user', data.user.id)
+      router.push('/login')
     })
   }, [])
 
@@ -31,7 +33,7 @@ export default function OnboardingPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', padding: '40px 16px' }}>
       <div style={{ textAlign: 'center', marginBottom: 32 }}>
         <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>
-          Sell<span style={{ color: '#8B9A35' }}>io</span>
+          Sell<span style={{ color: 'var(--brand)' }}>io</span>
         </div>
         <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 8 }}>
           Configurez votre compte en quelques étapes 🚀

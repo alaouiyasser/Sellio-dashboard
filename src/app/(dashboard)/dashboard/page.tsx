@@ -7,9 +7,13 @@ import Topbar from '@/components/layout/Topbar'
 import { useLang } from '@/components/layout/LanguageProvider'
 import OrdersChart from '@/components/charts/OrdersChart'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
+import {
+  Package, CheckCircle2, Truck, TrendingUp, TrendingDown, Wallet,
+  Calendar, Target, MapPin, Crown, Clock, ArrowRight,
+} from 'lucide-react'
 
-const OLIVE = '#8B9A35'
-const COLORS = ['#10B981', '#EF4444', '#F59E0B', '#8B9A35']
+const OLIVE = 'var(--brand)'
+const COLORS = ['var(--success)', 'var(--destructive)', 'var(--warning)', 'var(--brand)']
 type Period = '7' | '14' | '30' | '365'
 
 const PERIODS: { label: string; value: Period }[] = [
@@ -19,19 +23,17 @@ const PERIODS: { label: string; value: Period }[] = [
   { label: '1an', value: '365' },
 ]
 
-
-
 export default function OverviewPage() {
   const supabase = createClient()
   const { t } = useLang()
   const isMobile = useIsMobile()
 
   const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-    confirmed: { label: t('status.confirmed'), color: '#10B981', bg: 'rgba(16,185,129,0.15)' },
-    pending:   { label: t('status.pending'),   color: '#F59E0B', bg: 'rgba(245,158,11,0.15)' },
-    canceled:  { label: t('status.canceled'),  color: '#EF4444', bg: 'rgba(239,68,68,0.15)'  },
-    cancelled: { label: t('status.cancelled'), color: '#EF4444', bg: 'rgba(239,68,68,0.15)'  },
-    delivered: { label: t('status.delivered'), color: '#8B9A35', bg: 'rgba(139,154,53,0.15)' },
+    confirmed: { label: t('status.confirmed'), color: 'var(--success)', bg: 'color-mix(in srgb, var(--success) 15%, transparent)' },
+    pending:   { label: t('status.pending'),   color: 'var(--warning)', bg: 'color-mix(in srgb, var(--warning) 15%, transparent)' },
+    canceled:  { label: t('status.canceled'),  color: 'var(--destructive)', bg: 'color-mix(in srgb, var(--destructive) 15%, transparent)' },
+    cancelled: { label: t('status.cancelled'), color: 'var(--destructive)', bg: 'color-mix(in srgb, var(--destructive) 15%, transparent)' },
+    delivered: { label: t('status.delivered'), color: 'var(--brand)', bg: 'color-mix(in srgb, var(--brand) 15%, transparent)' },
   }
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<Period>('14')
@@ -71,7 +73,7 @@ export default function OverviewPage() {
     setTopCities(Object.entries(cities).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 5))
 
     const products: Record<string, number> = {}
-    orders.forEach(o => {
+    orders.filter(o => o.status === 'delivered').forEach(o => {
       ;(o.items ?? []).forEach((item: any) => {
         const name = item.title ?? item.name ?? 'Produit'
         products[name] = (products[name] ?? 0) + (item.quantity ?? 1)
@@ -136,7 +138,7 @@ export default function OverviewPage() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Topbar title={t('nav.dashboard')} />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-        Chargement...
+        {t('common.loading') || 'Chargement...'}
       </div>
     </div>
   )
@@ -149,40 +151,47 @@ export default function OverviewPage() {
         {/* KPIs */}
         <div style={{ width: '100%', display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: isMobile ? 8 : 14, marginBottom: 20 }}>
           {[
-            { label: t('kpi.total'),       value: kpis.total,        color: 'var(--text)', icon: '📦' },
-            { label: t('kpi.confirmed'),   value: kpis.confirmed,    color: '#10B981',     icon: '✅' },
-            { label: t('kpi.delivered'),   value: kpis.delivered,    color: OLIVE,         icon: '🚚' },
-            { label: t('kpi.confirmRate'), value: `${confirmRate}%`, color: '#10B981',     icon: '📈' },
-            { label: t('kpi.cancelRate'),  value: `${cancelRate}%`,  color: '#EF4444',     icon: '📉' },
-          ].map((k, i) => (
-            <div key={i} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px' }}>
-              <div style={{ fontSize: 18, marginBottom: 8 }}>{k.icon}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>{k.label}</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: k.color }}>{k.value}</div>
-            </div>
-          ))}
+            { label: t('kpi.total'),       value: kpis.total,        accent: 'var(--brand)',       valueColor: 'var(--text)',        icon: Package },
+            { label: t('kpi.confirmed'),   value: kpis.confirmed,    accent: 'var(--success)',     valueColor: 'var(--success)',     icon: CheckCircle2 },
+            { label: t('kpi.delivered'),   value: kpis.delivered,    accent: 'var(--brand)',       valueColor: 'var(--brand)',       icon: Truck },
+            { label: t('kpi.confirmRate'), value: `${confirmRate}%`, accent: 'var(--success)',     valueColor: 'var(--success)',     icon: TrendingUp },
+            { label: t('kpi.cancelRate'),  value: `${cancelRate}%`,  accent: 'var(--destructive)', valueColor: 'var(--destructive)', icon: TrendingDown },
+          ].map((k, i) => {
+            const Icon = k.icon
+            return (
+              <div key={i} style={{ background: `color-mix(in srgb, ${k.accent} 6%, var(--card))`, border: `1px solid color-mix(in srgb, ${k.accent} 22%, var(--border))`, borderRadius: 14, padding: isMobile ? '14px 14px' : '16px 18px' }}>
+                <div style={{ width: 38, height: 38, borderRadius: 11, display: 'grid', placeItems: 'center', background: `color-mix(in srgb, ${k.accent} 14%, transparent)`, color: k.accent, marginBottom: 12 }}>
+                  <Icon size={18} strokeWidth={2.2} />
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 500 }}>{k.label}</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: k.valueColor, letterSpacing: '-0.5px' }}>{k.value}</div>
+              </div>
+            )
+          })}
         </div>
 
         {/* Revenue */}
         <div style={{
-          background: 'linear-gradient(135deg, #1B2D3E, #2A4560)',
-          border: '1px solid rgba(139,154,53,0.3)',
+          background: 'linear-gradient(135deg, var(--brand), #3A1FD0)',
+          border: '1px solid color-mix(in srgb, var(--brand) 40%, transparent)',
           borderRadius: 14, padding: '20px 24px',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           marginBottom: 20, cursor: 'pointer',
         }} onClick={() => window.location.href = '/orders'}>
           <div>
-            <div style={{ fontSize: 12, color: '#8B9A35', marginBottom: 4, fontWeight: 600 }}>
+            <div style={{ fontSize: 12, color: 'var(--brand-accent)', marginBottom: 4, fontWeight: 700, letterSpacing: '0.3px' }}>
               {t('kpi.revenue')}
             </div>
-            <div style={{ fontSize: 36, fontWeight: 800, color: '#E8EDF2' }}>
-              {kpis.revenue.toLocaleString()} <span style={{ fontSize: 18, color: '#8B9A35' }}>MAD</span>
+            <div style={{ fontSize: 36, fontWeight: 800, color: '#FFFFFF', letterSpacing: '-1px' }}>
+              {kpis.revenue.toLocaleString()} <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.7)' }}>MAD</span>
             </div>
-            <div style={{ fontSize: 11, color: 'rgba(232,237,242,0.5)', marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>
               {kpis.delivered} {t('kpi.deliveredOrders')} · {t('kpi.clickToView')}
             </div>
           </div>
-          <div style={{ fontSize: 52 }}>💰</div>
+          <div style={{ width: 64, height: 64, borderRadius: 18, background: 'rgba(255,255,255,0.14)', display: 'grid', placeItems: 'center', color: '#fff' }}>
+            <Wallet size={30} strokeWidth={2} />
+          </div>
         </div>
 
         {/* Charts */}
@@ -190,7 +199,7 @@ export default function OverviewPage() {
 
           <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>📅 {t('chart.orders')}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 600, fontSize: 14, color: 'var(--text)' }}><Calendar size={16} strokeWidth={2.2} color="var(--brand)" /> {t('chart.orders')}</span>
               <div style={{ display: 'flex', gap: 6 }}>
                 {PERIODS.map(p => (
                   <button key={p.value} onClick={() => setPeriod(p.value)} style={{
@@ -207,7 +216,7 @@ export default function OverviewPage() {
           </div>
 
           <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 20 }}>
-            <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 16 }}>🎯 {t('chart.statuses')}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 16 }}><Target size={16} strokeWidth={2.2} color="var(--brand)" /> {t('chart.statuses')}</div>
             <ResponsiveContainer width="100%" height={160}>
               <PieChart>
                 <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" paddingAngle={3}>
@@ -233,11 +242,11 @@ export default function OverviewPage() {
         {/* Top 3 */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
           {[
-            { title: `🏙️ ${t('top.cities')}`,   data: topCities,   color: OLIVE,     key: 'name', val: 'value', suffix: '' },
-            { title: `📦 ${t('top.products')}`, data: topProducts, color: '#6366F1', key: 'name', val: 'value', suffix: ` ${t('top.sales')}` },
-          ].map(({ title, data, color, key, val, suffix }) => (
+            { title: t('top.cities'),   icon: MapPin,  data: topCities,   color: OLIVE,            key: 'name', val: 'value', suffix: '' },
+            { title: t('top.products'), icon: Package, data: topProducts, color: 'var(--chart-2)', key: 'name', val: 'value', suffix: ` ${t('top.sales')}` },
+          ].map(({ title, icon: Icon, data, color, key, val, suffix }) => (
             <div key={title} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 20 }}>
-              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 16 }}>{title}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 16 }}><Icon size={16} strokeWidth={2.2} color={color} /> {title}</div>
               {data.length === 0
                 ? <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>—</div>
                 : data.map((r: any, i: number) => (
@@ -256,7 +265,7 @@ export default function OverviewPage() {
           ))}
 
           <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 20 }}>
-            <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 16 }}>👑 {t('top.clients')}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 16 }}><Crown size={16} strokeWidth={2.2} color="var(--brand-accent)" /> {t('top.clients')}</div>
             {topClients.length === 0
               ? <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>—</div>
               : topClients.map((c, i) => (
@@ -264,17 +273,17 @@ export default function OverviewPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{
                       width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-                      background: i === 0 ? 'rgba(245,158,11,0.2)' : 'rgba(139,154,53,0.1)',
+                      background: i === 0 ? 'color-mix(in srgb, var(--warning) 20%, transparent)' : 'color-mix(in srgb, var(--brand) 10%, transparent)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 12, fontWeight: 700,
-                      color: i === 0 ? '#F59E0B' : OLIVE,
+                      color: i === 0 ? 'var(--warning)' : OLIVE,
                     }}>{i + 1}</div>
                     <div>
                       <div style={{ fontSize: 12, color: 'var(--text)', fontWeight: 500 }}>{c.phone}</div>
                       <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{c.orders} {t('top.orders')}</div>
                     </div>
                   </div>
-                  <div style={{ fontSize: 12, color: '#10B981', fontWeight: 700 }}>{c.revenue.toLocaleString()} MAD</div>
+                  <div style={{ fontSize: 12, color: 'var(--success)', fontWeight: 700 }}>{c.revenue.toLocaleString()} MAD</div>
                 </div>
               ))
             }
@@ -284,8 +293,8 @@ export default function OverviewPage() {
         {/* Recent orders */}
         <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
           <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>🕐 {t('orders.recent')}</span>
-            <a href="/orders" style={{ fontSize: 12, color: OLIVE, textDecoration: 'none', fontWeight: 600 }}>{t('orders.seeAll')} →</a>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 600, fontSize: 14, color: 'var(--text)' }}><Clock size={16} strokeWidth={2.2} color="var(--brand)" /> {t('orders.recent')}</span>
+            <a href="/orders" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12, color: OLIVE, textDecoration: 'none', fontWeight: 600 }}>{t('orders.seeAll')} <ArrowRight size={13} strokeWidth={2.4} /></a>
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>

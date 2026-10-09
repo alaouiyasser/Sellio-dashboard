@@ -1,7 +1,14 @@
 'use client'
-import { useState } from 'react'
+import { authFetch } from '@/lib/api-fetch'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
+import { fetchIntegrations, type IntegrationItem } from '@/lib/integrations-api'
 import { toast } from 'sonner'
+import {
+  ShoppingBag, ShoppingCart, Store, KeyRound, Truck, Package, Rocket,
+  Phone, Smartphone, QrCode, Upload, Copy, Info, Check, X, ArrowLeft, ArrowRight,
+  Sparkles, MapPin, BarChart3,
+} from 'lucide-react'
 
 const API = typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:3001'
 
@@ -16,56 +23,108 @@ const input: React.CSSProperties = {
   boxSizing: 'border-box' as const, marginBottom: 12,
 }
 const pill = (active: boolean): React.CSSProperties => ({
+  display: 'inline-flex', alignItems: 'center', gap: 8,
   padding: '10px 20px', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600,
-  border: `2px solid ${active ? '#8B9A35' : 'var(--border)'}`,
-  background: active ? 'rgba(139,154,53,0.1)' : 'transparent',
-  color: active ? '#8B9A35' : 'var(--text-muted)',
+  border: `2px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
+  background: active ? 'color-mix(in srgb, var(--brand) 10%, transparent)' : 'transparent',
+  color: active ? 'var(--brand)' : 'var(--text-muted)',
 })
 const nextBtn = (on: boolean): React.CSSProperties => ({
   flex: 2, padding: 13, borderRadius: 12, border: 'none', fontSize: 14,
   fontWeight: 600, cursor: on ? 'pointer' : 'not-allowed',
-  background: on ? '#8B9A35' : 'var(--border)', color: '#fff',
+  background: on ? 'var(--brand)' : 'var(--border)', color: '#fff',
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
 })
 const backBtn: React.CSSProperties = {
   flex: 1, padding: 13, borderRadius: 12, fontSize: 14, cursor: 'pointer',
   border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)',
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
 }
+const h2: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 9, fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }
+const fieldLabel: React.CSSProperties = { fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 8 }
 
 interface Props { tenantId: string; onComplete: () => void }
 
 export default function WizardOnboarding({ tenantId, onComplete }: Props) {
   const [step, setStep] = useState(1)
 
-  // Store
+  const [source, setSource] = useState<string | null>(null)
+  const [city, setCity] = useState('')
+  const [niche, setNiche] = useState<string | null>(null)
+  const [volume, setVolume] = useState<string | null>(null)
+
   const [logo, setLogo] = useState<string | null>(null)
-  const [storeType, setStoreType] = useState<'shopify' | 'youcan' | null>(null)
+  const [storeType, setStoreType] = useState<'shopify' | 'youcan' | 'woocommerce' | null>(null)
   const [storeUrl, setStoreUrl] = useState('')
   const [webhookSecret, setWebhookSecret] = useState('')
   const [accessToken, setAccessToken] = useState('')
 
-  // Delivery
-  const [deliveryProvider, setDeliveryProvider] = useState<'maystro' | 'yalidin' | null>(null)
+  const [deliveryProvider, setDeliveryProvider] = useState<string | null>(null)
   const [agencyId, setAgencyId] = useState('')
+  const [carriers, setCarriers] = useState<IntegrationItem[]>([])
+  useEffect(() => {
+    fetchIntegrations(tenantId)
+      .then((items) => setCarriers(items.filter((i) => i.category === 'carrier' && i.status !== 'coming_soon')))
+      .catch(() => {})
+  }, [tenantId])
 
-  // WhatsApp
   const [waPhone, setWaPhone] = useState('')
   const [waAge, setWaAge] = useState<string | null>(null)
   const [waLimit, setWaLimit] = useState(300)
   const [ownerPhone, setOwnerPhone] = useState('')
 
-  // QR
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const AGES = [
-    { v: 'new',         label: 'Nouveau (< 1 semaine)',  limit: 30  },
-    { v: '1_2_weeks',   label: '1–2 semaines',           limit: 80  },
-    { v: '2_4_weeks',   label: '2–4 semaines',           limit: 150 },
-    { v: 'established', label: 'Établi (+ 1 mois)',      limit: 300 },
+  const SOURCES = [
+    { v: 'instagram', label: 'Instagram' },
+    { v: 'facebook',  label: 'Facebook' },
+    { v: 'tiktok',    label: 'TikTok' },
+    { v: 'ai',        label: 'IA (ChatGPT, Claude)' },
+    { v: 'google',    label: 'Google' },
+    { v: 'referral',  label: 'Recommandation' },
+    { v: 'youtube',   label: 'YouTube' },
+    { v: 'other',     label: 'Autre' },
+  ]
+  const NICHES = [
+    { v: 'cosmetique',   label: 'Cosmétique' },
+    { v: 'mode',         label: 'Mode' },
+    { v: 'electronique', label: 'Électronique' },
+    { v: 'complements',  label: 'Compléments' },
+    { v: 'autre',        label: 'Autre' },
+  ]
+  const VOLUMES = [
+    { v: '<50',     label: '< 50' },
+    { v: '50-200',  label: '50-200' },
+    { v: '200-500', label: '200-500' },
+    { v: '500+',    label: '500+' },
   ]
 
+  const AGES = [
+    { v: 'new',         label: 'Nouveau (< 1 semaine)',  limit: 30  },
+    { v: '1_2_weeks',   label: '1-2 semaines',           limit: 80  },
+    { v: '2_4_weeks',   label: '2-4 semaines',           limit: 150 },
+    { v: 'established', label: 'Etabli (+ 1 mois)',      limit: 300 },
+  ]
+
+  async function handleSaveProfile() {
+    if (!source || !city.trim() || !niche || !volume) { toast.error('Remplissez tous les champs'); return }
+    setLoading(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from('tenants').update({
+        acquisition_source: source,
+        city: city.trim(),
+        niche,
+        monthly_volume: volume,
+      }).eq('id', tenantId)
+      if (error) throw error
+      setStep(2)
+    } catch (e: any) { toast.error(e.message) } finally { setLoading(false) }
+  }
+
   async function saveCredentials(provider: string, creds: Record<string, string>) {
-    const res = await fetch(`${API}/api/onboarding/credentials`, {
+    const res = await authFetch(`${API}/api/onboarding/credentials`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tenantId, provider, credentials: creds }),
@@ -74,37 +133,20 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
     if (!d.ok) throw new Error(d.error)
   }
 
-  function validatePhone(phone: string): boolean {
-    return /^\+[1-9]\d{7,14}$/.test(phone.trim())
-  }
-
-  function validateStoreUrl(url: string) {
-    return url.includes('.myshopify.com') || url.includes('.youcan.shop') || url.includes('http')
-  }
+  function validatePhone(phone: string): boolean { return /^\+[1-9]\d{7,14}$/.test(phone.trim()) }
+  function validateStoreUrl(url: string) { return url.includes('.myshopify.com') || url.includes('.youcan.shop') || url.includes('http') }
 
   async function handleSaveStore() {
-    if (!storeType || !storeUrl || !webhookSecret || !accessToken) {
-      toast.error('Tous les champs sont obligatoires'); return
-    }
-    if (!validateStoreUrl(storeUrl)) {
-      toast.error('URL invalide — ex: ma-boutique.myshopify.com'); return
-    }
-    if (webhookSecret.length < 8) {
-      toast.error('Webhook Secret trop court (min 8 caractères)'); return
-    }
-    setLoading(true)
+    const tokenRequired = storeType !== 'woocommerce'
+    if (!storeType || !storeUrl || !webhookSecret || (tokenRequired && !accessToken)) { toast.error('Champs obligatoires manquants'); return }
+    if (!validateStoreUrl(storeUrl)) { toast.error('URL invalide - ex: ma-boutique.myshopify.com'); return }
+    if (webhookSecret.length < 8) { toast.error('Webhook Secret trop court (min 8 caracteres)'); return }
     setLoading(true)
     try {
-      await saveCredentials(storeType, {
-        store_url: storeUrl.trim(),
-        webhook_secret: webhookSecret.trim(),
-        access_token: accessToken.trim(),
-      })
-      toast.success('✅ Boutique configurée')
-      setStep(3)
-    } catch (e: any) {
-      toast.error(e.message)
-    } finally { setLoading(false) }
+      await saveCredentials(storeType, { store_url: storeUrl.trim(), webhook_secret: webhookSecret.trim(), access_token: accessToken.trim() })
+      toast.success('Boutique configuree')
+      setStep(4)
+    } catch (e: any) { toast.error(e.message) } finally { setLoading(false) }
   }
 
   async function handleSaveDelivery() {
@@ -113,292 +155,265 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
     try {
       const supabase = createClient()
       await supabase.from('tenants').update({ delivery_provider: deliveryProvider }).eq('id', tenantId)
+      toast.success('Livraison configuree')
+      setStep(5)
+    } catch (e: any) { toast.error(e.message) } finally { setLoading(false) }
+  }
 
-      toast.success('✅ Livraison configurée')
-      setStep(4)
-    } catch (e: any) {
-      toast.error(e.message)
-    } finally { setLoading(false) }
+  async function finishOnboarding() {
+    try {
+      const supabase = createClient()
+      await supabase.from('tenants').update({ onboarding_completed: true }).eq('id', tenantId)
+    } catch {}
+    onComplete()
   }
 
   async function handleWhatsApp() {
     if (!waPhone || !waAge) return
-    if (!validatePhone(waPhone)) { toast.error('Format invalide — ex: +212776168329'); return }
+    if (!validatePhone(waPhone)) { toast.error('Format invalide - ex: +212776168329'); return }
     setLoading(true)
     try {
       const supabase = createClient()
       if (ownerPhone) await supabase.from('tenants').update({ owner_phone: ownerPhone }).eq('id', tenantId)
-
-      const res = await fetch(`${API}/api/whatsapp/${tenantId}/instance/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await authFetch(`${API}/api/whatsapp/${tenantId}/instance/create`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone_number: waPhone, daily_limit: waLimit, number_age: waAge }),
       })
       const data = await res.json()
-      if (data.ok && data.qrcode?.base64) {
-        setQrCode(data.qrcode.base64)
-        setStep(6)
-      } else if (data.ok) {
-        toast.success('✅ WhatsApp connecté!')
-        onComplete()
-      } else {
-        toast.error(data.error ?? 'Erreur WhatsApp')
-      }
-    } catch (e: any) {
-      toast.error(e.message)
-    } finally { setLoading(false) }
+      if (data.ok && data.qrcode?.base64) { setQrCode(data.qrcode.base64); setStep(7) }
+      else if (data.ok) { toast.success('WhatsApp connecte'); finishOnboarding() }
+      else { toast.error(data.error ?? 'Erreur WhatsApp') }
+    } catch (e: any) { toast.error(e.message) } finally { setLoading(false) }
   }
 
-  const TOTAL = 5
+  const TOTAL = 6
 
-  // ── QR Step ──
-  if (step === 6 && qrCode) return (
+  if (step === 7 && qrCode) return (
     <div style={card}>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>📱</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><Smartphone size={32} strokeWidth={1.8} color="var(--brand)" /></div>
         <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Scannez le QR Code</h2>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
-          Ouvrez WhatsApp → Appareils Liés → Scanner
-        </p>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>Ouvrez WhatsApp - Appareils Lies - Scanner</p>
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
         <div style={{ padding: 12, background: '#fff', borderRadius: 12 }}>
           <img src={qrCode} alt="QR" width={200} height={200} />
         </div>
       </div>
-      <button onClick={onComplete} style={{
+      <button onClick={finishOnboarding} style={{
         width: '100%', padding: 13, borderRadius: 12, background: '#25D366',
         color: '#fff', border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
       }}>
-        ✅ J'ai scanné, continuer
+        <Check size={17} strokeWidth={2.6} /> J'ai scanne, continuer
       </button>
     </div>
   )
 
   return (
     <div style={card}>
-      {/* Progress bar */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 28 }}>
         {Array.from({ length: TOTAL }).map((_, i) => (
-          <div key={i} style={{
-            flex: 1, height: 4, borderRadius: 4,
-            background: i < step ? '#8B9A35' : 'var(--border)',
-            transition: 'background 0.3s',
-          }} />
+          <div key={i} style={{ flex: 1, height: 4, borderRadius: 4, background: i < step ? 'var(--brand)' : 'var(--border)', transition: 'background 0.3s' }} />
         ))}
       </div>
 
-      {/* ── Step 1: Store Type ── */}
       {step === 1 && (
         <div>
-          <div style={{ fontSize: 13, color: '#8B9A35', fontWeight: 600, marginBottom: 6 }}>ÉTAPE 1 / {TOTAL}</div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
-            🛍️ Votre plateforme e-commerce
-          </h2>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
-            Choisissez la plateforme de votre boutique
-          </p>
-          <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-            <button onClick={() => setStoreType('shopify')} style={pill(storeType === 'shopify')}>
-              🛒 Shopify
-            </button>
-            <button onClick={() => setStoreType('youcan')} style={pill(storeType === 'youcan')}>
-              🏪 YouCan
-            </button>
+          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>ETAPE 1 / {TOTAL}</div>
+          <h2 style={h2}><Sparkles size={20} strokeWidth={2.2} color="var(--brand)" /> A propos de vous</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>Aidez-nous a mieux vous connaitre</p>
+
+          <label style={fieldLabel}>Comment avez-vous connu Sellio ?</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
+            {SOURCES.map(s => (
+              <button key={s.v} onClick={() => setSource(s.v)} style={{ ...pill(source === s.v), padding: '8px 14px', fontSize: 13 }}>{s.label}</button>
+            ))}
           </div>
-          <button onClick={() => setStep(2)} disabled={!storeType}
-            style={{ ...nextBtn(!!storeType), width: '100%' }}>
-            Suivant →
+
+          <label style={fieldLabel}><MapPin size={13} strokeWidth={2.2} style={{ display: 'inline', verticalAlign: -2, marginRight: 4 }} />Ville</label>
+          <input value={city} onChange={e => setCity(e.target.value)} placeholder='Casablanca, Tanger...' style={input} />
+
+          <label style={fieldLabel}><ShoppingBag size={13} strokeWidth={2.2} style={{ display: 'inline', verticalAlign: -2, marginRight: 4 }} />Type de produit</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
+            {NICHES.map(n => (
+              <button key={n.v} onClick={() => setNiche(n.v)} style={{ ...pill(niche === n.v), padding: '8px 14px', fontSize: 13 }}>{n.label}</button>
+            ))}
+          </div>
+
+          <label style={fieldLabel}><BarChart3 size={13} strokeWidth={2.2} style={{ display: 'inline', verticalAlign: -2, marginRight: 4 }} />Commandes / mois</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+            {VOLUMES.map(vl => (
+              <button key={vl.v} onClick={() => setVolume(vl.v)} style={{ ...pill(volume === vl.v), padding: '8px 18px', fontSize: 13 }}>{vl.label}</button>
+            ))}
+          </div>
+
+          <button onClick={handleSaveProfile} disabled={loading || !source || !city.trim() || !niche || !volume}
+            style={{ ...nextBtn(!!source && !!city.trim() && !!niche && !!volume && !loading), width: '100%' }}>
+            {loading ? 'Enregistrement...' : <>Suivant <ArrowRight size={15} /></>}
           </button>
         </div>
       )}
 
-      {/* ── Step 2: Store Credentials ── */}
       {step === 2 && (
         <div>
-          <div style={{ fontSize: 13, color: '#8B9A35', fontWeight: 600, marginBottom: 6 }}>ÉTAPE 2 / {TOTAL}</div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
-            🔑 Intégration {storeType === 'shopify' ? 'Shopify' : 'YouCan'}
-          </h2>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
-            Ces infos permettent à Sellio de recevoir vos commandes
-          </p>
+          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>ETAPE 2 / {TOTAL}</div>
+          <h2 style={h2}><ShoppingBag size={20} strokeWidth={2.2} color="var(--brand)" /> Votre plateforme e-commerce</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>Choisissez la plateforme de votre boutique</p>
+          <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+            <button onClick={() => setStoreType('shopify')} style={pill(storeType === 'shopify')}><ShoppingCart size={16} strokeWidth={2.2} /> Shopify</button>
+            <button onClick={() => setStoreType('youcan')} style={pill(storeType === 'youcan')}><Store size={16} strokeWidth={2.2} /> YouCan</button>
+            <button onClick={() => setStoreType('woocommerce')} style={pill(storeType === 'woocommerce')}><ShoppingBag size={16} strokeWidth={2.2} /> WooCommerce</button>
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button onClick={() => setStep(1)} style={backBtn}><ArrowLeft size={15} /> Retour</button>
+            <button onClick={() => setStep(3)} disabled={!storeType} style={nextBtn(!!storeType)}>Suivant <ArrowRight size={15} /></button>
+          </div>
+        </div>
+      )}
+
+      {step === 3 && (
+        <div>
+          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>ETAPE 3 / {TOTAL}</div>
+          <h2 style={h2}><KeyRound size={20} strokeWidth={2.2} color="var(--brand)" /> Integration {storeType === 'shopify' ? 'Shopify' : storeType === 'youcan' ? 'YouCan' : 'WooCommerce'}</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>Ces infos permettent a Sellio de recevoir vos commandes</p>
+
+          <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>URL de la boutique</label>
+          <input value={storeUrl} onChange={e => setStoreUrl(e.target.value)} placeholder={storeType === 'shopify' ? 'ma-boutique.myshopify.com' : storeType === 'youcan' ? 'ma-boutique.youcan.shop' : 'https://ma-boutique.com'} style={input} />
+
+          <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Webhook Secret</label>
+          <input value={webhookSecret} onChange={e => setWebhookSecret(e.target.value)} placeholder='Cle secrete webhook' style={input} />
 
           <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-            URL de la boutique
+            Access Token <span style={{ color: 'var(--destructive)', fontSize: 11 }}>* obligatoire</span>
           </label>
-          <input value={storeUrl} onChange={e => setStoreUrl(e.target.value)}
-            placeholder={storeType === 'shopify' ? 'ma-boutique.myshopify.com' : 'ma-boutique.youcan.shop'}
-            style={input} />
-
-          <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-            Webhook Secret
-          </label>
-          <input value={webhookSecret} onChange={e => setWebhookSecret(e.target.value)}
-            placeholder='Clé secrète webhook' style={input} />
-
-          <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-            Access Token <span style={{ color: '#e74c3c', fontSize: 11 }}>* obligatoire</span>
-          </label>
-          <input value={accessToken} onChange={e => setAccessToken(e.target.value)}
-            placeholder={storeType === 'shopify' ? 'shpat_xxxxxxxxxxxx' : 'Token API YouCan'} style={input} />
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '6px 10px', borderRadius: 8, background: 'rgba(0,0,0,0.15)', marginBottom: 12 }}>
-            {storeType === 'shopify'
-              ? '📌 Shopify Admin → Apps → Develop apps → Create app → Admin API access token'
-              : '📌 YouCan → Paramètres → API → Générer token'}
+          <input value={accessToken} onChange={e => setAccessToken(e.target.value)} placeholder={storeType === 'shopify' ? 'shpat_xxxxxxxxxxxx' : storeType === 'youcan' ? 'Token API YouCan' : 'Consumer Secret (optionnel)'} style={input} />
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, fontSize: 11, color: 'var(--text-muted)', padding: '8px 10px', borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)', marginBottom: 12 }}>
+            <Info size={14} strokeWidth={2.2} style={{ flexShrink: 0, marginTop: 1 }} />
+            <span>{storeType === 'shopify' ? 'Shopify Admin - Apps - Develop apps - Create app - Admin API access token' : storeType === 'youcan' ? 'YouCan - Parametres - API - Generer token' : 'WooCommerce - Reglages - Avance - Webhooks (le secret suffit pour recevoir les commandes)'}</span>
           </div>
           <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-            Logo de la boutique <span style={{ color: '#6B7B8D', fontSize: 11 }}>— optionnel</span>
+            Logo de la boutique <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>- optionnel</span>
           </label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-            {logo && <img src={logo} alt="logo" style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'cover', border: '2px solid #8B9A35' }} />}
-            <label style={{ padding: '8px 16px', borderRadius: 8, border: '1px dashed var(--border)', cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)' }}>
-              📁 Choisir un fichier
+            {logo && <img src={logo} alt="logo" style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'cover', border: '2px solid var(--brand)' }} />}
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: '1px dashed var(--border)', cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)' }}>
+              <Upload size={14} strokeWidth={2.2} /> Choisir un fichier
               <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
-                const file = e.target.files?.[0]
-                if (!file) return
-                const reader = new FileReader()
-                reader.onload = ev => setLogo(ev.target?.result as string)
-                reader.readAsDataURL(file)
+                const file = e.target.files?.[0]; if (!file) return
+                const reader = new FileReader(); reader.onload = ev => setLogo(ev.target?.result as string); reader.readAsDataURL(file)
               }} />
             </label>
-            {logo && <button onClick={() => setLogo(null)} style={{ fontSize: 11, color: '#e74c3c', background: 'none', border: 'none', cursor: 'pointer' }}>✕ Supprimer</button>}
+            {logo && <button onClick={() => setLogo(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--destructive)', background: 'none', border: 'none', cursor: 'pointer' }}><X size={13} strokeWidth={2.4} /> Supprimer</button>}
           </div>
 
-          <div style={{ padding: 12, borderRadius: 10, background: 'rgba(139,154,53,0.05)', border: '1px solid rgba(139,154,53,0.15)', marginBottom: 20, fontSize: 12, color: 'var(--text-muted)' }}>
-            📌 Webhook URL à configurer dans {storeType === 'shopify' ? 'Shopify' : 'YouCan'}:
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-              <code style={{ color: '#8B9A35', fontSize: 11, flex: 1, wordBreak: 'break-all' }}>
+          <div style={{ padding: 12, borderRadius: 10, background: 'color-mix(in srgb, var(--brand) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--brand) 15%, transparent)', marginBottom: 20, fontSize: 12, color: 'var(--text-muted)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Info size={14} strokeWidth={2.2} /> Webhook URL a configurer dans {storeType === 'shopify' ? 'Shopify' : storeType === 'youcan' ? 'YouCan' : 'WooCommerce'}:</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+              <code style={{ color: 'var(--brand)', fontSize: 11, flex: 1, wordBreak: 'break-all' }}>
                 https://sellio-production-ccf6.up.railway.app/webhook/{tenantId}/{storeType}
               </code>
               <button onClick={() => {
                 navigator.clipboard.writeText(`https://sellio-production-ccf6.up.railway.app/webhook/${tenantId}/${storeType}`)
-                toast.success('✅ Copié!')
-              }} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #8B9A35', background: 'transparent', color: '#8B9A35', fontSize: 11, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                📋 Copier
+                toast.success('Copie')
+              }} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 6, border: '1px solid var(--brand)', background: 'transparent', color: 'var(--brand)', fontSize: 11, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                <Copy size={12} strokeWidth={2.2} /> Copier
               </button>
             </div>
           </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => setStep(1)} style={backBtn}>← Retour</button>
-            <button onClick={handleSaveStore}
-              disabled={loading || !storeUrl || !webhookSecret}
-              style={nextBtn(!!storeUrl && !!webhookSecret && !loading)}>
-              {loading ? 'Enregistrement...' : 'Suivant →'}
+            <button onClick={() => setStep(2)} style={backBtn}><ArrowLeft size={15} /> Retour</button>
+            <button onClick={handleSaveStore} disabled={loading || !storeUrl || !webhookSecret} style={nextBtn(!!storeUrl && !!webhookSecret && !loading)}>
+              {loading ? 'Enregistrement...' : <>Suivant <ArrowRight size={15} /></>}
             </button>
           </div>
         </div>
       )}
 
-      {/* ── Step 3: Delivery ── */}
-      {step === 3 && (
+      {step === 4 && (
         <div>
-          <div style={{ fontSize: 13, color: '#8B9A35', fontWeight: 600, marginBottom: 6 }}>ÉTAPE 3 / {TOTAL}</div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
-            🚚 Société de livraison
-          </h2>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
-            Choisissez votre partenaire de livraison
-          </p>
-          <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
-            <button onClick={() => setDeliveryProvider('maystro')} style={pill(deliveryProvider === 'maystro')}>
-              📦 Maystro
-            </button>
-            <button onClick={() => setDeliveryProvider('yalidin')} style={pill(deliveryProvider === 'yalidin')}>
-              🚀 Yalidin
-            </button>
-          </div>
+          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>ETAPE 4 / {TOTAL}</div>
+          <h2 style={h2}><Truck size={20} strokeWidth={2.2} color="var(--brand)" /> Societe de livraison</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>Choisissez votre partenaire de livraison</p>
+          <select
+            value={deliveryProvider ?? ''}
+            onChange={(e) => setDeliveryProvider(e.target.value || null)}
+            style={{ ...input, cursor: 'pointer' }}
+          >
+            <option value="">— Choisir un transporteur —</option>
+            <optgroup label="API (synchronisation automatique)">
+              {carriers.filter((c) => c.method === 'api').map((c) => (
+                <option key={c.slug} value={c.slug}>{c.name}{c.country && c.country !== 'MA' ? ` (${c.country})` : ''}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Manuel (export / import Excel)">
+              {carriers.filter((c) => c.method !== 'api').map((c) => (
+                <option key={c.slug} value={c.slug}>{c.name}</option>
+              ))}
+            </optgroup>
+          </select>
+          {deliveryProvider && carriers.find((c) => c.slug === deliveryProvider)?.method !== 'api' && deliveryProvider !== 'maystro' && deliveryProvider !== 'yalidin' && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, fontSize: 12, color: 'var(--text-muted)', padding: '10px 12px', borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)', marginBottom: 12 }}>
+              <Info size={14} strokeWidth={2.2} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>Vous exporterez vos commandes en Excel, votre transporteur remplira les statuts, puis vous importerez le fichier. Ideal pour les transporteurs marocains sans API.</span>
+            </div>
+          )}
 
-          {deliveryProvider && (
+          {deliveryProvider === 'yalidin' && (
             <>
-
-              {deliveryProvider === 'yalidin' && (
-                <>
-                  <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-                    Agency ID
-                  </label>
-                  <input value={agencyId} onChange={e => setAgencyId(e.target.value)}
-                    placeholder='ID agence Yalidin' style={input} />
-                </>
-              )}
+              <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Agency ID</label>
+              <input value={agencyId} onChange={e => setAgencyId(e.target.value)} placeholder='ID agence Yalidin' style={input} />
             </>
           )}
 
           <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-            <button onClick={() => setStep(2)} style={backBtn}>← Retour</button>
-            <button onClick={handleSaveDelivery}
-              disabled={loading || !deliveryProvider}
-              style={nextBtn(!!deliveryProvider && !loading)}>
-              {loading ? 'Enregistrement...' : 'Suivant →'}
+            <button onClick={() => setStep(3)} style={backBtn}><ArrowLeft size={15} /> Retour</button>
+            <button onClick={handleSaveDelivery} disabled={loading || !deliveryProvider} style={nextBtn(!!deliveryProvider && !loading)}>
+              {loading ? 'Enregistrement...' : <>Suivant <ArrowRight size={15} /></>}
             </button>
           </div>
         </div>
       )}
 
-      {/* ── Step 4: Owner Phone ── */}
-      {step === 4 && (
-        <div>
-          <div style={{ fontSize: 13, color: '#8B9A35', fontWeight: 600, marginBottom: 6 }}>ÉTAPE 4 / {TOTAL}</div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
-            📞 Votre numéro (vendeur)
-          </h2>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
-            Vous recevrez les alertes de commandes ici
-          </p>
-          <input value={ownerPhone} onChange={e => setOwnerPhone(e.target.value)}
-            placeholder='+212600000000' style={input} />
-          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-            <button onClick={() => setStep(3)} style={backBtn}>← Retour</button>
-            <button onClick={() => {
-              if (!validatePhone(ownerPhone)) { toast.error('Format invalide — ex: +212600000000'); return; }
-              setStep(5);
-            }} disabled={!ownerPhone} style={nextBtn(!!ownerPhone && validatePhone(ownerPhone))}>
-              Suivant →
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Step 5: WhatsApp Setup ── */}
       {step === 5 && (
         <div>
-          <div style={{ fontSize: 13, color: '#8B9A35', fontWeight: 600, marginBottom: 6 }}>ÉTAPE 5 / {TOTAL}</div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
-            📱 Connexion WhatsApp
-          </h2>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-            Numéro WhatsApp dédié à votre boutique
-          </p>
+          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>ETAPE 5 / {TOTAL}</div>
+          <h2 style={h2}><Phone size={20} strokeWidth={2.2} color="var(--brand)" /> Votre numero (vendeur)</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>Vous recevrez les alertes de commandes ici</p>
+          <input value={ownerPhone} onChange={e => setOwnerPhone(e.target.value)} placeholder='+212600000000' style={input} />
+          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+            <button onClick={() => setStep(4)} style={backBtn}><ArrowLeft size={15} /> Retour</button>
+            <button onClick={() => { if (!validatePhone(ownerPhone)) { toast.error('Format invalide - ex: +212600000000'); return } setStep(6) }} disabled={!ownerPhone} style={nextBtn(!!ownerPhone && validatePhone(ownerPhone))}>
+              Suivant <ArrowRight size={15} />
+            </button>
+          </div>
+        </div>
+      )}
 
-          <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-            Numéro WhatsApp
-          </label>
-          <input value={waPhone} onChange={e => setWaPhone(e.target.value)}
-            placeholder='+212600000000' style={input} />
+      {step === 6 && (
+        <div>
+          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>ETAPE 6 / {TOTAL}</div>
+          <h2 style={h2}><Smartphone size={20} strokeWidth={2.2} color="var(--brand)" /> Connexion WhatsApp</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>Numero WhatsApp dedie a votre boutique</p>
 
-          <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}>
-            Ancienneté du numéro
-          </label>
+          <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Numero WhatsApp</label>
+          <input value={waPhone} onChange={e => setWaPhone(e.target.value)} placeholder='+212600000000' style={input} />
+
+          <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}>Anciennete du numero</label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
             {AGES.map(a => (
-              <button key={a.v} onClick={() => { setWaAge(a.v); setWaLimit(a.limit) }} style={{
-                ...pill(waAge === a.v), textAlign: 'left' as const,
-              }}>
+              <button key={a.v} onClick={() => { setWaAge(a.v); setWaLimit(a.limit) }} style={{ ...pill(waAge === a.v), display: 'block', textAlign: 'left' as const }}>
                 {a.label}
-                <span style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginTop: 2 }}>
-                  Limite: {a.limit} msg/jour
-                </span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginTop: 2 }}>Limite: {a.limit} msg/jour</span>
               </button>
             ))}
           </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => setStep(4)} style={backBtn}>← Retour</button>
-            <button onClick={handleWhatsApp}
-              disabled={loading || !waPhone || !waAge}
-              style={{ ...nextBtn(!!waPhone && !!waAge && !loading), background: waPhone && waAge && !loading ? '#25D366' : 'var(--border)' }}>
-              {loading ? 'Connexion...' : '📲 Scanner QR'}
+            <button onClick={() => setStep(5)} style={backBtn}><ArrowLeft size={15} /> Retour</button>
+            <button onClick={handleWhatsApp} disabled={loading || !waPhone || !waAge} style={{ ...nextBtn(!!waPhone && !!waAge && !loading), background: waPhone && waAge && !loading ? '#25D366' : 'var(--border)' }}>
+              {loading ? 'Connexion...' : <><QrCode size={16} strokeWidth={2.2} /> Scanner QR</>}
             </button>
           </div>
         </div>

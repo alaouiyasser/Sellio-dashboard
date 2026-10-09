@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const PUBLIC_PREFIXES = ['/login', '/signup', '/auth']
+
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -24,12 +26,14 @@ export async function proxy(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
+  const path = request.nextUrl.pathname
+  const isPublic = PUBLIC_PREFIXES.some((p) => path.startsWith(p))
 
-  if (!user && !request.nextUrl.pathname.startsWith('/login')) {
+  if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (user && request.nextUrl.pathname === '/login') {
+  if (user && (path === '/login' || path === '/signup')) {
     return NextResponse.redirect(new URL('/orders', request.url))
   }
 
@@ -37,5 +41,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!api|webhook|_next/static|_next/image|favicon.ico).*)'],
 }

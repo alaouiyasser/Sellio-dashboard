@@ -1,7 +1,7 @@
 'use client'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 interface Props { data: { date: string; count: number }[]; period: string }
-const OLIVE = '#8B9A35'
+const OLIVE = 'var(--brand)'
 export default function OrdersChart({ data, period }: Props) {
   const maxVal = Math.max(...data.map(d => d.count), 1)
   const yMax = Math.ceil(maxVal * 1.3)

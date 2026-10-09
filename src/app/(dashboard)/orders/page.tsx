@@ -4,14 +4,16 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import Topbar from '@/components/layout/Topbar'
 import { useLang } from '@/components/layout/LanguageProvider'
+import CarrierExportImport from '@/components/orders/CarrierExportImport'
 
 const STATUS_CONFIG: Record<string, { label: Record<string, string>; bg: string; color: string }> = {
-  confirmed: { label: { fr: 'Confirmé',   en: 'Confirmed', ar: 'مؤكد',         es: 'Confirmado'  }, bg: 'rgba(16,185,129,0.15)', color: '#10B981' },
+  confirmed: { label: { fr: 'Confirmé',   en: 'Confirmed', ar: 'مؤكد',         es: 'Confirmado'  }, bg: 'color-mix(in srgb, var(--success) 15%, transparent)', color: 'var(--success)' },
   pending:   { label: { fr: 'En attente', en: 'Pending',   ar: 'قيد الانتظار', es: 'Pendiente'   }, bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
   cancelled: { label: { fr: 'Annulé',     en: 'Cancelled', ar: 'ملغي',         es: 'Cancelado'   }, bg: 'rgba(239,68,68,0.15)',  color: '#EF4444' },
-  delivered: { label: { fr: 'Livré',      en: 'Delivered', ar: 'مسلم',         es: 'Entregado'   }, bg: 'rgba(139,154,53,0.15)', color: '#8B9A35' },
+  delivered: { label: { fr: 'Livré',      en: 'Delivered', ar: 'مسلم',         es: 'Entregado'   }, bg: 'color-mix(in srgb, var(--brand) 15%, transparent)', color: 'var(--brand)' },
  awaiting_delivery_check: { label: { fr: 'En attente confirmation', en: 'Awaiting confirmation', ar: 'في انتظار التأكيد', es: 'Esperando confirmación' }, bg: 'rgba(99,102,241,0.15)', color: '#6366F1' },
  delivery_issue: { label: { fr: 'Problème livraison', en: 'Delivery issue', ar: 'مشكل التوصيل', es: 'Problema entrega' }, bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
+  needs_merchant_confirm: { label: { fr: 'À confirmer', en: 'To confirm', ar: 'خاص تأكيد', es: 'Por confirmar' }, bg: 'rgba(245,158,11,0.2)', color: '#F59E0B' },
   modified:  { label: { fr: 'Modifié',    en: 'Modified',  ar: 'معدل',         es: 'Modificado'  }, bg: 'rgba(99,102,241,0.15)', color: '#6366F1' },
   sent:      { label: { fr: 'En attente', en: 'Pending',   ar: 'قيد الانتظار', es: 'Pendiente'   }, bg: 'rgba(245,158,11,0.15)', color: '#F59E0B' },
   canceled:  { label: { fr: 'Annulé',     en: 'Cancelled', ar: 'ملغي',         es: 'Cancelado'   }, bg: 'rgba(239,68,68,0.15)',  color: '#EF4444' },
@@ -96,13 +98,42 @@ export default function OrdersPage() {
             {STATUSES.map(s => (
               <button key={s.key} onClick={() => { setStatusFilter(s.key); setPage(1) }} style={{
                 padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border)',
-                background: statusFilter === s.key ? '#8B9A35' : 'var(--card)',
+                background: statusFilter === s.key ? 'var(--brand)' : 'var(--card)',
                 color: statusFilter === s.key ? '#fff' : 'var(--text-muted)',
                 fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all 0.2s',
               }}>{s.label}</button>
             ))}
           </div>
         </div>
+
+        {(() => {
+          const needsConfirm = orders.filter(o => o.status === 'needs_merchant_confirm')
+          if (needsConfirm.length === 0) return null
+          return (
+            <div style={{ marginBottom: 20, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 14, padding: 18 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 14, fontWeight: 700, color: '#F59E0B' }}>
+                ⚠️ {needsConfirm.length} {needsConfirm.length === 1 ? 'commande à confirmer' : 'commandes à confirmer'}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>
+                Le client n'a pas répondu. Confirmez le statut de livraison (Livré / Retourné / Refusé).
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {needsConfirm.map(o => (
+                  <div key={o.id} onClick={() => window.location.href = `/orders/${o.id}`}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--card)', borderRadius: 10, cursor: 'pointer', border: '1px solid var(--border)' }}>
+                    <div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--brand)' }}>#{o.external_id ?? o.id?.slice(0,8)}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 10 }}>{o.customer_phone}</span>
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#F59E0B' }}>Confirmer →</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
+        <CarrierExportImport />
 
         <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
           <div className="table-scroll"><table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -123,7 +154,7 @@ export default function OrdersPage() {
                 return (
                   <tr key={order.id} style={{ borderTop: '1px solid var(--border)', cursor: 'pointer' }}
                     onClick={() => window.location.href = `/orders/${order.id}`}>
-                    <td style={{ padding: '14px 20px', fontSize: 12, color: '#8B9A35', fontWeight: 600 }}>#{order.id?.slice(0, 8)}</td>
+                    <td style={{ padding: '14px 20px', fontSize: 12, color: 'var(--brand)', fontWeight: 600 }}>#{order.id?.slice(0, 8)}</td>
                     <td style={{ padding: '14px 20px', fontSize: 13, color: 'var(--text)' }}>{order.customer_phone}</td>
                     <td className='hide-on-mobile' style={{ padding: '14px 20px', fontSize: 13, color: 'var(--text-muted)' }}>{(() => { try { const a = typeof order.shipping_address === 'string' ? JSON.parse(order.shipping_address) : order.shipping_address; return a?.city ?? '—' } catch { return order.city ?? '—' } })()}</td>
                     <td style={{ padding: '14px 20px', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{order.total_price ? `${order.total_price} MAD` : '—'}</td>

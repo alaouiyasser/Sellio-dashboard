@@ -1,84 +1,149 @@
 'use client'
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
 
-const API = typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:3001'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
+import { Loader2, ArrowLeft } from 'lucide-react'
+import { createClient } from '@/lib/supabase'
+import { apiPost, inputCls, primaryBtn } from '@/lib/auth-client'
+import { AuthShell } from '@/components/auth/AuthShell'
+import { PasswordField } from '@/components/auth/PasswordField'
+
+const SECTORS = ['Beaute & Cosmetique', 'Mode & Vetements', 'Electronique', 'Complements alimentaires', 'Maison & Deco', 'Alimentaire', 'Autre']
 
 export default function SignupPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [storeName, setStoreName] = useState('')
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
   const supabase = createClient()
+  const [step, setStep] = useState<'form' | 'otp'>('form')
+  const [loading, setLoading] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
 
-  async function handleSignup() {
-    if (!email || !password || !storeName) { toast.error('Remplissez tous les champs'); return }
-    if (password.length < 6) { toast.error('Mot de passe minimum 6 caractères'); return }
-    setLoading(true)
-    try {
-      // 1 — Create Supabase auth user
-      const { data, error } = await supabase.auth.signUp({ email, password })
-      if (error) { toast.error(error.message); return }
-      const userId = data.user?.id
-      if (!userId) { toast.error('Erreur lors de la création'); return }
+  const [name, setName] = useState('')
+  const [store, setStore] = useState('')
+  const [city, setCity] = useState('')
+  const [sector, setSector] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [password, setPassword] = useState('')
+  const [password2, setPassword2] = useState('')
+  const [code, setCode] = useState('')
 
-      // 2 — Create tenant + credits via API
-      const res = await fetch(`${API}/api/auth/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, storeName, email }),
-      })
-      const result = await res.json()
-      if (!result.ok) { toast.error(result.error ?? 'Erreur'); return }
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const t = setInterval(() => setCooldown((c) => (c <= 1 ? 0 : c - 1)), 1000)
+    return () => clearInterval(t)
+  }, [cooldown])
 
-      // Auto sign in after signup
-      await supabase.auth.signInWithPassword({ email, password })
-      toast.success('✅ Compte créé! Bienvenue sur Sellio 🚀')
-      window.location.href = '/onboarding'
-    } catch (err: any) {
-      toast.error(err.message)
-    } finally {
-      setLoading(false)
-    }
+  function validForm(): string | null {
+    if (!name.trim()) return 'Entrez votre nom et prenom'
+    if (store.trim().length < 2) return 'Nom de boutique requis'
+    if (!city.trim()) return 'Entrez votre ville'
+    if (!sector) return 'Choisissez votre secteur'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Email invalide'
+    if (!phone.trim()) return 'Entrez votre numero'
+    if (password.length < 6) return 'Mot de passe min. 6 caracteres'
+    if (password !== password2) return 'Les mots de passe ne correspondent pas'
+    return null
   }
 
-  const inputStyle = {
-    width: '100%', padding: '12px 14px', borderRadius: 10,
-    border: '1px solid #1E2D3E', background: '#0C1117',
-    color: '#E8EDF2', fontSize: 14, outline: 'none', boxSizing: 'border-box' as const,
+  async function sendOtp() {
+    const err = validForm()
+    if (err) { toast.error(err); return }
+    setLoading(true)
+    try {
+      const { res, data } = await apiPost('/api/auth/phone/request-otp', { phone })
+      if (!res.ok || !data.ok) {
+        if (data.error === 'invalid_phone') toast.error('Numero invalide')
+        else if (data.error === 'rate_limited' || data.error === 'cooldown') {
+          toast.error(`Reessayez dans ${data.retryAfterSeconds ?? 60}s`); setCooldown(data.retryAfterSeconds ?? 60)
+        } else toast.error("Echec d'envoi du code")
+        return
+      }
+      setStep('otp'); setCooldown(data.cooldownSeconds ?? 60)
+      toast.success('Code envoye sur WhatsApp')
+    } finally { setLoading(false) }
+  }
+
+  async function verifyAndCreate() {
+    if (!/^\d{6}$/.test(code)) { toast.error('Entrez le code a 6 chiffres'); return }
+    setLoading(true)
+    try {
+      const v = await apiPost('/api/auth/phone/verify-otp', { phone, code })
+      if (v.res.ok && v.data.status === 'authenticated') { toast.error('Ce numero a deja un compte'); return }
+      if (!(v.res.ok && v.data.status === 'needs_signup')) {
+        if (v.data.error === 'invalid') toast.error(`Code incorrect (${v.data.remainingAttempts ?? 0} essais restants)`)
+        else if (v.data.error === 'expired') toast.error('Code expire, redemandez-en un')
+        else toast.error('Verification echouee')
+        return
+      }
+
+      const { res, data } = await apiPost('/api/auth/phone/complete-signup', { phone, email, storeName: store, rememberDevice: true })
+      if (!(res.ok && data.status === 'authenticated')) {
+        if (data.error === 'email_already_registered') toast.error('Cet email a deja un compte')
+        else if (data.error === 'phone_already_registered') toast.error('Ce numero a deja un compte')
+        else toast.error('Creation echouee')
+        return
+      }
+
+      await supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token })
+      await supabase.auth.updateUser({ password })
+      const { data: u } = await supabase.auth.getUser()
+      if (u.user) {
+        await supabase.from('tenants').update({
+          owner_name: name.trim(),
+          city: city.trim() || null,
+          niche: sector || null,
+        }).eq('id', u.user.id)
+      }
+
+      toast.success('Compte cree')
+      window.location.href = '/onboarding'
+    } finally { setLoading(false) }
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0C1117' }}>
-      <div style={{ width: '100%', maxWidth: 400, padding: 32, background: '#0F1721', border: '1px solid #1E2D3E', borderRadius: 20 }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 14, margin: '0 auto 12px', background: 'linear-gradient(135deg, #1B2D3E, #2A4560)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 0 2px rgba(139,154,53,0.4)', fontSize: 22, fontWeight: 800, color: '#8B9A35' }}>S</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: '#E8EDF2' }}>Sell<span style={{ color: '#8B9A35' }}>io</span></div>
-          <div style={{ fontSize: 13, color: '#6B7B8D', marginTop: 4 }}>Créez votre compte gratuitement</div>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <input value={storeName} onChange={e => setStoreName(e.target.value)} placeholder="Nom de votre boutique" style={inputStyle} />
-          <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" type="email" style={inputStyle} />
-          <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Mot de passe (min. 6 caractères)" type="password" style={inputStyle} />
-
-          <button onClick={handleSignup} disabled={loading} style={{ padding: '13px', borderRadius: 10, background: loading ? '#1E2D3E' : 'linear-gradient(135deg, #8B9A35, #6B7B1A)', color: '#fff', border: 'none', fontSize: 14, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', marginTop: 4 }}>
-            {loading ? 'Création...' : '🚀 Créer mon compte'}
+    <AuthShell
+      subtitle="Creez votre compte gratuitement"
+      footer={step === 'form'
+        ? (<>Deja un compte ?{' '}
+            <button type="button" onClick={() => { window.location.href = '/login' }}
+              className="font-medium text-brand hover:underline">Se connecter</button></>)
+        : undefined}
+    >
+      {step === 'form' ? (
+        <div className="flex flex-col gap-3">
+          <input placeholder="Nom et prenom" value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
+          <input placeholder="Nom de la boutique" value={store} onChange={(e) => setStore(e.target.value)} className={inputCls} />
+          <input placeholder="Ville" value={city} onChange={(e) => setCity(e.target.value)} className={inputCls} />
+          <select value={sector} onChange={(e) => setSector(e.target.value)} className={inputCls}>
+            <option value="">Secteur d'activite</option>
+            {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
+          <input type="tel" placeholder="Telephone (06 ...)" value={phone} onChange={(e) => setPhone(e.target.value)} className={inputCls} />
+          <PasswordField value={password} onChange={setPassword} placeholder="Mot de passe (min. 6)" />
+          <PasswordField value={password2} onChange={setPassword2} placeholder="Confirmer le mot de passe" />
+          <button onClick={sendOtp} disabled={loading} className={primaryBtn}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Continuer'}
           </button>
-
-          <div style={{ textAlign: 'center', fontSize: 13, color: '#6B7B8D', marginTop: 8 }}>
-            Déjà un compte?{' '}
-            <a href="/login" style={{ color: '#8B9A35', textDecoration: 'none' }}>Se connecter</a>
-          </div>
-
-          <div style={{ padding: 12, borderRadius: 10, background: 'rgba(139,154,53,0.05)', border: '1px solid rgba(139,154,53,0.15)', fontSize: 12, color: '#6B7B8D', textAlign: 'center' }}>
-            🎁 250 crédits offerts à l'inscription
-          </div>
         </div>
-      </div>
-    </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <button onClick={() => { setStep('form'); setCode('') }} className="flex items-center gap-1 self-start text-xs text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-3.5 w-3.5" /> Modifier mes infos
+          </button>
+          <p className="text-sm text-muted-foreground">Un code a ete envoye sur WhatsApp au {phone}</p>
+          <input inputMode="numeric" maxLength={6} placeholder="Code a 6 chiffres" value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            onKeyDown={(e) => e.key === 'Enter' && verifyAndCreate()}
+            className={`${inputCls} text-center text-lg tracking-[0.3em]`} />
+          <button onClick={verifyAndCreate} disabled={loading} className={primaryBtn}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verifier et creer mon compte'}
+          </button>
+          <button onClick={sendOtp} disabled={cooldown > 0 || loading}
+            className="text-center text-xs text-brand transition disabled:text-muted-foreground">
+            {cooldown > 0 ? `Renvoyer dans ${cooldown}s` : 'Renvoyer le code'}
+          </button>
+        </div>
+      )}
+    </AuthShell>
   )
 }

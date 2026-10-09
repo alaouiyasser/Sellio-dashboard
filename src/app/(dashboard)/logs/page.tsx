@@ -4,13 +4,16 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import Topbar from '@/components/layout/Topbar'
 import { useLang } from '@/components/layout/LanguageProvider'
+import {
+  CheckCircle2, Bell, Pencil, XCircle, Truck, Search, Check, X, ChevronLeft, ChevronRight,
+} from 'lucide-react'
 
-const TYPE_CONFIG: Record<string, { icon: string; color: string; bg: string }> = {
-  confirmation: { icon: '✅', color: '#10B981', bg: 'rgba(16,185,129,0.15)' },
-  reminder:     { icon: '⏰', color: '#F59E0B', bg: 'rgba(245,158,11,0.15)' },
-  modification: { icon: '✏️', color: '#6366F1', bg: 'rgba(99,102,241,0.15)' },
-  cancellation: { icon: '❌', color: '#EF4444', bg: 'rgba(239,68,68,0.15)'  },
-  tracking:     { icon: '🚚', color: '#8B9A35', bg: 'rgba(139,154,53,0.15)' },
+const TYPE_CONFIG: Record<string, { Icon: any; color: string; bg: string }> = {
+  confirmation: { Icon: CheckCircle2, color: 'var(--success)',     bg: 'color-mix(in srgb, var(--success) 15%, transparent)' },
+  reminder:     { Icon: Bell,         color: 'var(--warning)',     bg: 'color-mix(in srgb, var(--warning) 15%, transparent)' },
+  modification: { Icon: Pencil,       color: 'var(--chart-2)',     bg: 'color-mix(in srgb, var(--chart-2) 15%, transparent)' },
+  cancellation: { Icon: XCircle,      color: 'var(--destructive)', bg: 'color-mix(in srgb, var(--destructive) 15%, transparent)' },
+  tracking:     { Icon: Truck,        color: 'var(--brand)',       bg: 'color-mix(in srgb, var(--brand) 15%, transparent)' },
 }
 
 export default function LogsPage() {
@@ -32,6 +35,13 @@ export default function LogsPage() {
     { key: 'cancellation', label: t('msgTypes.cancellation') },
     { key: 'tracking',     label: t('msgTypes.tracking') },
   ]
+
+  const TypeIcon = ({ k, size = 14 }: { k: string; size?: number }) => {
+    const cfg = TYPE_CONFIG[k]
+    if (!cfg) return null
+    const Ic = cfg.Icon
+    return <Ic size={size} strokeWidth={2.2} />
+  }
 
   useEffect(() => { fetchMessages() }, [typeFilter])
 
@@ -56,22 +66,25 @@ export default function LogsPage() {
       <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
 
         <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-          <input
-            placeholder={`🔍 ${t('table.phone')}...`}
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1) }}
-            style={{ padding: '9px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 13, outline: 'none', minWidth: 240 }}
-          />
+          <div style={{ position: 'relative', minWidth: 240 }}>
+            <Search size={15} color="var(--text-muted)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+            <input
+              placeholder={`${t('table.phone')}...`}
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1) }}
+              style={{ padding: '9px 14px 9px 36px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 13, outline: 'none', width: '100%' }}
+            />
+          </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {TYPES.map(ty => (
               <button key={ty.key} onClick={() => { setTypeFilter(ty.key); setPage(1) }} style={{
                 padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)',
-                background: typeFilter === ty.key ? '#8B9A35' : 'var(--card)',
+                background: typeFilter === ty.key ? 'var(--brand)' : 'var(--card)',
                 color: typeFilter === ty.key ? '#fff' : 'var(--text-muted)',
                 fontSize: 12, fontWeight: 500, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 5,
               }}>
-                {ty.key !== 'all' && <span>{TYPE_CONFIG[ty.key]?.icon}</span>}
+                {ty.key !== 'all' && <TypeIcon k={ty.key} />}
                 {ty.label}
               </button>
             ))}
@@ -85,13 +98,14 @@ export default function LogsPage() {
             <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>—</div>
           ) : paginated.map((msg, i) => {
             const ty = TYPE_CONFIG[msg.message_type] ?? TYPE_CONFIG['confirmation']
+            const RowIcon = ty.Icon
             return (
               <div key={i} style={{
                 padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: 14,
                 borderBottom: i < paginated.length - 1 ? '1px solid var(--border)' : 'none',
               }}>
-                <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: ty.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
-                  {ty.icon}
+                <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: ty.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: ty.color }}>
+                  <RowIcon size={17} strokeWidth={2.2} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className='msg-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
@@ -105,13 +119,15 @@ export default function LogsPage() {
                       {new Date(msg.created_at).toLocaleString('fr-MA')}
                     </span>
                   </div>
-                  {msg.order_id && <div style={{ fontSize: 11, color: '#8B9A35', marginBottom: 4 }}>#{msg.order_id.slice(0, 8)}</div>}
+                  {msg.order_id && <div style={{ fontSize: 11, color: 'var(--brand)', marginBottom: 4 }}>#{msg.order_id.slice(0, 8)}</div>}
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', wordBreak: 'break-word' }}>
                     {msg.content ?? msg.template_name ?? '—'}
                   </div>
                 </div>
-                <div style={{ fontSize: 11, color: msg.status === 'sent' ? '#10B981' : '#EF4444', flexShrink: 0 }}>
-                  {msg.status === 'sent' ? '✓' : '✗'}
+                <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+                  {msg.status === 'sent'
+                    ? <Check size={15} color="var(--success)" strokeWidth={2.6} />
+                    : <X size={15} color="var(--destructive)" strokeWidth={2.6} />}
                 </div>
               </div>
             )
@@ -123,9 +139,9 @@ export default function LogsPage() {
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Page {page} / {totalPages}</span>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', cursor: 'pointer', opacity: page === 1 ? 0.4 : 1 }}>←</button>
+                style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', cursor: 'pointer', opacity: page === 1 ? 0.4 : 1, display: 'grid', placeItems: 'center' }}><ChevronLeft size={15} /></button>
               <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', cursor: 'pointer', opacity: page === totalPages ? 0.4 : 1 }}>→</button>
+                style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', cursor: 'pointer', opacity: page === totalPages ? 0.4 : 1, display: 'grid', placeItems: 'center' }}><ChevronRight size={15} /></button>
             </div>
           </div>
         )}

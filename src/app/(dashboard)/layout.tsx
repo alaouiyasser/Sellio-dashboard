@@ -14,7 +14,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Mobile header — hidden on desktop via CSS */}
         <div className="mobile-topbar">
           <button className="hamburger-btn" onClick={() => setSidebarOpen(true)}>☰</button>
-          <span style={{ fontWeight:800, fontSize:15, color:'#8B9A35' }}>⚡ Sellio</span>
+          <span style={{ fontWeight:800, fontSize:15, color:'var(--brand)' }}>⚡ Sellio</span>
           <div style={{ width:40 }} />
         </div>
 
