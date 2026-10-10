@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import WizardOnboarding from '@/components/onboarding/WizardOnboarding'
 import DevicesTab from '@/components/settings/DevicesTab'
 import {
-  Building2, Plug, Bot, MessageCircle, RotateCcw, AlertTriangle, Save,
+  Building2, Plug, Bot, MessageCircle, RotateCcw, AlertTriangle,
   Smartphone, Check, X, Plus, ShieldCheck,
 } from 'lucide-react'
 
@@ -199,7 +199,6 @@ function IntegrationsManagement({ tenantId, settings, setSettings }: {
   const supabase = createClient()
   const [instances, setInstances] = useState<any[]>([])
   const [activeQR, setActiveQR] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
   const [showAddPhone, setShowAddPhone] = useState(false)
   const [newPhone, setNewPhone] = useState("")
 
@@ -237,13 +236,6 @@ function IntegrationsManagement({ tenantId, settings, setSettings }: {
     } catch { toast.error("Erreur connexion") }
   }
 
-  async function saveDelivery() {
-    setSaving(true)
-    try {
-      await supabase.from("tenants").update({ delivery_provider: settings.delivery_provider }).eq("id", tenantId)
-      toast.success("Livraison sauvegardée")
-    } catch { toast.error("Erreur") } finally { setSaving(false) }
-  }
 
   const dot = (s: string) => s === "online" ? "var(--success)" : s === "connecting" ? "var(--warning)" : "var(--destructive)"
   const sec: React.CSSProperties = { padding: 16, borderRadius: 12, border: "1px solid var(--border)", marginBottom: 16 }
@@ -264,18 +256,14 @@ function IntegrationsManagement({ tenantId, settings, setSettings }: {
 
       <div style={sec}>
         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "var(--text)" }}>{t("integrations.delivery")}</div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          {(["maystro", "yalidin"] as const).map(p => (
-            <button key={p} onClick={() => setSettings((s: any) => ({ ...s, delivery_provider: p }))} style={{
-              padding: "7px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600,
-              border: `2px solid ${settings.delivery_provider === p ? "var(--brand)" : "var(--border)"}`,
-              background: settings.delivery_provider === p ? "color-mix(in srgb, var(--brand) 10%, transparent)" : "transparent",
-              color: settings.delivery_provider === p ? "var(--brand)" : "var(--text-muted)"
-            }}>{p === "maystro" ? "Maystro" : "Yalidin"}</button>
-          ))}
-          <button onClick={saveDelivery} disabled={saving} style={{ padding: "8px 14px", borderRadius: 8, background: "var(--brand)", color: "#fff", border: "none", fontSize: 12, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}>
-            {saving ? "..." : <><Save size={14} strokeWidth={2.2} /> {t("settings.save")}</>}
-          </button>
+        {/* Carriers are managed in one place only: the Integrations page (credentials, auto-shipping, default carrier). */}
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+            {settings.delivery_provider ? `Actuel : ${settings.delivery_provider}` : "Aucun transporteur"}
+          </span>
+          <a href="/integrations" style={{ padding: "8px 14px", borderRadius: 8, background: "var(--brand)", color: "#fff", fontSize: 12, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
+            Gérer les transporteurs
+          </a>
         </div>
       </div>
 

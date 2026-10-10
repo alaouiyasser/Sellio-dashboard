@@ -17,9 +17,28 @@ async function req(path: string, init?: RequestInit) {
 export interface IntegrationField {
   key: string
   label: string
-  type: 'text' | 'password' | 'url'
+  type: 'text' | 'password' | 'url' | 'select'
   required: boolean
   secret: boolean
+  placeholder?: string
+  help?: string
+  options?: { value: string; label: string }[]
+  default?: string
+}
+
+/** Initial form values: field defaults, then the saved non-secret config. Secrets stay blank. */
+export function initialFormValues(item: IntegrationItem): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const f of item.fields) {
+    const saved = f.secret ? undefined : item.connection?.config?.[f.key]
+    out[f.key] = saved ?? f.default ?? (f.type === 'select' ? f.options?.[0]?.value ?? '' : '')
+  }
+  return out
+}
+
+/** Required fields still empty (a saved secret may stay blank when editing). */
+export function missingFields(item: IntegrationItem, form: Record<string, string>): IntegrationField[] {
+  return item.fields.filter((f) => f.required && !form[f.key]?.trim() && !(f.secret && item.connection))
 }
 export interface IntegrationConnection {
   status: 'connected' | 'error' | 'disabled'

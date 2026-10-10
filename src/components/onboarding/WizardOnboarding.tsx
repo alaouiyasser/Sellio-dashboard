@@ -2,7 +2,8 @@
 import { authFetch } from '@/lib/api-fetch'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
-import { fetchIntegrations, type IntegrationItem } from '@/lib/integrations-api'
+import { fetchIntegrations, connectIntegration, updateIntegration, initialFormValues, missingFields, type IntegrationItem } from '@/lib/integrations-api'
+import IntegrationFields from '@/components/integrations/IntegrationFields'
 import { toast } from 'sonner'
 import {
   ShoppingBag, ShoppingCart, Store, KeyRound, Truck, Package, Rocket,
@@ -60,7 +61,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
   const [accessToken, setAccessToken] = useState('')
 
   const [deliveryProvider, setDeliveryProvider] = useState<string | null>(null)
-  const [agencyId, setAgencyId] = useState('')
+  const [carrierForm, setCarrierForm] = useState<Record<string, string>>({})
   const [carriers, setCarriers] = useState<IntegrationItem[]>([])
   useEffect(() => {
     fetchIntegrations(tenantId)
@@ -151,8 +152,19 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
 
   async function handleSaveDelivery() {
     if (!deliveryProvider) return
+    const carrier = carriers.find((c) => c.slug === deliveryProvider)
+    if (carrier) {
+      const missing = missingFields(carrier, carrierForm)
+      if (missing.length) { toast.error(`Champs requis : ${missing.map((f) => f.label).join(', ')}`); return }
+    }
     setLoading(true)
     try {
+      // The carrier is connected in the Integrations hub (single source of truth):
+      // credentials are checked by the API and orders can be shipped automatically.
+      if (carrier) {
+        await connectIntegration(tenantId, carrier.slug, carrier.method === 'api' ? carrierForm : {})
+        await updateIntegration(tenantId, carrier.slug, { isDefault: true }).catch(() => {})
+      }
       const supabase = createClient()
       await supabase.from('tenants').update({ delivery_provider: deliveryProvider }).eq('id', tenantId)
       toast.success('Livraison configuree')
@@ -338,7 +350,12 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>Choisissez votre partenaire de livraison</p>
           <select
             value={deliveryProvider ?? ''}
-            onChange={(e) => setDeliveryProvider(e.target.value || null)}
+            onChange={(e) => {
+              const slug = e.target.value || null
+              setDeliveryProvider(slug)
+              const c = carriers.find((x) => x.slug === slug)
+              setCarrierForm(c ? initialFormValues(c) : {})
+            }}
             style={{ ...input, cursor: 'pointer' }}
           >
             <option value="">— Choisir un transporteur —</option>
@@ -353,19 +370,22 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
               ))}
             </optgroup>
           </select>
-          {deliveryProvider && carriers.find((c) => c.slug === deliveryProvider)?.method !== 'api' && deliveryProvider !== 'maystro' && deliveryProvider !== 'yalidin' && (
+          {deliveryProvider && carriers.find((c) => c.slug === deliveryProvider)?.method !== 'api' && (
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, fontSize: 12, color: 'var(--text-muted)', padding: '10px 12px', borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)', marginBottom: 12 }}>
               <Info size={14} strokeWidth={2.2} style={{ flexShrink: 0, marginTop: 1 }} />
               <span>Vous exporterez vos commandes en Excel, votre transporteur remplira les statuts, puis vous importerez le fichier. Ideal pour les transporteurs marocains sans API.</span>
             </div>
           )}
 
-          {deliveryProvider === 'yalidin' && (
-            <>
-              <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Agency ID</label>
-              <input value={agencyId} onChange={e => setAgencyId(e.target.value)} placeholder='ID agence Yalidin' style={input} />
-            </>
-          )}
+          {(() => {
+            const c = carriers.find((x) => x.slug === deliveryProvider)
+            if (!c || c.method !== 'api' || c.fields.length === 0) return null
+            return (
+              <div style={{ marginBottom: 12 }}>
+                <IntegrationFields item={c} form={carrierForm} onChange={(k, v) => setCarrierForm((f) => ({ ...f, [k]: v }))} />
+              </div>
+            )
+          })()}
 
           <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
             <button onClick={() => setStep(3)} style={backBtn}><ArrowLeft size={15} /> Retour</button>
