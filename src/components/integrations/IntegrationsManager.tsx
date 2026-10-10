@@ -5,9 +5,10 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import {
   fetchIntegrations, connectIntegration, disconnectIntegration, updateIntegration,
-  deleteWaInstance, toggleWaInstance,
+  deleteWaInstance, toggleWaInstance, initialFormValues, missingFields,
   type IntegrationItem,
 } from '@/lib/integrations-api'
+import IntegrationFields from './IntegrationFields'
 import { toast } from 'sonner'
 import { Plus, Check, X, Settings2, Power, Loader2, MessageCircle } from 'lucide-react'
 
@@ -72,12 +73,12 @@ export default function IntegrationsManager() {
     items.filter((i) => i.category === cat && !i.connection && i.status !== 'coming_soon')
 
   async function openConnect(item: IntegrationItem) {
-    setModal(item); setForm({}); setAddCat(null)
+    setModal(item); setForm(initialFormValues(item)); setAddCat(null)
   }
   async function submitConnect() {
     if (!tid || !modal) return
-    const missing = modal.fields.filter((f) => f.required && !form[f.key]?.trim())
-    if (missing.length) { toast.error('Champs requis manquants'); return }
+    const missing = missingFields(modal, form)
+    if (missing.length) { toast.error(`Champs requis : ${missing.map((f) => f.label).join(', ')}`); return }
     setBusy(modal.slug)
     try {
       await connectIntegration(tid, modal.slug, form)
@@ -303,25 +304,10 @@ export default function IntegrationsManager() {
         <div onClick={() => !busy && setModal(null)} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.5)', display: 'grid', placeItems: 'center', padding: 16 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 22 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Connecter {modal.name}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{modal.connection ? 'Modifier' : 'Connecter'} {modal.name}</div>
               <button onClick={() => !busy && setModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {modal.fields.map((f) => (
-                <div key={f.key}>
-                  <label style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text)', display: 'block', marginBottom: 5 }}>
-                    {f.label} {f.required && <span style={{ color: 'var(--destructive)' }}>*</span>}
-                  </label>
-                  <input
-                    type={f.type === 'password' ? 'password' : f.type === 'url' ? 'url' : 'text'}
-                    value={form[f.key] ?? ''}
-                    onChange={(e) => setForm((s) => ({ ...s, [f.key]: e.target.value }))}
-                    autoComplete="off"
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 9, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13.5, outline: 'none', boxSizing: 'border-box' }}
-                  />
-                </div>
-              ))}
-            </div>
+            <IntegrationFields item={modal} form={form} onChange={(k, v) => setForm((s) => ({ ...s, [k]: v }))} />
             <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
               <button onClick={() => setModal(null)} disabled={!!busy} style={{ ...smallBtn, flex: 1, justifyContent: 'center', padding: 10 }}>Annuler</button>
               <button onClick={submitConnect} disabled={!!busy} style={{ ...addBtn, flex: 2, justifyContent: 'center', padding: 10 }}>
