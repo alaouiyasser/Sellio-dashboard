@@ -25,6 +25,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   delivered: { label: 'Livrée',      color: 'var(--brand)',       bg: 'color-mix(in srgb, var(--brand) 15%, transparent)' },
   returned:  { label: 'Retournée',   color: 'var(--chart-2)',     bg: 'color-mix(in srgb, var(--chart-2) 15%, transparent)' },
   needs_merchant_confirm: { label: 'À confirmer', color: 'var(--warning)', bg: 'color-mix(in srgb, var(--warning) 15%, transparent)' },
+  // Customer said yes; Sellio is confirming the exact city/address with them on WhatsApp.
+  awaiting_shipping_info: { label: 'Adresse en vérification', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)' },
 }
 
 function deliveryStatusToStep(ds: string | null): number {
