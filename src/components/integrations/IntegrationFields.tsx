@@ -37,7 +37,12 @@ export default function IntegrationFields({ item, form, onChange }: {
                 value={form[f.key] ?? ''}
                 onChange={(e) => onChange(f.key, e.target.value)}
                 placeholder={keepSecret ? '•••••• (laisser vide pour garder la clé actuelle)' : f.placeholder}
-                autoComplete="off"
+                // Chrome ignores "off" on password fields and autofills the Sellio
+                // login password into API-key fields → the carrier rejects the key.
+                autoComplete={f.type === 'password' ? 'new-password' : 'off'}
+                name={`integration-${item.slug}-${f.key}`}
+                data-1p-ignore
+                data-lpignore="true"
                 style={inputStyle}
               />
             )}
