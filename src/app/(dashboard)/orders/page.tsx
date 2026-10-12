@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { shipFailed } from '@/lib/shipping-api'
 import { createClient } from '@/lib/supabase'
 import Topbar from '@/components/layout/Topbar'
 import { useLang } from '@/components/layout/LanguageProvider'
@@ -105,6 +106,33 @@ export default function OrdersPage() {
             ))}
           </div>
         </div>
+
+        {(() => {
+          const notShipped = orders.filter(o => shipFailed(o))
+          if (notShipped.length === 0) return null
+          return (
+            <div style={{ marginBottom: 20, background: 'color-mix(in srgb, var(--destructive) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--destructive) 30%, transparent)', borderRadius: 14, padding: 18 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--destructive)', marginBottom: 6 }}>
+                ⚠️ {notShipped.length} {notShipped.length === 1 ? 'commande confirmée non envoyée au transporteur' : 'commandes confirmées non envoyées au transporteur'}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+                L'envoi automatique a échoué (ville, numéro…). Ouvrez la commande, corrigez puis « Renvoyer ».
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {notShipped.map(o => (
+                  <div key={o.id} onClick={() => window.location.href = `/orders/${o.id}`}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--card)', borderRadius: 10, cursor: 'pointer', border: '1px solid var(--border)' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--brand)' }}>#{o.external_id ?? o.id?.slice(0, 8)}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 10 }}>{String(o.delivery_status).replace(/^Erreur envoi\s*/, '')}</span>
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--destructive)', whiteSpace: 'nowrap' }}>Ouvrir →</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
 
         {(() => {
           const needsConfirm = orders.filter(o => o.status === 'needs_merchant_confirm')
