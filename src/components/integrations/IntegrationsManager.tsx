@@ -352,16 +352,22 @@ function ConnectedSection({ title, connected, available, single, onAdd, showAdd,
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {connected.map((item) => {
           const disabled = item.connection?.status === 'disabled'
+          const failing = item.connection?.status === 'error'
           return (
-            <div key={item.slug} style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', opacity: disabled ? 0.6 : 1 }}>
+            <div key={item.slug} style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', opacity: disabled ? 0.6 : 1, ...(failing && { borderColor: 'var(--destructive)' }) }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 38, height: 38, borderRadius: 9, background: 'var(--bg)', display: 'grid', placeItems: 'center', fontWeight: 800, color: 'var(--brand)', fontSize: 16 }}>{item.name[0]}</div>
                 <div>
                   <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>{item.name}</div>
-                  <div style={{ fontSize: 12, color: disabled ? 'var(--text-muted)' : '#16a34a', marginTop: 1 }}>
-                    {disabled ? 'Désactivé' : item.method === 'api' ? 'Connecté · API' : 'Connecté · Manuel'}
+                  <div style={{ fontSize: 12, color: disabled ? 'var(--text-muted)' : failing ? 'var(--destructive)' : '#16a34a', marginTop: 1 }}>
+                    {disabled ? 'Désactivé' : failing ? 'Erreur de connexion' : item.method === 'api' ? 'Connecté · API' : 'Connecté · Manuel'}
                     {item.connection?.isDefault && ' · Par défaut'}
                   </div>
+                  {failing && (
+                    <div style={{ fontSize: 12, color: 'var(--destructive)', marginTop: 3, maxWidth: 420 }}>
+                      ⚠️ {item.connection?.lastError || 'Clé refusée par le transporteur'} — cliquez sur « Modifier » pour mettre à jour la clé.
+                    </div>
+                  )}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
