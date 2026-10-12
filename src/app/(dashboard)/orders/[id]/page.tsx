@@ -7,6 +7,8 @@ import Topbar from '@/components/layout/Topbar'
 import { useParams, useRouter } from 'next/navigation'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { API_BASE } from '@/lib/auth-client'
+import ShipPanel from '@/components/orders/ShipPanel'
+import { shipFailed, SHIPPABLE_STATUSES, carrierName } from '@/lib/shipping-api'
 import {
   ArrowLeft, User, Phone, Package, PackageCheck, Truck, Store, ShoppingBag,
   ExternalLink, Route, Inbox, MessageCircle, CheckCircle2, Bike, Warehouse,
@@ -94,6 +96,7 @@ export default function OrderDetailPage() {
   const [order,   setOrder]   = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [tenantId, setTenantId] = useState<string | null>(null)
 
   async function deliveryAction(action: 'delivered' | 'returned' | 'refused' | 'in_delivery') {
     const labels: Record<string, string> = { delivered: 'Livré', returned: 'Retourné', refused: 'Refusé', in_delivery: 'Pris par le courrier' }
@@ -123,6 +126,7 @@ export default function OrderDetailPage() {
   async function fetchOrder() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
+    setTenantId(user.id)
     const { data: o } = await supabase
       .from('orders').select('*')
       .eq('id', id).eq('tenant_id', user.id).single()
@@ -185,12 +189,22 @@ export default function OrderDetailPage() {
                 )}
                 {order.delivery_provider && (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 5, fontSize: 11, fontWeight: 600, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                    <Truck size={12} strokeWidth={2.2} /> {order.delivery_provider}
+                    <Truck size={12} strokeWidth={2.2} /> {carrierName(order.delivery_provider)}
                   </span>
                 )}
-                {order.delivery_status && (
+                {order.delivery_tracking_code && (
+                  <span title="Numéro de suivi" style={{ padding: '3px 10px', borderRadius: 5, fontSize: 11, fontWeight: 700, fontFamily: 'ui-monospace, monospace', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                    {order.delivery_tracking_code}
+                  </span>
+                )}
+                {order.delivery_status && !shipFailed(order) && (
                   <span style={{ padding: '3px 10px', borderRadius: 5, fontSize: 11, fontWeight: 600, background: 'color-mix(in srgb, var(--brand) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--brand) 30%, transparent)', color: OLIVE }}>
                     {order.delivery_status}
+                  </span>
+                )}
+                {shipFailed(order) && (
+                  <span style={{ padding: '3px 10px', borderRadius: 5, fontSize: 11, fontWeight: 700, background: 'color-mix(in srgb, var(--destructive) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--destructive) 30%, transparent)', color: 'var(--destructive)' }}>
+                    ⚠ Non envoyée au transporteur
                   </span>
                 )}
               </div>
@@ -261,6 +275,10 @@ export default function OrderDetailPage() {
           </div>
 
           <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: '24px 20px', position: 'sticky', top: 0 }}>
+            {tenantId && SHIPPABLE_STATUSES.includes(order.status) && !order.delivery_tracking_code && (
+              <ShipPanel tenantId={tenantId} order={order} onShipped={fetchOrder} />
+            )}
+
             {order.delivery_conflict && (
               <div style={{ marginBottom: 20, padding: 14, borderRadius: 12, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)' }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--destructive)', marginBottom: 4 }}>🚩 Conflit détecté</div>
