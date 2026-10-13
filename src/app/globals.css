@@ -292,3 +292,21 @@
   .msg-date { width: 100% !important; margin-top: 4px; }
   .msg-content { white-space: normal !important; overflow: visible !important; }
 }
+
+/* ── Founder console (/admin) ─────────────────── */
+@keyframes admin-pulse { 0%,100% { opacity: 1 } 50% { opacity: .55 } }
+.admin-skel { animation: admin-pulse 1.4s ease-in-out infinite; background: color-mix(in srgb, var(--border) 45%, var(--card)) !important; }
+.admin-grid-4 { display: grid; gap: 14px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.admin-grid-3 { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.admin-grid-2 { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.admin-grid-main { display: grid; gap: 14px; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.admin-row:hover td { background: color-mix(in srgb, var(--brand) 4%, transparent); }
+.admin-nav-item:hover { background: color-mix(in srgb, var(--text-muted) 9%, transparent); }
+@media (max-width: 1100px) {
+  .admin-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-grid-3, .admin-grid-main { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .admin-grid-2 { grid-template-columns: minmax(0, 1fr); }
+  .admin-page { padding: 16px !important; }
+}

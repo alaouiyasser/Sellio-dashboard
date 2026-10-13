@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { API_BASE } from '@/lib/auth-client'
+import { adminApi } from '@/lib/admin-api'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useLang } from './LanguageProvider'
 import { useTheme } from './ThemeProvider'
 import {
-  LayoutGrid, Package, Wallet, BarChart3, MessageSquare, Bot, Plug, Settings, LogOut, X,
+  LayoutGrid, Package, Wallet, BarChart3, MessageSquare, Bot, Plug, Settings, LogOut, X, ShieldCheck,
 } from 'lucide-react'
 
 const OLIVE = 'var(--brand)'
@@ -37,6 +38,20 @@ export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
   const [credits, setCredits]   = useState<number | null>(null)
   const [company, setCompany]   = useState('')
   const [isMobile, setIsMobile] = useState(false)
+  const [founder, setFounder]   = useState(false)
+
+  // Founder console entry: shown only when the API says so (403 for merchants). Cached per tab.
+  useEffect(() => {
+    let cached: string | null = null
+    try { cached = sessionStorage.getItem('sellio_founder') } catch {}
+    if (cached !== null) { setFounder(cached === '1'); return }
+    adminApi.me()
+      .then(() => { setFounder(true); try { sessionStorage.setItem('sellio_founder', '1') } catch {} })
+      .catch((e) => {
+        // Only a clear "no" (401/403) is remembered; a network blip retries on the next page.
+        if (e?.status === 401 || e?.status === 403) try { sessionStorage.setItem('sellio_founder', '0') } catch {}
+      })
+  }, [])
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768)
@@ -82,6 +97,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         credentials: 'include',
       })
     } catch { /* best-effort: kammel logout local hta ila l API tfchel */ }
+    try { sessionStorage.removeItem('sellio_founder') } catch {}
     await supabase.auth.signOut()
     router.push('/login')
   }
@@ -172,6 +188,16 @@ export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
               </div>
             )
           })}
+          {founder && (
+            <div onClick={() => navigate('/admin')} style={{
+              display: 'flex', alignItems: 'center', gap: 11, marginTop: 10,
+              padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+              border: '1px dashed color-mix(in srgb, var(--brand) 35%, var(--border))',
+            }}>
+              <ShieldCheck size={18} strokeWidth={2} color="var(--brand)" style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--brand)', whiteSpace: 'nowrap' }}>Console fondateur</span>
+            </div>
+          )}
         </nav>
 
         {/* Credits */}
