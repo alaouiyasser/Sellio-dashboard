@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase'
 import { fetchIntegrations, connectIntegration, updateIntegration, initialFormValues, missingFields, type IntegrationItem } from '@/lib/integrations-api'
 import IntegrationFields from '@/components/integrations/IntegrationFields'
 import { toast } from 'sonner'
+import { fetchWaMode, type WaMode } from '@/lib/whatsapp-mode'
+import OfficialNumberCard from '@/components/OfficialNumberCard'
 import {
   ShoppingBag, ShoppingCart, Store, KeyRound, Truck, Package, Rocket,
   Phone, Smartphone, QrCode, Upload, Copy, Info, Check, X, ArrowLeft, ArrowRight,
@@ -75,6 +77,16 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
   const [ownerPhone, setOwnerPhone] = useState('')
 
   const [qrCode, setQrCode] = useState<string | null>(null)
+  const [waMode, setWaMode] = useState<WaMode | null>(null)
+  useEffect(() => { fetchWaMode().then(setWaMode) }, [])
+
+  async function finishCloud() {
+    setLoading(true)
+    try {
+      if (ownerPhone) await createClient().from('tenants').update({ owner_phone: ownerPhone }).eq('id', tenantId)
+      await finishOnboarding()
+    } finally { setLoading(false) }
+  }
   const [loading, setLoading] = useState(false)
 
   const SOURCES = [
@@ -411,7 +423,21 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
         </div>
       )}
 
-      {step === 6 && (
+      {step === 6 && waMode?.provider === 'cloud' && (
+        <div>
+          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>ETAPE 6 / {TOTAL}</div>
+          <h2 style={h2}><Smartphone size={20} strokeWidth={2.2} color="var(--brand)" /> WhatsApp</h2>
+          <div style={{ margin: '12px 0 20px' }}><OfficialNumberCard displayNumber={waMode.displayNumber} /></div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button onClick={() => setStep(5)} style={backBtn}><ArrowLeft size={15} /> Retour</button>
+            <button onClick={finishCloud} disabled={loading} style={nextBtn(!loading)}>
+              {loading ? 'Finalisation...' : <>Terminer <Check size={15} /></>}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 6 && waMode?.provider !== 'cloud' && (
         <div>
           <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>ETAPE 6 / {TOTAL}</div>
           <h2 style={h2}><Smartphone size={20} strokeWidth={2.2} color="var(--brand)" /> Connexion WhatsApp</h2>
