@@ -1,11 +1,12 @@
 'use client'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, ArrowUpDown, ArrowDown, ArrowUp, Store, Rocket, AlertTriangle, CircleCheck, Users } from 'lucide-react'
+import { Search, ArrowUpDown, ArrowDown, ArrowUp, Store, Rocket, AlertTriangle, CircleCheck, Users, Compass } from 'lucide-react'
 import { adminApi, type MerchantLine } from '@/lib/admin-api'
 import {
   Card, Kpi, Bar, Badge, PeriodPicker, PageHead, Skeleton, ErrorBox, mad, int, pct, ago, dateFr, th, td, inputStyle, FLAG_META,
 } from '@/components/admin/ui'
+import { SOURCE_LABEL, NICHE_LABEL, VOLUME_LABEL, nicheKey, cityKey } from '@/lib/merchant-profile'
 
 type Filter = 'all' | 'alerts' | 'onboarding' | 'active'
 type SortKey = 'name' | 'progress' | 'received' | 'deliveryRate' | 'revenue' | 'msgCostMad' | 'margin' | 'balance' | 'lastOrderAt'
@@ -22,6 +23,50 @@ const sortVal = (m: MerchantLine, k: SortKey): number | string => {
     case 'lastOrderAt': return m.lastOrderAt ? Date.parse(m.lastOrderAt) : 0
     default: return m[k]
   }
+}
+
+type Profile = NonNullable<MerchantLine['profile']>
+const DIMENSIONS: { title: string; pick: (p: Profile | undefined) => string | null; label: (k: string) => string; top?: number }[] = [
+  { title: 'Nous ont connus par', pick: (p) => p?.source ?? null, label: (k) => SOURCE_LABEL[k] ?? k },
+  { title: 'Type de produit', pick: (p) => nicheKey(p?.niche), label: (k) => NICHE_LABEL[k] ?? k },
+  { title: 'Ville', pick: (p) => cityKey(p?.city), label: (k) => k, top: 6 },
+  { title: 'Commandes / mois', pick: (p) => p?.volume ?? null, label: (k) => VOLUME_LABEL[k] ?? k },
+]
+
+/** One column of the profile card: answers ranked by number of merchants. */
+function Breakdown({ rows, dim }: { rows: MerchantLine[]; dim: (typeof DIMENSIONS)[number] }) {
+  const counts = new Map<string, number>()
+  let missing = 0
+  for (const m of rows) {
+    const k = dim.pick(m.profile)
+    if (k) counts.set(k, (counts.get(k) ?? 0) + 1); else missing++
+  }
+  const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1])
+  const shown = ranked.slice(0, dim.top ?? ranked.length)
+  const others = ranked.slice(shown.length).reduce((s, [, n]) => s + n, 0)
+  const max = Math.max(1, ...ranked.map(([, n]) => n))
+  return (
+    <div style={{ minWidth: 0 }}>
+      <h3 style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--text-muted)', margin: '0 0 12px' }}>{dim.title}</h3>
+      {shown.length === 0 && <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: 0 }}>Pas encore de réponse.</p>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {shown.map(([k, n]) => (
+          <div key={k}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 13, marginBottom: 4 }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{dim.label(k)}</span>
+              <b style={{ fontVariantNumeric: 'tabular-nums' }}>{n}</b>
+            </div>
+            <Bar value={(n / max) * 100} />
+          </div>
+        ))}
+      </div>
+      {(others > 0 || missing > 0) && (
+        <p style={{ fontSize: 11.5, color: 'var(--text-muted)', margin: '10px 0 0' }}>
+          {[others > 0 && `${others} autres`, missing > 0 && `${missing} sans réponse`].filter(Boolean).join(', ')}
+        </p>
+      )}
+    </div>
+  )
 }
 
 export default function AdminMerchantsPage() {
@@ -97,6 +142,14 @@ export default function AdminMerchantsPage() {
         </div>
       ) : !error && <div className="admin-grid-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} h={118} />)}</div>}
 
+      {rows && rows.length > 0 && (
+        <Card title="Profil des marchands" icon={Compass} hint="Réponses données à l'étape 1 de l'onboarding (tous les comptes, pas seulement la période).">
+          <div className="admin-grid-4" style={{ gap: 24 }}>
+            {DIMENSIONS.map((d) => <Breakdown key={d.title} rows={rows} dim={d} />)}
+          </div>
+        </Card>
+      )}
+
       <Card pad={false}>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottom: '1px solid var(--border)' }}>
           <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 340 }}>
@@ -149,7 +202,9 @@ export default function AdminMerchantsPage() {
                   <tr key={m.id} className="admin-row" style={{ cursor: 'pointer' }} onClick={() => router.push(`/admin/merchants/${m.id}`)}>
                     <td style={{ ...td, maxWidth: 220 }}>
                       <div style={{ fontWeight: 650, overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>Inscrit le {dateFr(m.createdAt)}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                        {[cityKey(m.profile?.city), NICHE_LABEL[nicheKey(m.profile?.niche) ?? '']].filter(Boolean).join(', ') || `Inscrit le ${dateFr(m.createdAt)}`}
+                      </div>
                     </td>
                     <td style={{ ...td, minWidth: 170 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

@@ -8,8 +8,6 @@ import { apiPost, inputCls, primaryBtn } from '@/lib/auth-client'
 import { AuthShell } from '@/components/auth/AuthShell'
 import { PasswordField } from '@/components/auth/PasswordField'
 
-const SECTORS = ['Beaute & Cosmetique', 'Mode & Vetements', 'Electronique', 'Complements alimentaires', 'Maison & Deco', 'Alimentaire', 'Autre']
-
 export default function SignupPage() {
   const supabase = createClient()
   const [step, setStep] = useState<'form' | 'otp'>('form')
@@ -18,8 +16,6 @@ export default function SignupPage() {
 
   const [name, setName] = useState('')
   const [store, setStore] = useState('')
-  const [city, setCity] = useState('')
-  const [sector, setSector] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
@@ -35,8 +31,6 @@ export default function SignupPage() {
   function validForm(): string | null {
     if (!name.trim()) return 'Entrez votre nom et prenom'
     if (store.trim().length < 2) return 'Nom de boutique requis'
-    if (!city.trim()) return 'Entrez votre ville'
-    if (!sector) return 'Choisissez votre secteur'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Email invalide'
     if (!phone.trim()) return 'Entrez votre numero'
     if (password.length < 6) return 'Mot de passe min. 6 caracteres'
@@ -87,11 +81,8 @@ export default function SignupPage() {
       await supabase.auth.updateUser({ password })
       const { data: u } = await supabase.auth.getUser()
       if (u.user) {
-        await supabase.from('tenants').update({
-          owner_name: name.trim(),
-          city: city.trim() || null,
-          niche: sector || null,
-        }).eq('id', u.user.id)
+        // City, niche, source and volume are asked once, in onboarding step 1.
+        await supabase.from('tenants').update({ owner_name: name.trim() }).eq('id', u.user.id)
       }
 
       toast.success('Compte cree')
@@ -112,11 +103,6 @@ export default function SignupPage() {
         <div className="flex flex-col gap-3">
           <input autoComplete="name" placeholder="Nom et prenom" value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
           <input autoComplete="organization" placeholder="Nom de la boutique" value={store} onChange={(e) => setStore(e.target.value)} className={inputCls} />
-          <input autoComplete="address-level2" placeholder="Ville" value={city} onChange={(e) => setCity(e.target.value)} className={inputCls} />
-          <select value={sector} onChange={(e) => setSector(e.target.value)} className={inputCls}>
-            <option value="">Secteur d'activite</option>
-            {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
           <input type="email" autoComplete="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
           <input type="tel" autoComplete="tel" placeholder="Telephone (06 ...)" value={phone} onChange={(e) => setPhone(e.target.value)} className={inputCls} />
           <PasswordField value={password} onChange={setPassword} placeholder="Mot de passe (min. 6)" autoComplete="new-password" />

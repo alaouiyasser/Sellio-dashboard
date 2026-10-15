@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase'
 import { fetchIntegrations, connectIntegration, updateIntegration, initialFormValues, missingFields, type IntegrationItem } from '@/lib/integrations-api'
 import IntegrationFields from '@/components/integrations/IntegrationFields'
 import { toast } from 'sonner'
+import { NICHE_LABEL, SOURCE_LABEL, VOLUME_LABEL } from '@/lib/merchant-profile'
 import { fetchWaMode, type WaMode } from '@/lib/whatsapp-mode'
 import OfficialNumberCard from '@/components/OfficialNumberCard'
 import {
@@ -89,29 +90,9 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
   }
   const [loading, setLoading] = useState(false)
 
-  const SOURCES = [
-    { v: 'instagram', label: 'Instagram' },
-    { v: 'facebook',  label: 'Facebook' },
-    { v: 'tiktok',    label: 'TikTok' },
-    { v: 'ai',        label: 'IA (ChatGPT, Claude)' },
-    { v: 'google',    label: 'Google' },
-    { v: 'referral',  label: 'Recommandation' },
-    { v: 'youtube',   label: 'YouTube' },
-    { v: 'other',     label: 'Autre' },
-  ]
-  const NICHES = [
-    { v: 'cosmetique',   label: 'Cosmétique' },
-    { v: 'mode',         label: 'Mode' },
-    { v: 'electronique', label: 'Électronique' },
-    { v: 'complements',  label: 'Compléments' },
-    { v: 'autre',        label: 'Autre' },
-  ]
-  const VOLUMES = [
-    { v: '<50',     label: '< 50' },
-    { v: '50-200',  label: '50-200' },
-    { v: '200-500', label: '200-500' },
-    { v: '500+',    label: '500+' },
-  ]
+  const SOURCES = Object.entries(SOURCE_LABEL).map(([v, label]) => ({ v, label }))
+  const NICHES = Object.entries(NICHE_LABEL).map(([v, label]) => ({ v, label }))
+  const VOLUMES = Object.entries(VOLUME_LABEL).map(([v, label]) => ({ v, label }))
 
   const AGES = [
     { v: 'new',         label: 'Nouveau (< 1 semaine)',  limit: 30  },

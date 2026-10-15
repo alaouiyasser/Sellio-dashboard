@@ -46,6 +46,7 @@ export interface MerchantLine {
   steps: Step[]; progress: number; funnel: Funnel
   revenue: number; cashIn: number; msgCostMad: number; messages: number; margin: number
   msgPerOrder: number | null; costPerDelivered: number | null; lastOrderAt: string | null; flags: string[]
+  profile?: { ownerName: string | null; city: string | null; niche: string | null; source: string | null; volume: string | null }
 }
 export interface MerchantDetail {
   period: { days: number; from: string; to: string }
