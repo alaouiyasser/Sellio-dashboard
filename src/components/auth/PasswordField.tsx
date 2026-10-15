@@ -5,17 +5,18 @@ import { Eye, EyeOff } from 'lucide-react'
 import { inputCls } from '@/lib/auth-client'
 
 export function PasswordField({
-  value, onChange, placeholder, onEnter,
+  value, onChange, placeholder, onEnter, autoComplete,
 }: {
   value: string
   onChange: (v: string) => void
   placeholder: string
   onEnter?: () => void
+  autoComplete?: string
 }) {
   const [show, setShow] = useState(false)
   return (
     <div className="relative">
-      <input type={show ? 'text' : 'password'} value={value} placeholder={placeholder}
+      <input type={show ? 'text' : 'password'} value={value} placeholder={placeholder} autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter' && onEnter) onEnter() }}
         className={`${inputCls} pr-10`} />

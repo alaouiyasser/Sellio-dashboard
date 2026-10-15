@@ -54,7 +54,7 @@ export default function SignupPage() {
         if (data.error === 'invalid_phone') toast.error('Numero invalide')
         else if (data.error === 'rate_limited' || data.error === 'cooldown') {
           toast.error(`Reessayez dans ${data.retryAfterSeconds ?? 60}s`); setCooldown(data.retryAfterSeconds ?? 60)
-        } else toast.error("Echec d'envoi du code")
+        } else toast.error("Impossible d'envoyer le code WhatsApp pour le moment. Reessayez dans quelques minutes.")
         return
       }
       setStep('otp'); setCooldown(data.cooldownSeconds ?? 60)
@@ -110,17 +110,17 @@ export default function SignupPage() {
     >
       {step === 'form' ? (
         <div className="flex flex-col gap-3">
-          <input placeholder="Nom et prenom" value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
-          <input placeholder="Nom de la boutique" value={store} onChange={(e) => setStore(e.target.value)} className={inputCls} />
-          <input placeholder="Ville" value={city} onChange={(e) => setCity(e.target.value)} className={inputCls} />
+          <input autoComplete="name" placeholder="Nom et prenom" value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
+          <input autoComplete="organization" placeholder="Nom de la boutique" value={store} onChange={(e) => setStore(e.target.value)} className={inputCls} />
+          <input autoComplete="address-level2" placeholder="Ville" value={city} onChange={(e) => setCity(e.target.value)} className={inputCls} />
           <select value={sector} onChange={(e) => setSector(e.target.value)} className={inputCls}>
             <option value="">Secteur d'activite</option>
             {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
-          <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
-          <input type="tel" placeholder="Telephone (06 ...)" value={phone} onChange={(e) => setPhone(e.target.value)} className={inputCls} />
-          <PasswordField value={password} onChange={setPassword} placeholder="Mot de passe (min. 6)" />
-          <PasswordField value={password2} onChange={setPassword2} placeholder="Confirmer le mot de passe" />
+          <input type="email" autoComplete="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
+          <input type="tel" autoComplete="tel" placeholder="Telephone (06 ...)" value={phone} onChange={(e) => setPhone(e.target.value)} className={inputCls} />
+          <PasswordField value={password} onChange={setPassword} placeholder="Mot de passe (min. 6)" autoComplete="new-password" />
+          <PasswordField value={password2} onChange={setPassword2} placeholder="Confirmer le mot de passe" autoComplete="new-password" />
           <button onClick={sendOtp} disabled={loading} className={primaryBtn}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Continuer'}
           </button>

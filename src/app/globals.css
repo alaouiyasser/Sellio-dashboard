@@ -176,6 +176,33 @@
   --success: #22C55E;
   --warning: #FBBF24;
   --destructive: #F87171;
+  color-scheme: dark;
+  /* Auth pages and ui/button use the shadcn tokens: map them to the same dark palette */
+  --background: #0E1014;
+  --foreground: #E6E8EE;
+  --card-foreground: #E6E8EE;
+  --popover: #181B21;
+  --popover-foreground: #E6E8EE;
+  --primary: #4D7CFF;
+  --primary-foreground: #FFFFFF;
+  --secondary: #20242B;
+  --secondary-foreground: #E6E8EE;
+  --muted: #20242B;
+  --muted-foreground: #9AA0AC;
+  --accent: #20242B;
+  --accent-foreground: #E6E8EE;
+  --input: #262B33;
+  --ring: #4D7CFF;
+}
+
+/* Browser autofill keeps the field colours instead of its pale blue fill */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+  box-shadow: 0 0 0 1000px var(--card) inset;
+  transition: background-color 9999s ease-out 0s;
 }
 
 /* GARDDU KOLSHI MN HNA L T7T KIF KAN — media queries + layout */
