@@ -10,7 +10,7 @@ import { fetchWaMode, type WaMode } from '@/lib/whatsapp-mode'
 import OfficialNumberCard from '@/components/OfficialNumberCard'
 import {
   ShoppingBag, ShoppingCart, Store, KeyRound, Truck, Package, Rocket,
-  Phone, Smartphone, QrCode, Upload, Copy, Info, Check, X, ArrowLeft, ArrowRight,
+  Phone, Smartphone, QrCode, Copy, Info, Check, ArrowLeft, ArrowRight,
   Sparkles, MapPin, BarChart3,
 } from 'lucide-react'
 
@@ -57,25 +57,27 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
   const [niche, setNiche] = useState<string | null>(null)
   const [volume, setVolume] = useState<string | null>(null)
 
-  const [logo, setLogo] = useState<string | null>(null)
   const [storeType, setStoreType] = useState<'shopify' | 'youcan' | 'woocommerce' | null>(null)
-  const [storeUrl, setStoreUrl] = useState('')
-  const [webhookSecret, setWebhookSecret] = useState('')
-  const [accessToken, setAccessToken] = useState('')
+  const [storeForm, setStoreForm] = useState<Record<string, string>>({})
 
   const [deliveryProvider, setDeliveryProvider] = useState<string | null>(null)
   const [carrierForm, setCarrierForm] = useState<Record<string, string>>({})
-  const [carriers, setCarriers] = useState<IntegrationItem[]>([])
-  useEffect(() => {
-    fetchIntegrations(tenantId)
-      .then((items) => setCarriers(items.filter((i) => i.category === 'carrier' && i.status !== 'coming_soon')))
-      .catch(() => {})
-  }, [tenantId])
+  // Store and carrier both go through the integrations hub: same fields, same
+  // credential check, and they show up in Intégrations afterwards.
+  const [catalog, setCatalog] = useState<IntegrationItem[]>([])
+  useEffect(() => { fetchIntegrations(tenantId).then(setCatalog).catch(() => {}) }, [tenantId])
+  const carriers = catalog.filter((i) => i.category === 'carrier' && i.status !== 'coming_soon')
+  const storeItem = catalog.find((i) => i.slug === storeType && i.category === 'ecommerce')
 
   const [waPhone, setWaPhone] = useState('')
   const [waAge, setWaAge] = useState<string | null>(null)
   const [waLimit, setWaLimit] = useState(300)
-  const [ownerPhone, setOwnerPhone] = useState('')
+  // Alerts go to the number verified at signup (it is also the login number, so it is not edited here).
+  const [alertPhone, setAlertPhone] = useState<string | null>(null)
+  useEffect(() => {
+    createClient().from('tenants').select('owner_phone').eq('id', tenantId).maybeSingle()
+      .then(({ data }) => setAlertPhone((data as any)?.owner_phone ?? null))
+  }, [tenantId])
 
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [waMode, setWaMode] = useState<WaMode | null>(null)
@@ -84,7 +86,6 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
   async function finishCloud() {
     setLoading(true)
     try {
-      if (ownerPhone) await createClient().from('tenants').update({ owner_phone: ownerPhone }).eq('id', tenantId)
       await finishOnboarding()
     } finally { setLoading(false) }
   }
@@ -117,28 +118,17 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
     } catch (e: any) { toast.error(e.message) } finally { setLoading(false) }
   }
 
-  async function saveCredentials(provider: string, creds: Record<string, string>) {
-    const res = await authFetch(`${API}/api/onboarding/credentials`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenantId, provider, credentials: creds }),
-    })
-    const d = await res.json()
-    if (!d.ok) throw new Error(d.error)
-  }
-
   function validatePhone(phone: string): boolean { return /^\+[1-9]\d{7,14}$/.test(phone.trim()) }
-  function validateStoreUrl(url: string) { return url.includes('.myshopify.com') || url.includes('.youcan.shop') || url.includes('http') }
 
   async function handleSaveStore() {
-    const tokenRequired = storeType !== 'woocommerce'
-    if (!storeType || !storeUrl || !webhookSecret || (tokenRequired && !accessToken)) { toast.error('Champs obligatoires manquants'); return }
-    if (!validateStoreUrl(storeUrl)) { toast.error('URL invalide - ex: ma-boutique.myshopify.com'); return }
-    if (webhookSecret.length < 8) { toast.error('Webhook Secret trop court (min 8 caracteres)'); return }
+    if (!storeType || !storeItem) return
+    const missing = missingFields(storeItem, storeForm)
+    if (missing.length) { toast.error(`Champs requis : ${missing.map((f) => f.label).join(', ')}`); return }
     setLoading(true)
     try {
-      await saveCredentials(storeType, { store_url: storeUrl.trim(), webhook_secret: webhookSecret.trim(), access_token: accessToken.trim() })
-      toast.success('Boutique configuree')
+      // The API opens the store with these credentials before saving them.
+      const r: any = await connectIntegration(tenantId, storeType, storeForm)
+      toast.success(r?.detail ?? 'Boutique connectee')
       setStep(4)
     } catch (e: any) { toast.error(e.message) } finally { setLoading(false) }
   }
@@ -161,7 +151,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
       const supabase = createClient()
       await supabase.from('tenants').update({ delivery_provider: deliveryProvider }).eq('id', tenantId)
       toast.success('Livraison configuree')
-      setStep(5)
+      setStep(6)
     } catch (e: any) { toast.error(e.message) } finally { setLoading(false) }
   }
 
@@ -179,7 +169,6 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
     setLoading(true)
     try {
       const supabase = createClient()
-      if (ownerPhone) await supabase.from('tenants').update({ owner_phone: ownerPhone }).eq('id', tenantId)
       const res = await authFetch(`${API}/api/whatsapp/${tenantId}/instance/create`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone_number: waPhone, daily_limit: waLimit, number_age: waAge }),
@@ -191,7 +180,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
     } catch (e: any) { toast.error(e.message) } finally { setLoading(false) }
   }
 
-  const TOTAL = 6
+  const TOTAL = 5
 
   if (step === 7 && qrCode) return (
     <div style={card}>
@@ -272,7 +261,11 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={() => setStep(1)} style={backBtn}><ArrowLeft size={15} /> Retour</button>
-            <button onClick={() => setStep(3)} disabled={!storeType} style={nextBtn(!!storeType)}>Suivant <ArrowRight size={15} /></button>
+            <button onClick={() => {
+              const item = catalog.find((i) => i.slug === storeType)
+              setStoreForm(item ? initialFormValues(item) : {})
+              setStep(3)
+            }} disabled={!storeType} style={nextBtn(!!storeType)}>Suivant <ArrowRight size={15} /></button>
           </div>
         </div>
       )}
@@ -283,34 +276,9 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
           <h2 style={h2}><KeyRound size={20} strokeWidth={2.2} color="var(--brand)" /> Integration {storeType === 'shopify' ? 'Shopify' : storeType === 'youcan' ? 'YouCan' : 'WooCommerce'}</h2>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>Ces infos permettent a Sellio de recevoir vos commandes</p>
 
-          <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>URL de la boutique</label>
-          <input value={storeUrl} onChange={e => setStoreUrl(e.target.value)} placeholder={storeType === 'shopify' ? 'ma-boutique.myshopify.com' : storeType === 'youcan' ? 'ma-boutique.youcan.shop' : 'https://ma-boutique.com'} style={input} />
-
-          <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Webhook Secret</label>
-          <input value={webhookSecret} onChange={e => setWebhookSecret(e.target.value)} placeholder='Cle secrete webhook' style={input} />
-
-          <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-            Access Token <span style={{ color: 'var(--destructive)', fontSize: 11 }}>* obligatoire</span>
-          </label>
-          <input value={accessToken} onChange={e => setAccessToken(e.target.value)} placeholder={storeType === 'shopify' ? 'shpat_xxxxxxxxxxxx' : storeType === 'youcan' ? 'Token API YouCan' : 'Consumer Secret (optionnel)'} style={input} />
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, fontSize: 11, color: 'var(--text-muted)', padding: '8px 10px', borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)', marginBottom: 12 }}>
-            <Info size={14} strokeWidth={2.2} style={{ flexShrink: 0, marginTop: 1 }} />
-            <span>{storeType === 'shopify' ? 'Shopify Admin - Apps - Develop apps - Create app - Admin API access token' : storeType === 'youcan' ? 'YouCan - Parametres - API - Generer token' : 'WooCommerce - Reglages - Avance - Webhooks (le secret suffit pour recevoir les commandes)'}</span>
-          </div>
-          <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-            Logo de la boutique <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>- optionnel</span>
-          </label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-            {logo && <img src={logo} alt="logo" style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'cover', border: '2px solid var(--brand)' }} />}
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: '1px dashed var(--border)', cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)' }}>
-              <Upload size={14} strokeWidth={2.2} /> Choisir un fichier
-              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
-                const file = e.target.files?.[0]; if (!file) return
-                const reader = new FileReader(); reader.onload = ev => setLogo(ev.target?.result as string); reader.readAsDataURL(file)
-              }} />
-            </label>
-            {logo && <button onClick={() => setLogo(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--destructive)', background: 'none', border: 'none', cursor: 'pointer' }}><X size={13} strokeWidth={2.4} /> Supprimer</button>}
-          </div>
+          {storeItem
+            ? <div style={{ marginBottom: 16 }}><IntegrationFields item={storeItem} form={storeForm} onChange={(k, v) => setStoreForm((f) => ({ ...f, [k]: v }))} /></div>
+            : <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>Chargement…</p>}
 
           <div style={{ padding: 12, borderRadius: 10, background: 'color-mix(in srgb, var(--brand) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--brand) 15%, transparent)', marginBottom: 20, fontSize: 12, color: 'var(--text-muted)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Info size={14} strokeWidth={2.2} /> Webhook URL a configurer dans {storeType === 'shopify' ? 'Shopify' : storeType === 'youcan' ? 'YouCan' : 'WooCommerce'}:</div>
@@ -329,8 +297,8 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
 
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={() => setStep(2)} style={backBtn}><ArrowLeft size={15} /> Retour</button>
-            <button onClick={handleSaveStore} disabled={loading || !storeUrl || !webhookSecret} style={nextBtn(!!storeUrl && !!webhookSecret && !loading)}>
-              {loading ? 'Enregistrement...' : <>Suivant <ArrowRight size={15} /></>}
+            <button onClick={handleSaveStore} disabled={loading || !storeItem} style={nextBtn(!!storeItem && !loading)}>
+              {loading ? 'Verification de la boutique...' : <>Verifier et continuer <ArrowRight size={15} /></>}
             </button>
           </div>
         </div>
@@ -389,28 +357,18 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
         </div>
       )}
 
-      {step === 5 && (
-        <div>
-          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>ETAPE 5 / {TOTAL}</div>
-          <h2 style={h2}><Phone size={20} strokeWidth={2.2} color="var(--brand)" /> Votre numero (vendeur)</h2>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>Vous recevrez les alertes de commandes ici</p>
-          <input value={ownerPhone} onChange={e => setOwnerPhone(e.target.value)} placeholder='+212600000000' style={input} />
-          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-            <button onClick={() => setStep(4)} style={backBtn}><ArrowLeft size={15} /> Retour</button>
-            <button onClick={() => { if (!validatePhone(ownerPhone)) { toast.error('Format invalide - ex: +212600000000'); return } setStep(6) }} disabled={!ownerPhone} style={nextBtn(!!ownerPhone && validatePhone(ownerPhone))}>
-              Suivant <ArrowRight size={15} />
-            </button>
-          </div>
-        </div>
-      )}
-
       {step === 6 && waMode?.provider === 'cloud' && (
         <div>
-          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>ETAPE 6 / {TOTAL}</div>
+          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>ETAPE 5 / {TOTAL}</div>
           <h2 style={h2}><Smartphone size={20} strokeWidth={2.2} color="var(--brand)" /> WhatsApp</h2>
-          <div style={{ margin: '12px 0 20px' }}><OfficialNumberCard displayNumber={waMode.displayNumber} /></div>
+          <div style={{ margin: '12px 0 16px' }}><OfficialNumberCard displayNumber={waMode.displayNumber} /></div>
+          {alertPhone && (
+            <p style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: 'var(--text-muted)', margin: '0 0 20px' }}>
+              <Phone size={14} strokeWidth={2.2} /> Vos alertes de commandes arrivent sur votre numero {alertPhone}.
+            </p>
+          )}
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => setStep(5)} style={backBtn}><ArrowLeft size={15} /> Retour</button>
+            <button onClick={() => setStep(4)} style={backBtn}><ArrowLeft size={15} /> Retour</button>
             <button onClick={finishCloud} disabled={loading} style={nextBtn(!loading)}>
               {loading ? 'Finalisation...' : <>Terminer <Check size={15} /></>}
             </button>
@@ -420,7 +378,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
 
       {step === 6 && waMode?.provider !== 'cloud' && (
         <div>
-          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>ETAPE 6 / {TOTAL}</div>
+          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>ETAPE 5 / {TOTAL}</div>
           <h2 style={h2}><Smartphone size={20} strokeWidth={2.2} color="var(--brand)" /> Connexion WhatsApp</h2>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>Numero WhatsApp dedie a votre boutique</p>
 
@@ -438,7 +396,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
           </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => setStep(5)} style={backBtn}><ArrowLeft size={15} /> Retour</button>
+            <button onClick={() => setStep(4)} style={backBtn}><ArrowLeft size={15} /> Retour</button>
             <button onClick={handleWhatsApp} disabled={loading || !waPhone || !waAge} style={{ ...nextBtn(!!waPhone && !!waAge && !loading), background: waPhone && waAge && !loading ? '#25D366' : 'var(--border)' }}>
               {loading ? 'Connexion...' : <><QrCode size={16} strokeWidth={2.2} /> Scanner QR</>}
             </button>
