@@ -10,6 +10,8 @@ import {
 } from '@/lib/integrations-api'
 import IntegrationFields from './IntegrationFields'
 import { toast } from 'sonner'
+import { fetchWaMode, type WaMode } from '@/lib/whatsapp-mode'
+import OfficialNumberCard from '@/components/OfficialNumberCard'
 import { Plus, Check, X, Settings2, Power, Loader2, MessageCircle } from 'lucide-react'
 
 const card: React.CSSProperties = {
@@ -41,12 +43,14 @@ export default function IntegrationsManager() {
   const [waQr, setWaQr] = useState<string | null>(null)
   const [waBusy, setWaBusy] = useState(false)
   const waPoll = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [waMode, setWaMode] = useState<WaMode | null>(null)
+  useEffect(() => { fetchWaMode().then(setWaMode) }, [])
 
   const load = useCallback(async (tenantId: string) => {
     try {
       const list = await fetchIntegrations(tenantId)
       setItems(list)
-      try {
+      if ((await fetchWaMode()).provider !== 'cloud') try {
         const API = typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:3001'
         // Sync real Evolution state first (webhook-independent), then load
         try { await authFetch(`${API}/api/whatsapp/${tenantId}/instances/sync`, { method: 'POST' }) } catch {}
@@ -217,6 +221,12 @@ export default function IntegrationsManager() {
       />
 
       {/* ─── WHATSAPP ─── */}
+      {waMode?.provider === 'cloud' ? (
+      <section style={{ marginBottom: 32 }}>
+        <h2 style={{ ...sectionTitle, marginBottom: 12 }}>WhatsApp</h2>
+        <OfficialNumberCard displayNumber={waMode.displayNumber} />
+      </section>
+      ) : (
       <section style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <h2 style={sectionTitle}>WhatsApp</h2>
@@ -260,6 +270,7 @@ export default function IntegrationsManager() {
           </div>
         )}
       </section>
+      )}
 
       {/* WhatsApp add-number modal */}
       {waModal && (
