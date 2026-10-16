@@ -60,10 +60,39 @@ export interface IntegrationItem {
   method: 'api' | 'manual' | 'sheets'
   fields: IntegrationField[]
   connection: IntegrationConnection | null
+  /** The store approves Sellio itself: show a button instead of the form. */
+  oneClick?: 'youcan-oauth' | 'wc-auth'
 }
 
 export const fetchIntegrations = (tid: string) =>
   req(`/api/integrations/${tid}`).then((d) => d.integrations as IntegrationItem[])
+
+export type StoreReturnTo = 'onboarding' | 'integrations'
+
+/** YouCan approval page URL (the API also sets the state cookie for the callback). */
+export const startYouCanConnect = (tid: string, returnTo: StoreReturnTo) =>
+  req(`/api/integrations/${tid}/youcan/oauth/start`, { method: 'POST', body: JSON.stringify({ returnTo }) })
+    .then((d) => d.url as string)
+
+/** The store's own WooCommerce "Approve Sellio" page. */
+export const wooAuthorizeUrl = (tid: string, storeUrl: string, returnTo: StoreReturnTo) =>
+  req(`/api/integrations/${tid}/woocommerce/authorize`, { method: 'POST', body: JSON.stringify({ storeUrl, returnTo }) })
+    .then((d) => d.url as string)
+
+/**
+ * Back from YouCan (?store=youcan&status=connected|denied|error&message=…) or
+ * WooCommerce (?store=woocommerce&success=1|0). Reads and clears the params.
+ */
+export function readStoreReturn(): { store: 'youcan' | 'woocommerce'; ok: boolean; message?: string } | null {
+  if (typeof window === 'undefined') return null
+  const q = new URLSearchParams(window.location.search)
+  const store = q.get('store')
+  if (store !== 'youcan' && store !== 'woocommerce') return null
+  const ok = store === 'youcan' ? q.get('status') === 'connected' : q.get('success') === '1'
+  const message = q.get('message') ?? (q.get('status') === 'denied' || q.get('success') === '0' ? 'Connexion annulée' : undefined)
+  window.history.replaceState(null, '', window.location.pathname)
+  return { store, ok, message: message ?? undefined }
+}
 
 export const connectIntegration = (tid: string, slug: string, credentials: Record<string, string>) =>
   req(`/api/integrations/${tid}/${slug}/connect`, { method: 'POST', body: JSON.stringify({ credentials }) })
