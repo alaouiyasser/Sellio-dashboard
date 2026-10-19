@@ -2,8 +2,9 @@
 import { authFetch } from '@/lib/api-fetch'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
-import { fetchIntegrations, connectIntegration, updateIntegration, initialFormValues, missingFields, type IntegrationItem } from '@/lib/integrations-api'
+import { fetchIntegrations, connectIntegration, updateIntegration, initialFormValues, missingFields, readStoreReturn, type IntegrationItem } from '@/lib/integrations-api'
 import IntegrationFields from '@/components/integrations/IntegrationFields'
+import StoreOneClick from '@/components/integrations/StoreOneClick'
 import { toast } from 'sonner'
 import { NICHE_LABEL, SOURCE_LABEL, VOLUME_LABEL } from '@/lib/merchant-profile'
 import { fetchWaMode, type WaMode } from '@/lib/whatsapp-mode'
@@ -68,6 +69,21 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
   useEffect(() => { fetchIntegrations(tenantId).then(setCatalog).catch(() => {}) }, [tenantId])
   const carriers = catalog.filter((i) => i.category === 'carrier' && i.status !== 'coming_soon')
   const storeItem = catalog.find((i) => i.slug === storeType && i.category === 'ecommerce')
+  const [storeManual, setStoreManual] = useState(false)
+
+  // Back from YouCan / WooCommerce approval: resume at the carrier step (or retry the store).
+  useEffect(() => {
+    const r = readStoreReturn()
+    if (!r) return
+    setStoreType(r.store)
+    if (r.ok) {
+      toast.success(r.store === 'youcan' ? 'Boutique YouCan connectee' : 'Boutique WooCommerce autorisee')
+      setStep(4)
+    } else {
+      toast.error(r.message ?? 'Connexion de la boutique echouee')
+      setStep(3)
+    }
+  }, [])
 
   const [waPhone, setWaPhone] = useState('')
   const [waAge, setWaAge] = useState<string | null>(null)
@@ -276,6 +292,15 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
           <h2 style={h2}><KeyRound size={20} strokeWidth={2.2} color="var(--brand)" /> Integration {storeType === 'shopify' ? 'Shopify' : storeType === 'youcan' ? 'YouCan' : 'WooCommerce'}</h2>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>Ces infos permettent a Sellio de recevoir vos commandes</p>
 
+          {storeItem?.oneClick && !storeManual ? (
+            <div style={{ marginBottom: 20 }}>
+              <StoreOneClick item={storeItem} tenantId={tenantId} returnTo="onboarding"
+                onManual={storeItem.oneClick === 'wc-auth' ? () => setStoreManual(true) : undefined} />
+              <div style={{ marginTop: 16 }}>
+                <button onClick={() => setStep(2)} style={{ ...backBtn, width: '100%' }}><ArrowLeft size={15} /> Retour</button>
+              </div>
+            </div>
+          ) : (<>
           {storeItem
             ? <div style={{ marginBottom: 16 }}><IntegrationFields item={storeItem} form={storeForm} onChange={(k, v) => setStoreForm((f) => ({ ...f, [k]: v }))} /></div>
             : <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>Chargement…</p>}
@@ -301,6 +326,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
               {loading ? 'Verification de la boutique...' : <>Verifier et continuer <ArrowRight size={15} /></>}
             </button>
           </div>
+          </>)}
         </div>
       )}
 

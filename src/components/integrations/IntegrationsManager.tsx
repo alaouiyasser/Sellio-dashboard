@@ -5,10 +5,11 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import {
   fetchIntegrations, connectIntegration, disconnectIntegration, updateIntegration,
-  deleteWaInstance, toggleWaInstance, initialFormValues, missingFields,
+  deleteWaInstance, toggleWaInstance, initialFormValues, missingFields, readStoreReturn,
   type IntegrationItem,
 } from '@/lib/integrations-api'
 import IntegrationFields from './IntegrationFields'
+import StoreOneClick from './StoreOneClick'
 import { toast } from 'sonner'
 import { fetchWaMode, type WaMode } from '@/lib/whatsapp-mode'
 import OfficialNumberCard from '@/components/OfficialNumberCard'
@@ -36,6 +37,7 @@ export default function IntegrationsManager() {
   const [addCat, setAddCat] = useState<null | 'ecommerce' | 'carrier'>(null)
   const [modal, setModal] = useState<IntegrationItem | null>(null)
   const [form, setForm] = useState<Record<string, string>>({})
+  const [manual, setManual] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
   const [waInstances, setWaInstances] = useState<Array<{ instance_key: string; phone_number: string; status: string; messages_today?: number; daily_limit?: number }>>([])
   const [waModal, setWaModal] = useState(false)
@@ -77,8 +79,21 @@ export default function IntegrationsManager() {
     items.filter((i) => i.category === cat && !i.connection && i.status !== 'coming_soon')
 
   async function openConnect(item: IntegrationItem) {
-    setModal(item); setForm(initialFormValues(item)); setAddCat(null)
+    setModal(item); setForm(initialFormValues(item)); setAddCat(null); setManual(false)
   }
+
+  // Back from YouCan / WooCommerce approval.
+  useEffect(() => {
+    if (!tid) return
+    const r = readStoreReturn()
+    if (!r) return
+    const name = r.store === 'youcan' ? 'YouCan' : 'WooCommerce'
+    if (!r.ok) { toast.error(`${name} : ${r.message ?? 'connexion échouée'}`); return }
+    toast.success(r.store === 'youcan' ? 'Boutique YouCan connectée' : 'Autorisation reçue, Sellio configure votre boutique…')
+    load(tid)
+    // WooCommerce finishes the webhook in the background: refresh once more.
+    if (r.store === 'woocommerce') setTimeout(() => load(tid), 6000)
+  }, [tid, load])
   async function submitConnect() {
     if (!tid || !modal) return
     const missing = missingFields(modal, form)
@@ -318,6 +333,10 @@ export default function IntegrationsManager() {
               <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{modal.connection ? 'Modifier' : 'Connecter'} {modal.name}</div>
               <button onClick={() => !busy && setModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
             </div>
+            {modal.oneClick && !manual && tid ? (
+              <StoreOneClick item={modal} tenantId={tid} returnTo="integrations"
+                onManual={modal.oneClick === 'wc-auth' ? () => setManual(true) : undefined} />
+            ) : (<>
             <IntegrationFields item={modal} form={form} onChange={(k, v) => setForm((s) => ({ ...s, [k]: v }))} />
             <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
               <button onClick={() => setModal(null)} disabled={!!busy} style={{ ...smallBtn, flex: 1, justifyContent: 'center', padding: 10 }}>Annuler</button>
@@ -325,6 +344,7 @@ export default function IntegrationsManager() {
                 {busy ? <Loader2 size={15} className="animate-spin" /> : <><Check size={15} /> Enregistrer</>}
               </button>
             </div>
+            </>)}
           </div>
         </div>
       )}
