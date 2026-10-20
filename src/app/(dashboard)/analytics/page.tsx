@@ -5,7 +5,7 @@ import Topbar from '@/components/layout/Topbar'
 import { useLang } from '@/components/layout/LanguageProvider'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
-import { Target, XCircle, MapPin, Package } from 'lucide-react'
+import { Target, MapPin, Package } from 'lucide-react'
 
 const OLIVE = 'var(--brand)'
 const COLORS = ['var(--success)', 'var(--destructive)', 'var(--warning)', 'var(--brand)']
@@ -22,7 +22,6 @@ export default function AnalyticsPage() {
   const [cancelled, setCancelled] = useState(0)
   const [pending, setPending] = useState(0)
   const [delivered, setDelivered] = useState(0)
-  const [cancelReasons, setCancelReasons] = useState<any[]>([])
   const [topCities, setTopCities] = useState<any[]>([])
   const [topProducts, setTopProducts] = useState<any[]>([])
   useEffect(() => { fetchData() }, [])
@@ -32,12 +31,11 @@ export default function AnalyticsPage() {
     const { data: orders, error } = await supabase.from('orders').select('*')
     if (error || !orders) { setLoading(false); return }
     let c = 0, x = 0, p = 0, d = 0
-    const reasons: Record<string, number> = {}
     const cities: Record<string, number> = {}
     const products: Record<string, number> = {}
     orders.forEach(o => {
       if (o.status === 'confirmed') c++
-      else if (o.status === 'canceled' || o.status === 'cancelled') { x++; if (o.cancellation_reason) reasons[o.cancellation_reason] = (reasons[o.cancellation_reason] ?? 0) + 1 }
+      else if (o.status === 'canceled' || o.status === 'cancelled') x++
       else if (o.status === 'pending') p++
       else if (o.status === 'delivered') d++
       const addr = o.shipping_address ? (typeof o.shipping_address === 'string' ? (() => { try { return JSON.parse(o.shipping_address) } catch { return null } })() : o.shipping_address) : null
@@ -47,7 +45,6 @@ export default function AnalyticsPage() {
       if (o.status === 'delivered') parseItems(o.items).forEach((item: any) => { const name = item.productName ?? item.title ?? item.name ?? 'Produit'; products[name] = (products[name] ?? 0) + 1 })
     })
     setConfirmed(c); setCancelled(x); setPending(p); setDelivered(d)
-    setCancelReasons(Object.entries(reasons).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value).slice(0,5))
     setTopCities(Object.entries(cities).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value).slice(0,6))
     setTopProducts(Object.entries(products).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value).slice(0,5))
     setLoading(false)
@@ -100,13 +97,9 @@ export default function AnalyticsPage() {
             </div>
           </div>
           <div style={{ background:'var(--card)', border:'1px solid var(--border)', borderRadius:16, padding:20 }}>
-            <div style={head}><XCircle size={16} strokeWidth={2.2} color="var(--destructive)" /> Raisons annulation</div>
-            {cancelReasons.length === 0 ? <div style={{ color:'var(--text-muted)', fontSize:13 }}>—</div> : cancelReasons.map((r,i) => (<div key={i} style={{ marginBottom:12 }}><div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginBottom:4 }}><span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'75%', color:'var(--text)' }}>{r.name}</span><span style={{ color:'var(--destructive)', fontWeight:700 }}>{r.value}</span></div><div style={{ height:4, borderRadius:4, background:'var(--border)' }}><div style={{ width:(r.value/(cancelReasons[0]?.value??1))*100+'%', height:'100%', borderRadius:4, background:'var(--destructive)' }} /></div></div>))}
+            <div style={head}><MapPin size={16} strokeWidth={2.2} color="var(--brand)" /> Top villes</div>
+            {topCities.length === 0 ? <div style={{ color:'var(--text-muted)', fontSize:13 }}>—</div> : <ResponsiveContainer width="100%" height={180}><BarChart data={topCities} margin={{ top:5, right:10, left:0, bottom:5 }}><XAxis dataKey="name" tick={{ fontSize:11, fill:'var(--text-muted)' }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize:11, fill:'var(--text-muted)' }} axisLine={false} tickLine={false} width={25} /><Tooltip contentStyle={{ background:'var(--card)', border:'1px solid var(--border)', borderRadius:8, fontSize:12, color:'var(--text)' }} /><Bar dataKey="value" fill={OLIVE} radius={[6,6,0,0]} /></BarChart></ResponsiveContainer>}
           </div>
-        </div>
-        <div style={{ background:'var(--card)', border:'1px solid var(--border)', borderRadius:16, padding:20 }}>
-          <div style={head}><MapPin size={16} strokeWidth={2.2} color="var(--brand)" /> Top villes</div>
-          {topCities.length === 0 ? <div style={{ color:'var(--text-muted)', fontSize:13 }}>—</div> : <ResponsiveContainer width="100%" height={180}><BarChart data={topCities} margin={{ top:5, right:10, left:0, bottom:5 }}><XAxis dataKey="name" tick={{ fontSize:11, fill:'var(--text-muted)' }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize:11, fill:'var(--text-muted)' }} axisLine={false} tickLine={false} width={25} /><Tooltip contentStyle={{ background:'var(--card)', border:'1px solid var(--border)', borderRadius:8, fontSize:12, color:'var(--text)' }} /><Bar dataKey="value" fill={OLIVE} radius={[6,6,0,0]} /></BarChart></ResponsiveContainer>}
         </div>
         <div style={{ background:'var(--card)', border:'1px solid var(--border)', borderRadius:16, padding:20 }}>
           <div style={head}><Package size={16} strokeWidth={2.2} color="var(--chart-2)" /> Top produits</div>
