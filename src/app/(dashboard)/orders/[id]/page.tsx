@@ -61,7 +61,7 @@ function buildTimeline(order: any) {
     const cancelIdx = steps.findIndex(s => s.id === 'confirmed')
     steps.splice(cancelIdx, steps.length - cancelIdx, {
       id: 'canceled', Icon: XCircle, label: 'Annulée',
-      sublabel: order.cancellation_reason ?? 'Commande annulée',
+      sublabel: 'Commande annulée',
       date: order.cancelled_at ?? order.canceled_at, done: true, active: false,
     })
   }
@@ -238,13 +238,6 @@ export default function OrderDetailPage() {
                 }}>
                   <ExternalLink size={15} strokeWidth={2.2} /> Suivre la livraison
                 </a>
-              )}
-
-              {isCanceled && order.cancellation_reason && (
-                <div style={{ marginTop: 14, padding: '10px 14px', borderRadius: 10, background: 'color-mix(in srgb, var(--destructive) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--destructive) 20%, transparent)' }}>
-                  <div style={{ fontSize: 11, color: 'var(--destructive)', fontWeight: 700, marginBottom: 4 }}>RAISON D'ANNULATION</div>
-                  <div style={{ fontSize: 13, color: 'var(--destructive)' }}>{order.cancellation_reason}</div>
-                </div>
               )}
 
               {order.livreur_phone && (
