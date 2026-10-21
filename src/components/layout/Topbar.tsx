@@ -4,6 +4,7 @@ import { useTheme } from './ThemeProvider'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import LangSwitcher from './LangSwitcher'
+import NotificationBell from './NotificationBell'
 import { Sun, Moon } from 'lucide-react'
 
 interface TopbarProps {
@@ -43,6 +44,8 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
 
       <div className="topbar-right" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <span className="topbar-lang"><LangSwitcher /></span>
+
+        <NotificationBell />
 
         <div onClick={toggle} style={{
           width: 44, height: 24, borderRadius: 12,
