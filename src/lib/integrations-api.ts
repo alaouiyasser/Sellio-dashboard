@@ -49,6 +49,11 @@ export interface IntegrationConnection {
   lastError: string | null
   connectedAt: string
 }
+export interface SetupGuide {
+  steps: { text: string; copy?: { label: string; value: string } }[]
+  note?: string
+}
+
 export interface IntegrationItem {
   slug: string
   name: string
@@ -62,6 +67,8 @@ export interface IntegrationItem {
   connection: IntegrationConnection | null
   /** The store approves Sellio itself: show a button instead of the form. */
   oneClick?: 'youcan-oauth' | 'wc-auth'
+  /** Step-by-step setup with values to copy (webhook URLs…). */
+  guide?: SetupGuide | null
 }
 
 export const fetchIntegrations = (tid: string) =>

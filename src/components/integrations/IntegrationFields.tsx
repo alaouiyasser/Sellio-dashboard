@@ -1,6 +1,7 @@
 'use client'
 
 import type { IntegrationItem } from '@/lib/integrations-api'
+import SetupGuide from './SetupGuide'
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '10px 12px', borderRadius: 9, border: '1px solid var(--border)',
@@ -16,6 +17,7 @@ export default function IntegrationFields({ item, form, onChange }: {
   const editing = !!item.connection
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {item.guide && item.guide.steps.length > 0 && <SetupGuide guide={item.guide} open={!editing} />}
       {item.fields.map((f) => {
         const keepSecret = f.secret && editing
         return (
