@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase'
 import { useLang } from './LanguageProvider'
 import { useTheme } from './ThemeProvider'
 import {
-  LayoutGrid, Package, Wallet, BarChart3, Coins, MessageSquare, Bot, Plug, Settings, LogOut, X, ShieldCheck,
+  LayoutGrid, Package, Wallet, BarChart3, Coins, Tag, MessageSquare, Bot, Plug, Settings, LogOut, X, ShieldCheck,
 } from 'lucide-react'
 
 const OLIVE = 'var(--brand)'
@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { path: '/credits',    icon: Wallet,        labelKey: 'nav.credits'    },
   { path: '/analytics',  icon: BarChart3,     labelKey: 'nav.analytics'  },
   { path: '/profit',     icon: Coins,         labelKey: 'nav.profit'     },
+  { path: '/offers',     icon: Tag,           labelKey: 'nav.offers'     },
   { path: '/logs',       icon: MessageSquare, labelKey: 'nav.messages'   },
   { path: '/ai-coach',   icon: Bot,           labelKey: 'nav.aicoach'    },
   { path: '/integrations', icon: Plug, labelKey: 'nav.integrations' },
