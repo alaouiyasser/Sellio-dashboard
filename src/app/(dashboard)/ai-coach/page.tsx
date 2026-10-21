@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { createClient } from '@/lib/supabase'
 import Topbar from '@/components/layout/Topbar'
 import { useLang } from '@/components/layout/LanguageProvider'
-import { Bot, Calendar, CalendarDays, ThumbsUp, AlertTriangle, Search, Target, Package, MapPin, Sun, Globe } from 'lucide-react'
+import { Bot, MessageCircle, Calendar, CalendarDays, ThumbsUp, AlertTriangle, Search, Target, Package, MapPin, Sun, Globe } from 'lucide-react'
 
 type Priority = 'HIGH' | 'MEDIUM' | 'LOW'
 type Decision = 'scale' | 'keep' | 'fix' | 'stop'
@@ -108,6 +109,9 @@ export default function AICoachPage() {
         <Bot size={48} color="var(--text-muted)" strokeWidth={1.6} />
         <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{t('aicoach.noReport')}</div>
         <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Le premier rapport arrive dimanche matin, dès 5 commandes sur la semaine.</div>
+        <Link href="/ai-coach/chat" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 12, background: 'var(--brand)', color: '#fff', fontSize: 13, fontWeight: 600 }}>
+          <MessageCircle size={16} /> Discuter avec le coach
+        </Link>
       </div>
     </div>
   )
@@ -143,6 +147,11 @@ export default function AICoachPage() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Link href="/ai-coach/chat" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 12, background: 'var(--brand)', color: '#fff', fontSize: 13, fontWeight: 600 }}>
+                <MessageCircle size={16} /> Discuter avec le coach
+              </Link>
+            </div>
 
             <div style={{ ...card, padding: 24, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '110px 1fr', gap: 24, alignItems: 'center' }}>
               <div style={{
