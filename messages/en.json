@@ -8,7 +8,8 @@
     "aicoach": "AI Coach",
     "settings": "Settings",
     "logout": "Logout",
-    "integrations": "Integrations"
+    "integrations": "Integrations",
+    "profit": "Profit"
   },
   "kpi": {
     "total": "Total orders",
