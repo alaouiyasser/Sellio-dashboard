@@ -9,7 +9,8 @@
     "settings": "Settings",
     "logout": "Logout",
     "integrations": "Integrations",
-    "profit": "Profit"
+    "profit": "Profit",
+    "offers": "Offers"
   },
   "kpi": {
     "total": "Total orders",

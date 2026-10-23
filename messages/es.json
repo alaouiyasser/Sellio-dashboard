@@ -9,7 +9,8 @@
     "settings": "Configuración",
     "logout": "Cerrar sesión",
     "integrations": "Integraciones",
-    "profit": "Rentabilidad"
+    "profit": "Rentabilidad",
+    "offers": "Ofertas"
   },
   "kpi": {
     "total": "Total pedidos",

@@ -162,6 +162,6 @@ export const ORDER_STATUS: Record<string, { label: string; tone: Tone }> = {
   pending: { label: 'En attente', tone: 'muted' }, sent: { label: 'Message envoyé', tone: 'muted' },
   confirmed: { label: 'Confirmée', tone: 'brand' }, canceled: { label: 'Annulée', tone: 'destructive' }, cancelled: { label: 'Annulée', tone: 'destructive' },
   in_delivery: { label: 'En livraison', tone: 'warning' }, delivered: { label: 'Livrée', tone: 'success' }, returned: { label: 'Retournée', tone: 'destructive' },
-  awaiting_shipping_info: { label: 'Infos expédition', tone: 'warning' }, awaiting_delivery_check: { label: 'Vérif. livraison', tone: 'warning' },
+  awaiting_shipping_info: { label: 'Infos expédition', tone: 'warning' }, awaiting_upsell: { label: 'Offre proposée', tone: 'warning' }, awaiting_delivery_check: { label: 'Vérif. livraison', tone: 'warning' },
   needs_merchant_confirm: { label: 'À valider', tone: 'warning' }, delivery_issue: { label: 'Problème livraison', tone: 'destructive' },
 }
