@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import WizardOnboarding from '@/components/onboarding/WizardOnboarding'
 import DevicesTab from '@/components/settings/DevicesTab'
 import {
-  Building2, Plug, Bot, MessageCircle, RotateCcw, AlertTriangle,
+  Building2, Plug, MessageCircle, RotateCcw, AlertTriangle,
   Smartphone, Check, X, Plus, ShieldCheck,
 } from 'lucide-react'
 
@@ -27,7 +27,6 @@ const labelStyle: React.CSSProperties = {
 
 const TABS_KEYS = [
   { key: 'general',  Icon: Building2, tk: 'settings.general' },
-  { key: 'ai',       Icon: Bot,       tk: 'settings.aicoach' },
   { key: 'security', Icon: ShieldCheck, tk: 'Securite' },
 ]
 
@@ -408,30 +407,6 @@ export default function SettingsPage() {
                 <input style={inputStyle} value={settings.company_name}
                   placeholder="Ex: Maroc Beauty Store"
                   onChange={e => setSettings(s => ({ ...s, company_name: e.target.value }))} />
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'ai' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div>
-                <label style={labelStyle}>Fréquence du rapport AI Coach</label>
-                <select value={settings.ai_coach_frequency}
-                  onChange={e => setSettings(s => ({ ...s, ai_coach_frequency: e.target.value }))}
-                  style={{ ...inputStyle, cursor: 'pointer' }}>
-                  <option value="weekly">Hebdomadaire (chaque vendredi)</option>
-                  <option value="monthly">Mensuel (1er du mois)</option>
-                  <option value="both">Les deux</option>
-                </select>
-              </div>
-              <div style={{
-                display: 'flex', alignItems: 'flex-start', gap: 8,
-                padding: 14, borderRadius: 10, background: 'color-mix(in srgb, var(--brand) 8%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--brand) 20%, transparent)',
-                fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6,
-              }}>
-                <Bot size={15} strokeWidth={2.2} color="var(--brand)" style={{ flexShrink: 0, marginTop: 1 }} />
-                <span>L'AI Coach analyse vos données et génère un rapport stratégique personnalisé.</span>
               </div>
             </div>
           )}
