@@ -12,7 +12,6 @@ export interface OfferForm {
   title: string; productName: string; extraQty: number; pricing: 'unit_price' | 'percent'; value: string
   message: string; startsAt: string; endsAt: string
 }
-export interface ChatMessage { id?: number; role: 'user' | 'assistant'; content: string; offer_id?: string | null; created_at?: string }
 
 async function call(path: string, init?: RequestInit) {
   const res = await authFetch(`${API_BASE}/api${path}`, {
@@ -28,8 +27,6 @@ export const offersApi = {
   create: (f: OfferForm, status: 'draft' | 'active') => call('/offers', { method: 'POST', body: JSON.stringify({ ...f, value: f.value.replace(',', '.'), status }) }),
   setStatus: (id: string, status: OfferStatus): Promise<{ offer: Offer }> => call(`/offers/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   remove: (id: string) => call(`/offers/${id}`, { method: 'DELETE' }),
-  history: (): Promise<{ messages: ChatMessage[]; offers: Offer[] }> => call('/coach/chat'),
-  send: (message: string): Promise<{ reply: string; offers: Offer[] }> => call('/coach/chat', { method: 'POST', body: JSON.stringify({ message }) }),
 }
 
 /** "1 unité à 150 DH" / "2 unités à -30 %" */

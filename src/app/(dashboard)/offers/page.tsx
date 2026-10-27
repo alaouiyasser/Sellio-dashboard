@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { toast } from 'sonner'
-import { Loader2, Bot } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
 import { useLang } from '@/components/layout/LanguageProvider'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -55,12 +54,9 @@ export default function OffersPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ ...card, padding: 16, fontSize: 13, color: 'var(--text)', lineHeight: 1.6, display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
               <span>Une offre n’est envoyée que si elle est <b>active</b>. Sans offre active, vos clients ne reçoivent rien de plus.</span>
-              <Link href="/ai-coach/chat" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: 'var(--brand)' }}>
-                <Bot size={15} /> En parler avec le coach
-              </Link>
             </div>
             {loading ? <div style={{ padding: 30, textAlign: 'center' }}><Loader2 className="h-5 w-5 animate-spin" style={{ display: 'inline' }} /></div>
-              : offers.length === 0 ? <div style={{ ...card, fontSize: 13, color: 'var(--text-muted)' }}>Aucune offre pour l’instant. Créez-en une à droite, ou demandez une idée au coach.</div>
+              : offers.length === 0 ? <div style={{ ...card, fontSize: 13, color: 'var(--text-muted)' }}>Aucune offre pour l’instant. Créez-en une à droite.</div>
               : offers.map((o) => <OfferCard key={o.id} offer={o} onChange={replace(o.id)} />)}
           </div>
 
