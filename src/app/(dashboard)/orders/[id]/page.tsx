@@ -8,7 +8,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { API_BASE } from '@/lib/auth-client'
 import ShipPanel from '@/components/orders/ShipPanel'
-import { shipFailed, SHIPPABLE_STATUSES, carrierName } from '@/lib/shipping-api'
+import { shipFailed, SHIPPABLE_STATUSES, carrierName, carrierTracked } from '@/lib/shipping-api'
 import {
   ArrowLeft, User, Phone, Package, PackageCheck, Truck, Store, ShoppingBag,
   ExternalLink, Route, Inbox, MessageCircle, CheckCircle2, Bike, Warehouse,
@@ -298,6 +298,12 @@ export default function OrderDetailPage() {
                     </div>
                   )
                 })()}
+                {carrierTracked(order) ? (
+                  <div style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--bg)', border: '1px solid var(--border)', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                    {order.delivery_status && <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{order.delivery_status}</div>}
+                    Mis à jour automatiquement depuis {carrierName(order.delivery_provider)}.
+                  </div>
+                ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {order.status !== 'in_delivery' && (
                     <button onClick={() => deliveryAction('in_delivery')} disabled={actionLoading !== null}
@@ -320,6 +326,7 @@ export default function OrderDetailPage() {
                     </button>
                   </div>
                 </div>
+                )}
               </div>
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 700, marginBottom: 24, color: 'var(--text)' }}><Route size={15} strokeWidth={2.2} color="var(--brand)" /> Suivi de commande</div>
