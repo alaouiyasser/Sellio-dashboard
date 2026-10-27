@@ -5,10 +5,17 @@ import { API_BASE } from './auth-client'
 export const SHIP_ERROR_PREFIX = 'Erreur envoi'
 export const SHIPPABLE_STATUSES = ['confirmed', 'in_delivery']
 
-export const CARRIER_NAMES: Record<string, string> = { ozon: 'Ozon Express', ameex: 'Ameex' }
+export const CARRIER_NAMES: Record<string, string> = { ozon: 'Ozon Express', ameex: 'Ameex', sendit: 'Sendit', coliix: 'Coliix' }
+/** Mirrors the API's POLLED_CARRIERS: Sellio reads the parcel status from these carriers itself. */
+export const TRACKED_CARRIERS = ['ozon', 'ameex', 'sendit', 'coliix']
 export const carrierName = (slug: string) => CARRIER_NAMES[slug] ?? slug
 
 export interface ShipCarrier { provider: string; isDefault: boolean }
+
+/** The parcel is at a carrier Sellio tracks: its status comes from the carrier, never typed by hand. */
+export function carrierTracked(order: { delivery_provider?: string | null; delivery_tracking_code?: string | null }): boolean {
+  return !!order.delivery_tracking_code && TRACKED_CARRIERS.includes(order.delivery_provider ?? '')
+}
 
 /** A confirmed order that is not at any carrier because the last hand-over failed. */
 export function shipFailed(order: { status?: string; delivery_status?: string | null; delivery_tracking_code?: string | null }): boolean {
