@@ -8,10 +8,10 @@ import { useLang } from '@/components/layout/LanguageProvider'
 import OrdersChart from '@/components/charts/OrdersChart'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import {
-import { orderCity, orderItems, itemName, statusLabel } from '@/lib/order-view'
   Package, CheckCircle2, Truck, TrendingUp, TrendingDown, Wallet,
   Calendar, Target, MapPin, Crown, Clock, ArrowRight,
 } from 'lucide-react'
+import { orderCity, orderItems, itemName, statusLabel } from '@/lib/order-view'
 
 const OLIVE = 'var(--brand)'
 const COLORS = ['var(--success)', 'var(--destructive)', 'var(--warning)', 'var(--brand)']
