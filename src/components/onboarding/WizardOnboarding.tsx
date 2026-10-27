@@ -77,7 +77,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
     if (!r) return
     setStoreType(r.store)
     if (r.ok) {
-      toast.success(r.store === 'youcan' ? 'Boutique YouCan connectee' : 'Boutique WooCommerce autorisee')
+      toast.success(r.store === 'youcan' ? 'Boutique YouCan connectee' : r.store === 'shopify' ? 'Boutique Shopify connectee' : 'Boutique WooCommerce autorisee')
       setStep(4)
     } else {
       toast.error(r.message ?? 'Connexion de la boutique echouee')
@@ -295,7 +295,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
           {storeItem?.oneClick && !storeManual ? (
             <div style={{ marginBottom: 20 }}>
               <StoreOneClick item={storeItem} tenantId={tenantId} returnTo="onboarding"
-                onManual={storeItem.oneClick === 'wc-auth' ? () => setStoreManual(true) : undefined} />
+                onManual={storeItem.oneClick !== 'youcan-oauth' ? () => setStoreManual(true) : undefined} />
               <div style={{ marginTop: 16 }}>
                 <button onClick={() => setStep(2)} style={{ ...backBtn, width: '100%' }}><ArrowLeft size={15} /> Retour</button>
               </div>

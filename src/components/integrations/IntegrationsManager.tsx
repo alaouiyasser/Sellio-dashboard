@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import {
   fetchIntegrations, connectIntegration, disconnectIntegration, updateIntegration,
-  deleteWaInstance, toggleWaInstance, initialFormValues, missingFields, readStoreReturn,
+  deleteWaInstance, toggleWaInstance, initialFormValues, missingFields, readStoreReturn, readShopifyLaunch, startShopifyConnect,
   type IntegrationItem,
 } from '@/lib/integrations-api'
 import IntegrationFields from './IntegrationFields'
@@ -87,13 +87,23 @@ export default function IntegrationsManager() {
     if (!tid) return
     const r = readStoreReturn()
     if (!r) return
-    const name = r.store === 'youcan' ? 'YouCan' : 'WooCommerce'
+    const name = r.store === 'youcan' ? 'YouCan' : r.store === 'shopify' ? 'Shopify' : 'WooCommerce'
     if (!r.ok) { toast.error(`${name} : ${r.message ?? 'connexion échouée'}`); return }
-    toast.success(r.store === 'youcan' ? 'Boutique YouCan connectée' : 'Autorisation reçue, Sellio configure votre boutique…')
+    toast.success(r.store === 'woocommerce' ? 'Autorisation reçue, Sellio configure votre boutique…' : `Boutique ${name} connectée`)
     load(tid)
     // WooCommerce finishes the webhook in the background: refresh once more.
     if (r.store === 'woocommerce') setTimeout(() => load(tid), 6000)
   }, [tid, load])
+
+  // Opened from Shopify (install link / "Open app"): go straight to the approval for that shop.
+  useEffect(() => {
+    if (!tid) return
+    const shop = readShopifyLaunch()
+    if (!shop) return
+    startShopifyConnect(tid, shop, 'integrations')
+      .then((url) => { window.location.href = url })
+      .catch((e) => toast.error(e?.message || 'Connexion Shopify impossible'))
+  }, [tid])
   async function submitConnect() {
     if (!tid || !modal) return
     const missing = missingFields(modal, form)
@@ -335,7 +345,7 @@ export default function IntegrationsManager() {
             </div>
             {modal.oneClick && !manual && tid ? (
               <StoreOneClick item={modal} tenantId={tid} returnTo="integrations"
-                onManual={modal.oneClick === 'wc-auth' ? () => setManual(true) : undefined} />
+                onManual={modal.oneClick !== 'youcan-oauth' ? () => setManual(true) : undefined} />
             ) : (<>
             <IntegrationFields item={modal} form={form} onChange={(k, v) => setForm((s) => ({ ...s, [k]: v }))} />
             <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
