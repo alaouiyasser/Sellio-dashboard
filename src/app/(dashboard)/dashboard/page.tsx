@@ -8,6 +8,7 @@ import { useLang } from '@/components/layout/LanguageProvider'
 import OrdersChart from '@/components/charts/OrdersChart'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import {
+import { orderCity, orderItems, itemName, statusLabel } from '@/lib/order-view'
   Package, CheckCircle2, Truck, TrendingUp, TrendingDown, Wallet,
   Calendar, Target, MapPin, Crown, Clock, ArrowRight,
 } from 'lucide-react'
@@ -25,16 +26,10 @@ const PERIODS: { label: string; value: Period }[] = [
 
 export default function OverviewPage() {
   const supabase = createClient()
-  const { t } = useLang()
+  const { t, locale } = useLang()
   const isMobile = useIsMobile()
 
-  const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-    confirmed: { label: t('status.confirmed'), color: 'var(--success)', bg: 'color-mix(in srgb, var(--success) 15%, transparent)' },
-    pending:   { label: t('status.pending'),   color: 'var(--warning)', bg: 'color-mix(in srgb, var(--warning) 15%, transparent)' },
-    canceled:  { label: t('status.canceled'),  color: 'var(--destructive)', bg: 'color-mix(in srgb, var(--destructive) 15%, transparent)' },
-    cancelled: { label: t('status.cancelled'), color: 'var(--destructive)', bg: 'color-mix(in srgb, var(--destructive) 15%, transparent)' },
-    delivered: { label: t('status.delivered'), color: 'var(--brand)', bg: 'color-mix(in srgb, var(--brand) 15%, transparent)' },
-  }
+
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<Period>('14')
   const [allOrders, setAllOrders] = useState<any[]>([])
@@ -69,21 +64,21 @@ export default function OverviewPage() {
     setKpis({ total: orders.length, confirmed, cancelled, delivered, revenue })
 
     const cities: Record<string, number> = {}
-    orders.filter(o => o.city).forEach(o => { cities[o.shipping_address ?? o.city] = (cities[o.city] ?? 0) + 1 })
+    orders.forEach(o => { const c = orderCity(o); if (c) cities[c] = (cities[c] ?? 0) + 1 })
     setTopCities(Object.entries(cities).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 5))
 
     const products: Record<string, number> = {}
     orders.filter(o => o.status === 'delivered').forEach(o => {
-      ;(o.items ?? []).forEach((item: any) => {
-        const name = item.title ?? item.name ?? 'Produit'
+      orderItems(o).forEach((item: any) => {
+        const name = itemName(item)
         products[name] = (products[name] ?? 0) + (item.quantity ?? 1)
       })
     })
     setTopProducts(Object.entries(products).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 5))
 
     const clients: Record<string, { orders: number; revenue: number }> = {}
-    orders.forEach(o => {
-      const phone = o.customer_phone ?? 'Inconnu'
+    orders.filter(o => String(o.customer_phone ?? '').replace(/\D/g, '').length >= 9).forEach(o => {
+      const phone = o.customer_phone
       if (!clients[phone]) clients[phone] = { orders: 0, revenue: 0 }
       clients[phone].orders++
       if (o.status === 'delivered') clients[phone].revenue += o.total_price ?? 0
@@ -306,13 +301,13 @@ export default function OverviewPage() {
             </thead>
             <tbody>
               {recentOrders.map((o, i) => {
-                const s = STATUS_CONFIG[o.status] ?? STATUS_CONFIG['pending']
+                const s = statusLabel(o.status, locale)
                 return (
                   <tr key={i} style={{ borderTop: '1px solid var(--border)', cursor: 'pointer' }}
                     onClick={() => window.location.href = `/orders/${o.id}`}>
                     <td style={{ padding: '12px 16px', fontSize: 12, color: OLIVE, fontWeight: 600 }}>#{o.id?.slice(0, 8)}</td>
                     <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text)' }}>{o.customer_phone}</td>
-                    <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-muted)' }}>{o.city ?? '—'}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-muted)' }}>{orderCity(o) || '—'}</td>
                     <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{o.total_price ? `${o.total_price} MAD` : '—'}</td>
                     <td style={{ padding: '12px 16px' }}>
                       <span style={{ padding: '3px 8px', borderRadius: 5, background: s.bg, color: s.color, fontSize: 11, fontWeight: 600 }}>{s.label}</span>
