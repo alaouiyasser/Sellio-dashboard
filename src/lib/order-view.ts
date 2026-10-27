@@ -6,10 +6,10 @@ export function parseJson<T = any>(v: unknown): T | null {
   return v as T
 }
 
-/** City as stored by the API: shipping_address.city (the validated carrier city once known). */
+/** One name per real city (API's city_canonical: « tanja », « طنجة » → Tanger), else the city as typed. */
 export function orderCity(o: { shipping_address?: unknown; city?: string | null }): string {
   const a = parseJson<Record<string, any>>(o.shipping_address)
-  return String(a?.city ?? o.city ?? '').trim()
+  return String(a?.city_canonical ?? a?.city ?? o.city ?? '').trim()
 }
 
 export function orderItems(o: { items?: unknown }): any[] {
