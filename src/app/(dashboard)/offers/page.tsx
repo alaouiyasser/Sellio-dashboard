@@ -13,7 +13,7 @@ import { OfferCard } from '@/components/offers/OfferCard'
 const card: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 20 }
 const input: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, marginTop: 4 }
 const label: React.CSSProperties = { fontSize: 12, color: 'var(--text-muted)' }
-const EMPTY: OfferForm = { title: '', productName: '', extraQty: 1, pricing: 'unit_price', value: '', message: '', startsAt: '', endsAt: '' }
+const EMPTY: OfferForm = { title: '', productName: '', store: '', extraQty: 1, pricing: 'unit_price', value: '', message: '', startsAt: '', endsAt: '' }
 
 export default function OffersPage() {
   const { t } = useLang()
@@ -65,6 +65,14 @@ export default function OffersPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <label style={label}>Nom (pour vous)
                 <input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="ex. 2e flacon à 150 DH" style={input} />
+              </label>
+              <label style={label}>Boutique
+                <select value={form.store} onChange={(e) => set('store', e.target.value)} style={input}>
+                  <option value="">Toutes les boutiques</option>
+                  <option value="youcan">YouCan</option>
+                  <option value="shopify">Shopify</option>
+                  <option value="woocommerce">WooCommerce</option>
+                </select>
               </label>
               <label style={label}>Produit
                 <select value={form.productName} onChange={(e) => set('productName', e.target.value)} style={input}>
