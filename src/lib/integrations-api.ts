@@ -66,7 +66,7 @@ export interface IntegrationItem {
   fields: IntegrationField[]
   connection: IntegrationConnection | null
   /** The store approves Sellio itself: show a button instead of the form. */
-  oneClick?: 'youcan-oauth' | 'wc-auth'
+  oneClick?: 'youcan-oauth' | 'wc-auth' | 'shopify-oauth'
   /** Step-by-step setup with values to copy (webhook URLs…). */
   guide?: SetupGuide | null
 }
@@ -81,6 +81,11 @@ export const startYouCanConnect = (tid: string, returnTo: StoreReturnTo) =>
   req(`/api/integrations/${tid}/youcan/oauth/start`, { method: 'POST', body: JSON.stringify({ returnTo }) })
     .then((d) => d.url as string)
 
+/** Shopify approval page for xxx.myshopify.com (the API sets the state cookie for the callback). */
+export const startShopifyConnect = (tid: string, shop: string, returnTo: StoreReturnTo) =>
+  req(`/api/integrations/${tid}/shopify/oauth/start`, { method: 'POST', body: JSON.stringify({ shop, returnTo }) })
+    .then((d) => d.url as string)
+
 /** The store's own WooCommerce "Approve Sellio" page. */
 export const wooAuthorizeUrl = (tid: string, storeUrl: string, returnTo: StoreReturnTo) =>
   req(`/api/integrations/${tid}/woocommerce/authorize`, { method: 'POST', body: JSON.stringify({ storeUrl, returnTo }) })
@@ -90,12 +95,12 @@ export const wooAuthorizeUrl = (tid: string, storeUrl: string, returnTo: StoreRe
  * Back from YouCan (?store=youcan&status=connected|denied|error&message=…) or
  * WooCommerce (?store=woocommerce&success=1|0). Reads and clears the params.
  */
-export function readStoreReturn(): { store: 'youcan' | 'woocommerce'; ok: boolean; message?: string } | null {
+export function readStoreReturn(): { store: 'youcan' | 'woocommerce' | 'shopify'; ok: boolean; message?: string } | null {
   if (typeof window === 'undefined') return null
   const q = new URLSearchParams(window.location.search)
   const store = q.get('store')
-  if (store !== 'youcan' && store !== 'woocommerce') return null
-  const ok = store === 'youcan' ? q.get('status') === 'connected' : q.get('success') === '1'
+  if (store !== 'youcan' && store !== 'woocommerce' && store !== 'shopify') return null
+  const ok = store === 'woocommerce' ? q.get('success') === '1' : q.get('status') === 'connected'
   const message = q.get('message') ?? (q.get('status') === 'denied' || q.get('success') === '0' ? 'Connexion annulée' : undefined)
   window.history.replaceState(null, '', window.location.pathname)
   return { store, ok, message: message ?? undefined }
@@ -170,4 +175,17 @@ export async function toggleWaInstance(tid: string, instanceKey: string, enabled
   })
   const d = await r.json()
   if (!d.ok) throw new Error(d.error || 'Erreur')
+}
+
+/**
+ * Opened from Shopify (app install link / "Open app"): ?shop=xxx.myshopify.com&hmac=…
+ * Returns the shop so the page can start the approval, and clears the params.
+ */
+export function readShopifyLaunch(): string | null {
+  if (typeof window === 'undefined') return null
+  const q = new URLSearchParams(window.location.search)
+  const shop = q.get('shop')
+  if (!shop || !q.get('hmac') || !/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(shop)) return null
+  window.history.replaceState(null, '', window.location.pathname)
+  return shop
 }

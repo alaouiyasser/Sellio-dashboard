@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Loader2, ShieldCheck, ExternalLink } from 'lucide-react'
-import { startYouCanConnect, wooAuthorizeUrl, type IntegrationItem, type StoreReturnTo } from '@/lib/integrations-api'
+import { startYouCanConnect, startShopifyConnect, wooAuthorizeUrl, type IntegrationItem, type StoreReturnTo } from '@/lib/integrations-api'
 
 const btn: React.CSSProperties = {
   width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -35,7 +35,9 @@ export default function StoreOneClick({ item, tenantId, returnTo, onManual }: {
     try {
       const url = item.oneClick === 'youcan-oauth'
         ? await startYouCanConnect(tenantId, returnTo)
-        : await wooAuthorizeUrl(tenantId, storeUrl.trim(), returnTo)
+        : item.oneClick === 'shopify-oauth'
+          ? await startShopifyConnect(tenantId, storeUrl.trim(), returnTo)
+          : await wooAuthorizeUrl(tenantId, storeUrl.trim(), returnTo)
       window.location.href = url
     } catch (e: any) {
       toast.error(e?.message || 'Connexion impossible')
@@ -44,6 +46,7 @@ export default function StoreOneClick({ item, tenantId, returnTo, onManual }: {
   }
 
   const youcan = item.oneClick === 'youcan-oauth'
+  const shopify = item.oneClick === 'shopify-oauth'
   return (
     <div>
       <p style={note}>
@@ -51,17 +54,19 @@ export default function StoreOneClick({ item, tenantId, returnTo, onManual }: {
         <span>
           {youcan
             ? "Vous allez sur YouCan pour autoriser Sellio à lire vos commandes, puis vous revenez ici. Aucun token à copier : les nouvelles commandes arrivent automatiquement."
-            : "Vous allez sur votre site pour cliquer « Approuver ». WooCommerce crée les clés pour Sellio et les commandes arrivent automatiquement. Aucune clé à copier."}
+            : shopify
+              ? "Indiquez l’adresse xxx.myshopify.com de votre boutique (Shopify → Paramètres → Domaines). Vous installez Sellio sur Shopify, puis vous revenez ici. Aucun token à copier."
+              : "Vous allez sur votre site pour cliquer « Approuver ». WooCommerce crée les clés pour Sellio et les commandes arrivent automatiquement. Aucune clé à copier."}
         </span>
       </p>
 
       {!youcan && (
-        <input value={storeUrl} onChange={(e) => setStoreUrl(e.target.value)} placeholder="https://ma-boutique.ma"
+        <input value={storeUrl} onChange={(e) => setStoreUrl(e.target.value)} placeholder={shopify ? 'ma-boutique.myshopify.com' : 'https://ma-boutique.ma'}
           inputMode="url" autoComplete="url" style={input} />
       )}
 
       <button onClick={go} disabled={busy || (!youcan && !storeUrl.trim())} style={{ ...btn, opacity: busy || (!youcan && !storeUrl.trim()) ? 0.6 : 1 }}>
-        {busy ? <Loader2 size={16} className="animate-spin" /> : <><ExternalLink size={15} /> {youcan ? 'Connecter ma boutique YouCan' : 'Autoriser Sellio sur WooCommerce'}</>}
+        {busy ? <Loader2 size={16} className="animate-spin" /> : <><ExternalLink size={15} /> {youcan ? 'Connecter ma boutique YouCan' : shopify ? 'Connecter ma boutique Shopify' : 'Autoriser Sellio sur WooCommerce'}</>}
       </button>
 
       {onManual && (
