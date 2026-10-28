@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Loader2, Trash2, Bot } from 'lucide-react'
-import { offersApi, offerDeal, STATUS_LABEL, type Offer, type OfferStatus } from '@/lib/offers-api'
+import { offersApi, offerDeal, STATUS_LABEL, type Offer, type OfferStatus, STORE_LABEL } from '@/lib/offers-api'
 
 const small: React.CSSProperties = { padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }
 const dateFr = (d: string | null) => (d ? new Date(d).toLocaleDateString('fr-MA', { day: 'numeric', month: 'short' }) : null)
@@ -38,7 +38,7 @@ export function OfferCard({ offer, onChange, compact = false }: { offer: Offer; 
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{offer.title}</div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-            {offer.product_name ?? 'Tous les produits'} · {offerDeal(offer)}
+            {offer.product_name ?? 'Tous les produits'}{offer.store ? ` (${STORE_LABEL[offer.store] ?? offer.store})` : ''} · {offerDeal(offer)}
           </div>
           {period && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{period}</div>}
         </div>

@@ -3,13 +3,13 @@ import { API_BASE } from './auth-client'
 
 export type OfferStatus = 'draft' | 'active' | 'paused' | 'ended'
 export interface Offer {
-  id: string; title: string; product_name: string | null; extra_qty: number
+  id: string; title: string; product_name: string | null; store?: string | null; extra_qty: number
   pricing: 'unit_price' | 'percent'; value: number; message: string | null
   status: OfferStatus; starts_at: string | null; ends_at: string | null; created_by: 'merchant' | 'coach'
   shown: number; accepted: number; extra_revenue: number; created_at: string
 }
 export interface OfferForm {
-  title: string; productName: string; extraQty: number; pricing: 'unit_price' | 'percent'; value: string
+  title: string; productName: string; store: string; extraQty: number; pricing: 'unit_price' | 'percent'; value: string
   message: string; startsAt: string; endsAt: string
 }
 
@@ -40,3 +40,5 @@ export const STATUS_LABEL: Record<OfferStatus, { label: string; color: string }>
   paused: { label: 'En pause', color: 'var(--warning)' },
   ended: { label: 'Terminée', color: 'var(--text-muted)' },
 }
+
+export const STORE_LABEL: Record<string, string> = { youcan: 'YouCan', shopify: 'Shopify', woocommerce: 'WooCommerce' }
