@@ -67,6 +67,8 @@ export interface IntegrationItem {
   connection: IntegrationConnection | null
   /** The store approves Sellio itself: show a button instead of the form. */
   oneClick?: 'youcan-oauth' | 'wc-auth' | 'shopify-oauth'
+  /** One extra step done in the store itself (e.g. add the Sellio COD form to Shopify). */
+  action?: { label: string; url: string }
   /** Step-by-step setup with values to copy (webhook URLs…). */
   guide?: SetupGuide | null
 }

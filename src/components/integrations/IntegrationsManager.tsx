@@ -411,7 +411,14 @@ function ConnectedSection({ title, connected, available, single, onAdd, showAdd,
                   )}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {item.action && !disabled && (
+                  <a href={item.action.url} target="_blank" rel="noopener noreferrer"
+                    title="Shopify s’ouvre avec le formulaire déjà placé : cliquez sur Enregistrer."
+                    style={{ ...smallBtn, background: 'var(--brand)', color: '#fff', border: 'none', textDecoration: 'none' }}>
+                    {item.action.label}
+                  </a>
+                )}
                 <button onClick={() => onPick(item)} disabled={busy === item.slug} style={smallBtn}><Settings2 size={14} /> Modifier</button>
                 <button onClick={() => onToggle(item)} disabled={busy === item.slug} style={smallBtn}><Power size={14} /> {disabled ? 'Activer' : 'Désactiver'}</button>
                 <button onClick={() => onRemove(item)} disabled={busy === item.slug} style={{ ...smallBtn, color: 'var(--destructive)' }}><X size={14} /></button>
