@@ -6,6 +6,7 @@ import { Bell } from 'lucide-react'
 import { authFetch } from '@/lib/api-fetch'
 import { API_BASE } from '@/lib/auth-client'
 
+import { tx, intlLocale } from '@/lib/i18n'
 interface Notification { id: number; kind: string; title: string; body: string | null; link: string | null; urgent: boolean; read_at: string | null; created_at: string }
 
 async function api(path: string, init?: RequestInit) {
@@ -21,7 +22,7 @@ function ago(iso: string) {
   if (m < 60) return `il y a ${m} min`
   const h = Math.round(m / 60)
   if (h < 24) return `il y a ${h} h`
-  return new Date(iso).toLocaleDateString('fr-MA', { day: 'numeric', month: 'short' })
+  return new Date(iso).toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' })
 }
 
 /** Merchant alerts (delivery problems, returns, reports, offers, credits) — in the app, not on WhatsApp. */
@@ -61,7 +62,7 @@ export default function NotificationBell() {
 
   return (
     <div ref={box} style={{ position: 'relative' }}>
-      <button onClick={() => setOpen((o) => !o)} aria-label={unread ? `Notifications, ${unread} non lues` : 'Notifications'} aria-expanded={open}
+      <button onClick={() => setOpen((o) => !o)} aria-label={unread ? tx("Notifications, {0} non lues", [unread]) : tx("Notifications")} aria-expanded={open}
         style={{ position: 'relative', width: 34, height: 34, borderRadius: '50%', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', display: 'grid', placeItems: 'center', cursor: 'pointer' }}>
         <Bell size={16} />
         {unread > 0 && (
@@ -72,16 +73,16 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div role="dialog" aria-label="Notifications" style={{
+        <div role="dialog" aria-label={tx("Notifications")} style={{
           position: 'absolute', top: 42, insetInlineEnd: 0, width: 'min(360px, calc(100vw - 32px))', maxHeight: 460, overflow: 'auto', zIndex: 50,
           background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: '0 12px 32px rgba(0,0,0,0.18)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Notifications</span>
-            {unread > 0 && <button onClick={() => read()} style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12, cursor: 'pointer' }}>Tout marquer comme lu</button>}
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{tx("Notifications")}</span>
+            {unread > 0 && <button onClick={() => read()} style={{ background: 'none', border: 'none', color: 'var(--brand)', fontSize: 12, cursor: 'pointer' }}>{tx("Tout marquer comme lu")}</button>}
           </div>
           {items.length === 0 ? (
-            <div style={{ padding: 20, fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>Rien de nouveau.</div>
+            <div style={{ padding: 20, fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>{tx("Rien de nouveau.")}</div>
           ) : items.map((n) => (
             <button key={n.id} onClick={() => { if (!n.read_at) read([n.id]); if (n.link) { setOpen(false); router.push(n.link) } }}
               style={{ display: 'block', width: '100%', textAlign: 'start', padding: '11px 14px', border: 'none', borderBottom: '1px solid var(--border)', cursor: n.link ? 'pointer' : 'default',

@@ -12,6 +12,7 @@ import {
 import { toast } from 'sonner'
 import { Check, Loader2, X, Trash2, Zap, Star, Power, MessageCircle } from 'lucide-react'
 
+import { tx } from '@/lib/i18n'
 type Locale = 'fr' | 'en' | 'ar' | 'es'
 const STR: Record<Locale, Record<string, string>> = {
   fr: { title: 'Intégrations', subtitle: 'Connectez vos plateformes e-commerce, transporteurs et sources de leads.',
@@ -131,7 +132,7 @@ export default function IntegrationsGrid() {
 
       <section style={{ marginBottom: 36 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>WhatsApp</h2>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{tx("WhatsApp")}</h2>
         </div>
         <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -139,11 +140,11 @@ export default function IntegrationsGrid() {
               <MessageCircle size={22} color="#fff" strokeWidth={2.2} />
             </div>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>WhatsApp Business</div>
-              <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 2 }}>Connectez le numero qui enverra les messages a vos clients</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{tx("WhatsApp Business")}</div>
+              <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 2 }}>{tx("Connectez le numero qui enverra les messages a vos clients")}</div>
             </div>
           </div>
-          <a href="/settings?tab=whatsapp" style={{ padding: '10px 18px', borderRadius: 10, background: 'var(--brand)', color: '#fff', fontSize: 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>Configurer</a>
+          <a href="/settings?tab=whatsapp" style={{ padding: '10px 18px', borderRadius: 10, background: 'var(--brand)', color: '#fff', fontSize: 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>{tx("Configurer")}</a>
         </div>
       </section>
 
@@ -230,7 +231,7 @@ export default function IntegrationsGrid() {
               {modal.fields.map((f) => (
                 <div key={f.key}>
                   <label style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text)', display: 'block', marginBottom: 5 }}>
-                    {f.label} {f.required && <span style={{ color: 'var(--destructive)' }}>*</span>}
+                    {tx(f.label)} {f.required && <span style={{ color: 'var(--destructive)' }}>*</span>}
                   </label>
                   <input
                     type={f.type === 'password' ? 'password' : f.type === 'url' ? 'url' : 'text'}

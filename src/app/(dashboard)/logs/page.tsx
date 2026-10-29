@@ -8,6 +8,7 @@ import {
   CheckCircle2, Bell, Pencil, XCircle, Truck, Search, Check, X, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 
+import { tx } from '@/lib/i18n'
 const TYPE_CONFIG: Record<string, { Icon: any; color: string; bg: string }> = {
   confirmation: { Icon: CheckCircle2, color: 'var(--success)',     bg: 'color-mix(in srgb, var(--success) 15%, transparent)' },
   reminder:     { Icon: Bell,         color: 'var(--warning)',     bg: 'color-mix(in srgb, var(--warning) 15%, transparent)' },
@@ -28,7 +29,7 @@ export default function LogsPage() {
 
   const TYPES = [
     { key: 'all',          label: t('status.all') },
-    { key: 'sent', label: 'Envoyé' },
+    { key: 'sent', label: tx("Envoyé") },
     { key: 'confirmation', label: t('msgTypes.confirmation') },
     { key: 'reminder',     label: t('msgTypes.reminder') },
     { key: 'modification', label: t('msgTypes.modification') },
@@ -62,7 +63,7 @@ export default function LogsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={t('nav.messages')} subtitle="WhatsApp" />
+      <Topbar title={t('nav.messages')} subtitle={tx("WhatsApp")} />
       <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
 
         <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -93,7 +94,7 @@ export default function LogsPage() {
 
         <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
           {loading ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Chargement...</div>
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>{tx("Chargement...")}</div>
           ) : paginated.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>—</div>
           ) : paginated.map((msg, i) => {
@@ -136,7 +137,7 @@ export default function LogsPage() {
 
         {totalPages > 1 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Page {page} / {totalPages}</span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{tx("Page")} {page} / {totalPages}</span>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
                 style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', cursor: 'pointer', opacity: page === 1 ? 0.4 : 1, display: 'grid', placeItems: 'center' }}><ChevronLeft size={15} /></button>

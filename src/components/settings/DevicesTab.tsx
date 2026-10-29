@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { Smartphone, LogOut, Trash2, ShieldCheck, Loader2 } from 'lucide-react'
 import { API_BASE } from '@/lib/auth-client'
 
+import { tx } from '@/lib/i18n'
 type Device = {
   id: string
   label: string | null
@@ -57,9 +58,9 @@ export default function DevicesTab() {
       })
       const data = await res.json().catch(() => ({}))
       if (res.ok && data.ok) {
-        toast.success('Appareil révoqué')
+        toast.success(tx("Appareil révoqué"))
         setDevices((d) => d.filter((x) => x.id !== id))
-      } else toast.error('Échec de la révocation')
+      } else toast.error(tx("Échec de la révocation"))
     } finally {
       setBusy(null)
     }
@@ -76,9 +77,9 @@ export default function DevicesTab() {
       })
       const data = await res.json().catch(() => ({}))
       if (res.ok && data.ok) {
-        toast.success(`${data.revoked} appareil(s) déconnecté(s)`)
+        toast.success(tx("{0} appareil(s) déconnecté(s)", [data.revoked]))
         load()
-      } else toast.error('Échec')
+      } else toast.error(tx("Échec"))
     } finally {
       setBusy(null)
     }
@@ -92,7 +93,7 @@ export default function DevicesTab() {
   if (loading) {
     return (
       <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 8, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-        <Loader2 size={15} className="animate-spin" /> Chargement...
+        <Loader2 size={15} className="animate-spin" /> {tx("Chargement...")}
       </div>
     )
   }
@@ -103,11 +104,11 @@ export default function DevicesTab() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: 14, borderRadius: 10, background: 'color-mix(in srgb, var(--brand) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--brand) 18%, transparent)', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
         <ShieldCheck size={15} strokeWidth={2.2} color="var(--brand)" style={{ flexShrink: 0, marginTop: 1 }} />
-        <span>Les appareils où vous êtes resté connecté. Révoquez ceux que vous ne reconnaissez pas.</span>
+        <span>{tx("Les appareils où vous êtes resté connecté. Révoquez ceux que vous ne reconnaissez pas.")}</span>
       </div>
 
       {devices.length === 0 ? (
-        <div style={{ fontSize: 13, color: 'var(--text-muted)', padding: 8 }}>Aucun appareil mémorisé.</div>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', padding: 8 }}>{tx("Aucun appareil mémorisé.")}</div>
       ) : (
         <div>
           {devices.map((d) => (
@@ -117,14 +118,14 @@ export default function DevicesTab() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {d.label ?? 'Appareil'}
-                  {d.current && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: 'var(--success)', color: '#fff' }}>CET APPAREIL</span>}
+                  {d.label ?? tx("Appareil")}
+                  {d.current && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: 'var(--success)', color: '#fff' }}>{tx("CET APPAREIL")}</span>}
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{d.last_ip ?? '—'} · vu le {fmt(d.last_seen_at)}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{d.last_ip ?? '—'} {tx("· vu le")} {fmt(d.last_seen_at)}</div>
               </div>
               {!d.current && (
                 <button onClick={() => revoke(d.id)} disabled={busy === d.id} style={{ padding: '6px 10px', borderRadius: 7, border: '1px solid var(--destructive)', background: 'transparent', color: 'var(--destructive)', fontSize: 11, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, opacity: busy === d.id ? 0.6 : 1 }}>
-                  <Trash2 size={13} strokeWidth={2.2} /> Révoquer
+                  <Trash2 size={13} strokeWidth={2.2} /> {tx("Révoquer")}
                 </button>
               )}
             </div>
@@ -134,7 +135,7 @@ export default function DevicesTab() {
 
       {others > 0 && (
         <button onClick={revokeOthers} disabled={busy === 'others'} style={{ alignSelf: 'flex-start', marginTop: 4, padding: '9px 16px', borderRadius: 9, border: '1px solid var(--destructive)', background: 'transparent', color: 'var(--destructive)', fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7, opacity: busy === 'others' ? 0.6 : 1 }}>
-          <LogOut size={14} strokeWidth={2.2} /> Déconnecter tous les autres appareils
+          <LogOut size={14} strokeWidth={2.2} /> {tx("Déconnecter tous les autres appareils")}
         </button>
       )}
     </div>

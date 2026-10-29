@@ -5,6 +5,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { createClient } from '@/lib/supabase'
 import Topbar from '@/components/layout/Topbar'
 import { useLang } from '@/components/layout/LanguageProvider'
+import { fetchCoachReport } from '@/lib/coach-api'
 import { Bot, Calendar, CalendarDays, ThumbsUp, AlertTriangle, Search, Target, Package, MapPin, Sun, Globe } from 'lucide-react'
 
 type Priority = 'HIGH' | 'MEDIUM' | 'LOW'
@@ -44,16 +45,34 @@ function toView(d: any): View {
 }
 
 const tint = (c: string, p: number) => `color-mix(in srgb, ${c} ${p}%, transparent)`
-const PRIORITY: Record<Priority, { color: string; label: string }> = {
-  HIGH: { color: 'var(--destructive)', label: 'Urgent' },
-  MEDIUM: { color: 'var(--warning)', label: 'Important' },
-  LOW: { color: 'var(--brand)', label: 'À faire' },
+type Lang = 'fr' | 'en' | 'ar' | 'es'
+const L = {
+  fr: { loading: 'Chargement...', empty: 'Un rapport chaque dimanche matin et un bilan le 1er de chaque mois, dès 5 commandes sur la période.',
+    week: 'Semaine', month: 'Mois', orders: 'Commandes', delivered: 'Livrées', revenue: "Chiffre d'affaires", aov: 'Panier moyen',
+    todo: 'À faire cette semaine', wins: 'Ce qui marche', watch: 'À surveiller', products: 'Produits', product: 'Produit', returns: 'Retours',
+    ca: 'CA', decision: 'Décision', cities: 'Villes', season: 'Saison', market: 'Marché', source: 'Source', competition: 'Concurrence', translating: 'Traduction…',
+    HIGH: 'Urgent', MEDIUM: 'Important', LOW: 'À faire', scale: 'Pousser', keep: 'Garder', fix: 'Corriger', stop: 'Arrêter' },
+  en: { loading: 'Loading...', empty: 'A report every Sunday morning and a review on the 1st of each month, from 5 orders in the period.',
+    week: 'Week', month: 'Month', orders: 'Orders', delivered: 'Delivered', revenue: 'Revenue', aov: 'Average order',
+    todo: 'To do this week', wins: "What's working", watch: 'To watch', products: 'Products', product: 'Product', returns: 'Returns',
+    ca: 'Revenue', decision: 'Decision', cities: 'Cities', season: 'Season', market: 'Market', source: 'Source', competition: 'Competition', translating: 'Translating…',
+    HIGH: 'Urgent', MEDIUM: 'Important', LOW: 'To do', scale: 'Push', keep: 'Keep', fix: 'Fix', stop: 'Stop' },
+  ar: { loading: 'جارٍ التحميل...', empty: 'تقرير كل يوم أحد صباحًا وحصيلة في أول كل شهر، ابتداءً من 5 طلبات في الفترة.',
+    week: 'الأسبوع', month: 'الشهر', orders: 'الطلبات', delivered: 'المُسلَّمة', revenue: 'رقم المعاملات', aov: 'متوسط السلة',
+    todo: 'ما يجب فعله هذا الأسبوع', wins: 'ما ينجح', watch: 'للمراقبة', products: 'المنتجات', product: 'المنتج', returns: 'المرتجعات',
+    ca: 'المبيعات', decision: 'القرار', cities: 'المدن', season: 'الموسم', market: 'السوق', source: 'المصدر', competition: 'المنافسة', translating: 'جارٍ الترجمة…',
+    HIGH: 'عاجل', MEDIUM: 'مهم', LOW: 'للقيام به', scale: 'ادفع', keep: 'احتفظ', fix: 'صحّح', stop: 'أوقف' },
+  es: { loading: 'Cargando...', empty: 'Un informe cada domingo por la mañana y un balance el día 1 de cada mes, a partir de 5 pedidos en el periodo.',
+    week: 'Semana', month: 'Mes', orders: 'Pedidos', delivered: 'Entregados', revenue: 'Facturación', aov: 'Ticket medio',
+    todo: 'Para hacer esta semana', wins: 'Lo que funciona', watch: 'A vigilar', products: 'Productos', product: 'Producto', returns: 'Devoluciones',
+    ca: 'Ventas', decision: 'Decisión', cities: 'Ciudades', season: 'Temporada', market: 'Mercado', source: 'Fuente', competition: 'Competencia', translating: 'Traduciendo…',
+    HIGH: 'Urgente', MEDIUM: 'Importante', LOW: 'Por hacer', scale: 'Impulsar', keep: 'Mantener', fix: 'Corregir', stop: 'Parar' },
 }
-const DECISION: Record<Decision, { color: string; label: string }> = {
-  scale: { color: 'var(--success)', label: 'Pousser' },
-  keep: { color: 'var(--brand)', label: 'Garder' },
-  fix: { color: 'var(--warning)', label: 'Corriger' },
-  stop: { color: 'var(--destructive)', label: 'Arrêter' },
+const PRIORITY: Record<Priority, { color: string }> = {
+  HIGH: { color: 'var(--destructive)' }, MEDIUM: { color: 'var(--warning)' }, LOW: { color: 'var(--brand)' },
+}
+const DECISION: Record<Decision, { color: string }> = {
+  scale: { color: 'var(--success)' }, keep: { color: 'var(--brand)' }, fix: { color: 'var(--warning)' }, stop: { color: 'var(--destructive)' },
 }
 const card: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 20 }
 const fmt = (n: number) => Math.round(n).toLocaleString('fr-MA')
@@ -73,13 +92,30 @@ function Section({ icon: Icon, title, children }: { icon: any; title: string; ch
 
 export default function AICoachPage() {
   const supabase = createClient()
-  const { t } = useLang()
+  const { t, locale } = useLang()
+  const lang: Lang = (['fr', 'en', 'ar', 'es'] as const).includes(locale as Lang) ? (locale as Lang) : 'fr'
+  const T = L[lang]
+  const dateLocale = lang === 'ar' ? 'ar-MA' : lang === 'en' ? 'en-GB' : lang === 'es' ? 'es-ES' : 'fr-MA'
   const isMobile = useIsMobile()
+  const [translated, setTranslated] = useState<Record<string, any>>({})
+  const [translating, setTranslating] = useState(false)
   const [reports, setReports] = useState<Report[]>([])
   const [selected, setSelected] = useState<Report | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { fetchReports() }, [])
+
+  // Report text in the dashboard language (French = as written).
+  const key = selected ? `${selected.id}:${lang}` : ''
+  useEffect(() => {
+    if (!selected || lang === 'fr' || translated[key] || selected.report_data?.version !== 2) return
+    let live = true
+    setTranslating(true)
+    fetchCoachReport(selected.id, lang).then((rep) => {
+      if (live && rep) setTranslated((m) => ({ ...m, [key]: rep }))
+    }).finally(() => { if (live) setTranslating(false) })
+    return () => { live = false }
+  }, [key])
 
   async function fetchReports() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -97,7 +133,7 @@ export default function AICoachPage() {
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Topbar title={t('nav.aicoach')} />
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Chargement...</div>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>{T.loading}</div>
     </div>
   )
 
@@ -107,19 +143,19 @@ export default function AICoachPage() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, textAlign: 'center' }}>
         <Bot size={48} color="var(--text-muted)" strokeWidth={1.6} />
         <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{t('aicoach.noReport')}</div>
-        <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Un rapport chaque dimanche matin et un bilan le 1er de chaque mois, dès 5 commandes sur la période.</div>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{T.empty}</div>
       </div>
     </div>
   )
 
   const r = selected!
-  const v = toView(r.report_data)
+  const v = toView((lang !== 'fr' && translated[`${r.id}:${lang}`]) || r.report_data)
   const m = v.metrics
   const decisionOf = (name: string) => v.decisions.find((d) => d.product === name)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={t('nav.aicoach')} subtitle={r.niche} />
+      <Topbar title={t('nav.aicoach')} subtitle={translating ? T.translating : r.niche} />
       <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? 16 : 24 }}>
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '240px minmax(0,1fr)', gap: 20, alignItems: 'start' }}>
 
@@ -129,13 +165,13 @@ export default function AICoachPage() {
               const on = selected?.id === rep.id
               return (
                 <button key={rep.id} onClick={() => setSelected(rep)} style={{
-                  textAlign: 'left', padding: '12px 14px', borderRadius: 12, cursor: 'pointer', minWidth: isMobile ? 150 : undefined,
+                  textAlign: 'start', padding: '12px 14px', borderRadius: 12, cursor: 'pointer', minWidth: isMobile ? 150 : undefined,
                   border: `1px solid ${on ? 'var(--brand)' : 'var(--border)'}`, background: on ? tint('var(--brand)', 8) : 'var(--card)', color: 'inherit',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
-                    {rep.period_type === 'weekly' ? <><Calendar size={13} strokeWidth={2.2} /> Semaine</> : <><CalendarDays size={13} strokeWidth={2.2} /> Mois</>}
+                    {rep.period_type === 'weekly' ? <><Calendar size={13} strokeWidth={2.2} /> {T.week}</> : <><CalendarDays size={13} strokeWidth={2.2} /> {T.month}</>}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(rep.created_at).toLocaleDateString('fr-MA')}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(rep.created_at).toLocaleDateString(dateLocale)}</div>
                   <div style={{ marginTop: 6, fontSize: 11, fontWeight: 700, color: scoreColor(s) }}>{s}/100</div>
                 </button>
               )
@@ -163,10 +199,10 @@ export default function AICoachPage() {
             {m?.funnel && (
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 12 }}>
                 {[
-                  { label: 'Commandes', value: fmt(m.funnel.received), d: delta(m.vsPrevious?.ordersChange) },
-                  { label: 'Livrées', value: fmt(m.funnel.delivered), d: delta(m.vsPrevious?.deliveredChange) },
-                  { label: "Chiffre d'affaires", value: `${fmt(m.funnel.gmv)} DH`, d: delta(m.vsPrevious?.revenueChange) },
-                  { label: 'Panier moyen', value: m.averageOrderValue ? `${fmt(m.averageOrderValue)} DH` : '—', d: null },
+                  { label: T.orders, value: fmt(m.funnel.received), d: delta(m.vsPrevious?.ordersChange) },
+                  { label: T.delivered, value: fmt(m.funnel.delivered), d: delta(m.vsPrevious?.deliveredChange) },
+                  { label: T.revenue, value: `${fmt(m.funnel.gmv)} DH`, d: delta(m.vsPrevious?.revenueChange) },
+                  { label: T.aov, value: m.averageOrderValue ? `${fmt(m.averageOrderValue)} DH` : '—', d: null },
                 ].map((k) => (
                   <div key={k.label} style={{ ...card, padding: 16 }}>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>{k.label}</div>
@@ -179,12 +215,12 @@ export default function AICoachPage() {
             )}
 
             {v.actions.length > 0 && (
-              <Section icon={Target} title="À faire cette semaine">
+              <Section icon={Target} title={T.todo}>
                 {v.actions.map((a, i) => {
                   const p = PRIORITY[a.priority] ?? PRIORITY.MEDIUM
                   return (
                     <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 0', borderTop: i ? '1px solid var(--border)' : 'none' }}>
-                      <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: tint(p.color, 12), color: p.color, flexShrink: 0 }}>{p.label}</span>
+                      <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: tint(p.color, 12), color: p.color, flexShrink: 0 }}>{T[a.priority] ?? T.MEDIUM}</span>
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>{a.action}</div>
                         {a.why && <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>{a.why}</div>}
@@ -197,8 +233,8 @@ export default function AICoachPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
               {[
-                { title: 'Ce qui marche', icon: ThumbsUp, items: v.wins, color: 'var(--success)' },
-                { title: 'À surveiller', icon: AlertTriangle, items: v.problems, color: 'var(--destructive)' },
+                { title: T.wins, icon: ThumbsUp, items: v.wins, color: 'var(--success)' },
+                { title: T.watch, icon: AlertTriangle, items: v.problems, color: 'var(--destructive)' },
               ].filter((b) => b.items.length).map(({ title, icon: Icon, items, color }) => (
                 <div key={title} style={card}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color, marginBottom: 12 }}><Icon size={15} strokeWidth={2.2} /> {title}</div>
@@ -210,17 +246,17 @@ export default function AICoachPage() {
             </div>
 
             {(m?.products?.length || v.decisions.length) ? (
-              <Section icon={Package} title="Produits">
+              <Section icon={Package} title={T.products}>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 520 }}>
                     <thead>
-                      <tr style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'left' }}>
-                        <th style={{ padding: '6px 8px', fontWeight: 500 }}>Produit</th>
-                        <th style={{ padding: '6px 8px', fontWeight: 500, textAlign: 'right' }}>Commandes</th>
-                        <th style={{ padding: '6px 8px', fontWeight: 500, textAlign: 'right' }}>Livrées</th>
-                        <th style={{ padding: '6px 8px', fontWeight: 500, textAlign: 'right' }}>Retours</th>
-                        <th style={{ padding: '6px 8px', fontWeight: 500, textAlign: 'right' }}>CA</th>
-                        <th style={{ padding: '6px 8px', fontWeight: 500 }}>Décision</th>
+                      <tr style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'start' }}>
+                        <th style={{ padding: '6px 8px', fontWeight: 500 }}>{T.product}</th>
+                        <th style={{ padding: '6px 8px', fontWeight: 500, textAlign: 'end' }}>{T.orders}</th>
+                        <th style={{ padding: '6px 8px', fontWeight: 500, textAlign: 'end' }}>{T.delivered}</th>
+                        <th style={{ padding: '6px 8px', fontWeight: 500, textAlign: 'end' }}>{T.returns}</th>
+                        <th style={{ padding: '6px 8px', fontWeight: 500, textAlign: 'end' }}>{T.ca}</th>
+                        <th style={{ padding: '6px 8px', fontWeight: 500 }}>{T.decision}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -233,12 +269,12 @@ export default function AICoachPage() {
                               {p.name}
                               {d?.reason && <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 400, marginTop: 3, maxWidth: 320 }}>{d.reason}</div>}
                             </td>
-                            <td style={{ padding: '10px 8px', textAlign: 'right' }}>{p.orders ?? '—'} {delta(p.ordersChange)}</td>
-                            <td style={{ padding: '10px 8px', textAlign: 'right' }}>{p.delivered ?? '—'}</td>
-                            <td style={{ padding: '10px 8px', textAlign: 'right' }}>{p.returnRate === null || p.returnRate === undefined ? '—' : `${p.returnRate}%`}</td>
-                            <td style={{ padding: '10px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>{p.revenue !== undefined ? `${fmt(p.revenue)} DH` : '—'}</td>
+                            <td style={{ padding: '10px 8px', textAlign: 'end' }}>{p.orders ?? '—'} {delta(p.ordersChange)}</td>
+                            <td style={{ padding: '10px 8px', textAlign: 'end' }}>{p.delivered ?? '—'}</td>
+                            <td style={{ padding: '10px 8px', textAlign: 'end' }}>{p.returnRate === null || p.returnRate === undefined ? '—' : `${p.returnRate}%`}</td>
+                            <td style={{ padding: '10px 8px', textAlign: 'end', whiteSpace: 'nowrap' }}>{p.revenue !== undefined ? `${fmt(p.revenue)} DH` : '—'}</td>
                             <td style={{ padding: '10px 8px' }}>
-                              {dc && <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: tint(dc.color, 12), color: dc.color }}>{dc.label}</span>}
+                              {dc && <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: tint(dc.color, 12), color: dc.color }}>{T[d!.decision] ?? T.keep}</span>}
                             </td>
                           </tr>
                         )
@@ -251,7 +287,7 @@ export default function AICoachPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
               {v.cities.length > 0 && (
-                <Section icon={MapPin} title="Villes">
+                <Section icon={MapPin} title={T.cities}>
                   {v.cities.map((c, i) => (
                     <div key={i} style={{ padding: '8px 0', borderTop: i ? '1px solid var(--border)' : 'none', fontSize: 13, lineHeight: 1.5 }}>
                       <span style={{ fontWeight: 600, color: 'var(--text)' }}>{c.city}</span> <span style={{ color: 'var(--text-muted)' }}>{c.insight}</span>
@@ -260,7 +296,7 @@ export default function AICoachPage() {
                 </Section>
               )}
               {(v.season.now || v.season.prepare.length > 0) && (
-                <Section icon={Sun} title="Saison">
+                <Section icon={Sun} title={T.season}>
                   {v.season.now && <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6, marginBottom: 8 }}>{v.season.now}</div>}
                   {v.season.prepare.map((s, i) => (
                     <div key={i} style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5, padding: '4px 0' }}>• {s}</div>
@@ -270,18 +306,18 @@ export default function AICoachPage() {
             </div>
 
             {v.market.length > 0 && (
-              <Section icon={Globe} title="Marché">
+              <Section icon={Globe} title={T.market}>
                 {v.market.map((x, i) => (
                   <div key={i} style={{ padding: '8px 0', borderTop: i ? '1px solid var(--border)' : 'none', fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>
                     {x.text}{' '}
-                    {x.source && <a href={x.source} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--brand)' }}>Source</a>}
+                    {x.source && <a href={x.source} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--brand)' }}>{T.source}</a>}
                   </div>
                 ))}
               </Section>
             )}
 
             {v.competitors.length > 0 && (
-              <Section icon={Search} title="Concurrence">
+              <Section icon={Search} title={T.competition}>
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
                   {v.competitors.map((c, i) => (
                     <div key={i} style={{ padding: 14, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg)' }}>

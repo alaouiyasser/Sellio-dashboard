@@ -11,6 +11,7 @@ import {
   LayoutGrid, Package, Wallet, BarChart3, Coins, Tag, MessageSquare, Bot, Plug, Settings, LogOut, X, ShieldCheck,
 } from 'lucide-react'
 
+import { tx } from '@/lib/i18n'
 const OLIVE = 'var(--brand)'
 
 const NAV_ITEMS = [
@@ -153,10 +154,10 @@ export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
             </div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.01em' }}>
-                Sellio
+                {tx("Sellio")}
               </div>
               <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 130 }}>
-                {company || 'Dashboard'}
+                {company || tx("Dashboard")}
               </div>
             </div>
           </div>
@@ -197,7 +198,7 @@ export default function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
               border: '1px dashed color-mix(in srgb, var(--brand) 35%, var(--border))',
             }}>
               <ShieldCheck size={18} strokeWidth={2} color="var(--brand)" style={{ flexShrink: 0 }} />
-              <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--brand)', whiteSpace: 'nowrap' }}>Console fondateur</span>
+              <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--brand)', whiteSpace: 'nowrap' }}>{tx("Console fondateur")}</span>
             </div>
           )}
         </nav>

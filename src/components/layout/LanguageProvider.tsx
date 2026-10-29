@@ -1,6 +1,7 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, Fragment, useContext, useEffect, useState } from 'react'
+import { setTxLocale } from '@/lib/i18n'
 import fr from '../../../messages/fr.json'
 import en from '../../../messages/en.json'
 import ar from '../../../messages/ar.json'
@@ -36,6 +37,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('sellio-lang', locale)
   }, [locale])
 
+  setTxLocale(locale)   // before children render, so tx() follows the switch
+
   function t(key: string): string {
     const keys = key.split('.')
     let val: any = MESSAGES[locale]
@@ -47,7 +50,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <LangContext.Provider value={{ locale, setLocale, t }}>
-      {children}
+      {/* Re-mount on change: every tx() string (even outside React state) follows the language. */}
+      <Fragment key={locale}>{children}</Fragment>
     </LangContext.Provider>
   )
 }

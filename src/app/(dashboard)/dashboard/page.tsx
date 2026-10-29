@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { orderCity, orderItems, itemName, statusLabel } from '@/lib/order-view'
 
+import { tx, intlLocale } from '@/lib/i18n'
 const OLIVE = 'var(--brand)'
 const COLORS = ['var(--success)', 'var(--destructive)', 'var(--warning)', 'var(--brand)']
 type Period = '7' | '14' | '30' | '365'
@@ -105,8 +106,8 @@ export default function OverviewPage() {
       const d = new Date(now)
       d.setDate(d.getDate() - i)
       const key = period === '365'
-        ? d.toLocaleDateString('fr-MA', { month: 'short', year: '2-digit' })
-        : d.toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit' })
+        ? d.toLocaleDateString(intlLocale(), { month: 'short', year: '2-digit' })
+        : d.toLocaleDateString(intlLocale(), { day: '2-digit', month: '2-digit' })
       days[key] = 0
     }
 
@@ -118,8 +119,8 @@ export default function OverviewPage() {
       .forEach(o => {
         const d = new Date(o.created_at)
         const key = period === '365'
-          ? d.toLocaleDateString('fr-MA', { month: 'short', year: '2-digit' })
-          : d.toLocaleDateString('fr-MA', { day: '2-digit', month: '2-digit' })
+          ? d.toLocaleDateString(intlLocale(), { month: 'short', year: '2-digit' })
+          : d.toLocaleDateString(intlLocale(), { day: '2-digit', month: '2-digit' })
         if (key in days) days[key]++
       })
 
@@ -133,14 +134,14 @@ export default function OverviewPage() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Topbar title={t('nav.dashboard')} />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-        {t('common.loading') || 'Chargement...'}
+        {t('common.loading') || tx("Chargement...")}
       </div>
     </div>
   )
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={t('nav.dashboard')} subtitle={companyName || 'Business overview'} />
+      <Topbar title={t('nav.dashboard')} subtitle={companyName || tx("Business overview")} />
       <div style={{ flex: 1, overflow: 'auto', overflowX: 'hidden', padding: isMobile ? 12 : 24 }}>
 
         {/* KPIs */}
@@ -158,7 +159,7 @@ export default function OverviewPage() {
                 <div style={{ width: 38, height: 38, borderRadius: 11, display: 'grid', placeItems: 'center', background: `color-mix(in srgb, ${k.accent} 14%, transparent)`, color: k.accent, marginBottom: 12 }}>
                   <Icon size={18} strokeWidth={2.2} />
                 </div>
-                <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 500 }}>{k.label}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 500 }}>{tx(k.label)}</div>
                 <div style={{ fontSize: 24, fontWeight: 800, color: k.valueColor, letterSpacing: '-0.5px' }}>{k.value}</div>
               </div>
             )
@@ -178,7 +179,7 @@ export default function OverviewPage() {
               {t('kpi.revenue')}
             </div>
             <div style={{ fontSize: 36, fontWeight: 800, color: '#FFFFFF', letterSpacing: '-1px' }}>
-              {kpis.revenue.toLocaleString()} <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.7)' }}>MAD</span>
+              {kpis.revenue.toLocaleString()} <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.7)' }}>{tx("MAD")}</span>
             </div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>
               {kpis.delivered} {t('kpi.deliveredOrders')} · {t('kpi.clickToView')}
@@ -203,7 +204,7 @@ export default function OverviewPage() {
                     background: period === p.value ? OLIVE : 'var(--bg)',
                     color: period === p.value ? '#fff' : 'var(--text-muted)',
                     fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
-                  }}>{p.label}</button>
+                  }}>{tx(p.label)}</button>
                 ))}
               </div>
             </div>
@@ -278,7 +279,7 @@ export default function OverviewPage() {
                       <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{c.orders} {t('top.orders')}</div>
                     </div>
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--success)', fontWeight: 700 }}>{c.revenue.toLocaleString()} MAD</div>
+                  <div style={{ fontSize: 12, color: 'var(--success)', fontWeight: 700 }}>{c.revenue.toLocaleString()} {tx("MAD")}</div>
                 </div>
               ))
             }
@@ -294,7 +295,7 @@ export default function OverviewPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: 'var(--sidebar)' }}>
-                {['ID', t('table.phone'), t('table.city'), t('table.amount'), t('table.status')].map(h => (
+                {[tx("ID"), t('table.phone'), t('table.city'), t('table.amount'), t('table.status')].map(h => (
                   <th key={h} style={{ padding: '9px 16px', textAlign: 'left', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
                 ))}
               </tr>
@@ -308,9 +309,9 @@ export default function OverviewPage() {
                     <td style={{ padding: '12px 16px', fontSize: 12, color: OLIVE, fontWeight: 600 }}>#{o.id?.slice(0, 8)}</td>
                     <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text)' }}>{o.customer_phone}</td>
                     <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-muted)' }}>{orderCity(o) || '—'}</td>
-                    <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{o.total_price ? `${o.total_price} MAD` : '—'}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{o.total_price ? tx("{0} MAD", [o.total_price]) : '—'}</td>
                     <td style={{ padding: '12px 16px' }}>
-                      <span style={{ padding: '3px 8px', borderRadius: 5, background: s.bg, color: s.color, fontSize: 11, fontWeight: 600 }}>{s.label}</span>
+                      <span style={{ padding: '3px 8px', borderRadius: 5, background: s.bg, color: s.color, fontSize: 11, fontWeight: 600 }}>{tx(s.label)}</span>
                     </td>
                   </tr>
                 )

@@ -6,6 +6,7 @@ import WizardOnboarding from '@/components/onboarding/WizardOnboarding'
 import IntegrationsManager from '@/components/integrations/IntegrationsManager'
 import { toast } from 'sonner'
 
+import { tx } from '@/lib/i18n'
 export default function IntegrationsPage() {
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [done, setDone] = useState<boolean | null>(null)
@@ -28,7 +29,7 @@ export default function IntegrationsPage() {
 
   if (!tenantId || done === null) return (
     <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: 'var(--text-muted)', fontSize: 14 }}>Chargement...</div>
+      <div style={{ color: 'var(--text-muted)', fontSize: 14 }}>{tx("Chargement...")}</div>
     </div>
   )
 
@@ -40,7 +41,7 @@ export default function IntegrationsPage() {
     <div style={{ padding: '28px 16px 64px' }}>
       <WizardOnboarding
         tenantId={tenantId}
-        onComplete={() => { toast.success('Configuration terminée ✓'); setDone(true) }}
+        onComplete={() => { toast.success(tx("Configuration terminée ✓")); setDone(true) }}
       />
     </div>
   )
