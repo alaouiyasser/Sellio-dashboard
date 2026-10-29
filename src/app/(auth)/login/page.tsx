@@ -8,6 +8,7 @@ import { apiPost, inputCls, primaryBtn } from '@/lib/auth-client'
 import { AuthShell } from '@/components/auth/AuthShell'
 import { PasswordField } from '@/components/auth/PasswordField'
 
+import { tx } from '@/lib/i18n'
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -61,10 +62,10 @@ export default function LoginPage() {
   }
 
   async function emailLogin() {
-    if (!email || !password) { toast.error('Remplissez email et mot de passe'); return }
+    if (!email || !password) { toast.error(tx("Remplissez email et mot de passe")); return }
     setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) toast.error('Email ou mot de passe incorrect')
+    if (error) toast.error(tx("Email ou mot de passe incorrect"))
     else window.location.href = '/orders'
     setLoading(false)
   }
@@ -79,33 +80,33 @@ export default function LoginPage() {
 
   return (
     <AuthShell
-      subtitle="Connectez-vous a votre dashboard"
+      subtitle={tx("Connectez-vous a votre dashboard")}
       footer={
-        <>Pas encore de compte ?{' '}
+        <>{tx("Pas encore de compte ?")}{' '}
           <button type="button" onClick={() => { window.location.href = '/signup' }}
-            className="font-medium text-brand hover:underline">Creer un compte</button>
+            className="font-medium text-brand hover:underline">{tx("Creer un compte")}</button>
         </>
       }
     >
       <button onClick={googleLogin}
         className="mb-4 flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background py-2.5 text-sm font-medium text-foreground transition hover:bg-muted/50">
-        <GoogleIcon /> Continuer avec Google
+        <GoogleIcon /> {tx("Continuer avec Google")}
       </button>
 
       <div className="mb-4 flex items-center gap-3 text-xs text-muted-foreground">
-        <div className="h-px flex-1 bg-border" /> ou <div className="h-px flex-1 bg-border" />
+        <div className="h-px flex-1 bg-border" /> {tx("ou")} <div className="h-px flex-1 bg-border" />
       </div>
 
       <div className="flex flex-col gap-2">
-        <input type="email" placeholder="Email" value={email}
+        <input type="email" placeholder={tx("Email")} value={email}
           onChange={(e) => setEmail(e.target.value)} className={inputCls} />
-        <PasswordField value={password} onChange={setPassword} placeholder="Mot de passe" onEnter={emailLogin} />
+        <PasswordField value={password} onChange={setPassword} placeholder={tx("Mot de passe")} onEnter={emailLogin} />
         <div className="flex justify-end">
           <button type="button" onClick={() => { window.location.href = '/auth/forgot' }}
-            className="text-xs text-muted-foreground transition hover:text-brand">Mot de passe oublie ?</button>
+            className="text-xs text-muted-foreground transition hover:text-brand">{tx("Mot de passe oublie ?")}</button>
         </div>
         <button onClick={emailLogin} disabled={loading} className={`${primaryBtn} mt-1`}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Se connecter'}
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : tx("Se connecter")}
         </button>
       </div>
     </AuthShell>

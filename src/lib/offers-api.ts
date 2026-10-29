@@ -1,3 +1,4 @@
+import { tx } from './i18n'
 import { authFetch } from './api-fetch'
 import { API_BASE } from './auth-client'
 
@@ -31,8 +32,8 @@ export const offersApi = {
 
 /** "1 unité à 150 DH" / "2 unités à -30 %" */
 export function offerDeal(o: Pick<Offer, 'extra_qty' | 'pricing' | 'value'>) {
-  const u = o.extra_qty === 1 ? '1 unité en plus' : `${o.extra_qty} unités en plus`
-  return o.pricing === 'unit_price' ? `${u} à ${Math.round(o.value)} DH l’unité` : `${u} à −${o.value} %`
+  const u = o.extra_qty === 1 ? tx('1 unité en plus') : tx('{0} unités en plus', [o.extra_qty])
+  return o.pricing === 'unit_price' ? tx('{0} à {1} DH l’unité', [u, Math.round(o.value)]) : tx('{0} à −{1} %', [u, o.value])
 }
 export const STATUS_LABEL: Record<OfferStatus, { label: string; color: string }> = {
   draft: { label: 'Brouillon', color: 'var(--text-muted)' },

@@ -1,3 +1,4 @@
+import { txLocale } from './i18n'
 // Reading an order row the same way on every page (Supabase rows hold JSON as text or objects).
 
 export function parseJson<T = any>(v: unknown): T | null {
@@ -38,7 +39,7 @@ export const ORDER_STATUS: Record<string, { label: Record<string, string>; bg: s
   delivery_unconfirmed: { label: { fr: 'Non confirmé', en: 'Unconfirmed', ar: 'غير مؤكد', es: 'Sin confirmar' }, bg: 'rgba(156,163,175,0.15)', color: '#9CA3AF' },
 }
 
-export const statusLabel = (status: string, locale = 'fr') => {
+export const statusLabel = (status: string, locale: string = txLocale()) => {
   const s = ORDER_STATUS[status] ?? ORDER_STATUS.pending!
   return { label: s.label[locale] ?? s.label.fr!, bg: s.bg, color: s.color }
 }

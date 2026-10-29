@@ -13,6 +13,7 @@ import {
   Smartphone, Check, X, Plus, ShieldCheck,
 } from 'lucide-react'
 
+import { tx } from '@/lib/i18n'
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 
 const inputStyle: React.CSSProperties = {
@@ -62,14 +63,14 @@ function WhatsAppTab({ tenantId }: { tenantId: string }) {
           setStatus('online')
           setQrCode(null)
           clearInterval(pollRef.current!)
-          toast.success('WhatsApp connecté avec succès')
+          toast.success(tx("WhatsApp connecté avec succès"))
         }
       } catch {}
     }, 5000)
   }
 
   async function handleConnect() {
-    if (!phone) { toast.error('Entrez votre numéro WhatsApp'); return }
+    if (!phone) { toast.error(tx("Entrez votre numéro WhatsApp")); return }
     setLoading(true)
     try {
       const res  = await authFetch(`${API}/api/whatsapp/${tenantId}/instance/create`, {
@@ -81,7 +82,7 @@ function WhatsAppTab({ tenantId }: { tenantId: string }) {
         setQrCode(data.qrcode.base64)
         setStatus('connecting')
         startPolling()
-        toast('Scannez le QR code avec WhatsApp')
+        toast(tx("Scannez le QR code avec WhatsApp"))
       } else {
         toast.error(data.error ?? 'Erreur lors de la création')
       }
@@ -104,7 +105,7 @@ function WhatsAppTab({ tenantId }: { tenantId: string }) {
         setQrCode(data.qrcode?.base64 ?? null)
         setStatus('connecting')
         startPolling()
-        toast('Session réinitialisée — scannez le nouveau QR code')
+        toast(tx("Session réinitialisée — scannez le nouveau QR code"))
       }
     } catch (err: any) {
       toast.error(err.message)
@@ -127,7 +128,7 @@ function WhatsAppTab({ tenantId }: { tenantId: string }) {
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{statusLabel}</span>
         {status === 'online' && (
           <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--text-muted)' }}>
-            Votre WhatsApp est actif <Check size={13} color="var(--success)" strokeWidth={2.6} />
+            {tx("Votre WhatsApp est actif")} <Check size={13} color="var(--success)" strokeWidth={2.6} />
           </span>
         )}
       </div>
@@ -140,28 +141,28 @@ function WhatsAppTab({ tenantId }: { tenantId: string }) {
           border: '1px solid color-mix(in srgb, var(--brand) 20%, transparent)',
         }}>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0, textAlign: 'center' }}>
-            Ouvrez WhatsApp → Appareils connectés → Connecter un appareil
+            {tx("Ouvrez WhatsApp → Appareils connectés → Connecter un appareil")}
           </p>
           <div style={{ padding: 12, background: '#fff', borderRadius: 12, boxShadow: '0 4px 24px rgba(0,0,0,0.15)' }}>
-            <img src={qrCode} alt="QR Code WhatsApp" width={200} height={200} />
+            <img src={qrCode} alt={tx("QR Code WhatsApp")} width={200} height={200} />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--warning)', animation: 'pulse 1.5s infinite' }} />
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>En attente du scan...</span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{tx("En attente du scan...")}</span>
           </div>
         </div>
       )}
 
       {status !== 'online' && !qrCode && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <label style={labelStyle}>Numéro WhatsApp à connecter</label>
+          <label style={labelStyle}>{tx("Numéro WhatsApp à connecter")}</label>
           <input style={inputStyle} value={phone} placeholder="+212600000000" onChange={e => setPhone(e.target.value)} />
           <button onClick={handleConnect} disabled={loading} style={{
             padding: '11px 24px', borderRadius: 10, background: '#25D366', color: '#fff', border: 'none',
             fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: loading ? 0.7 : 1,
             display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center',
           }}>
-            {loading ? 'Connexion...' : <><MessageCircle size={16} strokeWidth={2.2} /> Connecter WhatsApp</>}
+            {loading ? tx("Connexion...") : <><MessageCircle size={16} strokeWidth={2.2} /> {tx("Connecter WhatsApp")}</>}
           </button>
         </div>
       )}
@@ -172,7 +173,7 @@ function WhatsAppTab({ tenantId }: { tenantId: string }) {
           border: '1px solid var(--destructive)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
           opacity: loading ? 0.7 : 1, display: 'inline-flex', alignItems: 'center', gap: 7, justifyContent: 'center',
         }}>
-          <RotateCcw size={14} strokeWidth={2.2} /> Réinitialiser la session
+          <RotateCcw size={14} strokeWidth={2.2} /> {tx("Réinitialiser la session")}
         </button>
       )}
 
@@ -184,7 +185,7 @@ function WhatsAppTab({ tenantId }: { tenantId: string }) {
         fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6,
       }}>
         <AlertTriangle size={15} strokeWidth={2.2} color="var(--warning)" style={{ flexShrink: 0, marginTop: 1 }} />
-        <span>En cas de bannissement, votre queue sera automatiquement suspendue et vous recevrez une alerte Telegram.</span>
+        <span>{tx("En cas de bannissement, votre queue sera automatiquement suspendue et vous recevrez une alerte Telegram.")}</span>
       </div>
     </div>
   )
@@ -213,12 +214,12 @@ function IntegrationsManagement({ tenantId, settings, setSettings }: {
   async function handleDisconnect(key: string) {
     await supabase.from("whatsapp_instances").update({ status: "offline" }).eq("instance_key", key)
     fetchInstances()
-    toast.success("Déconnecté")
+    toast.success(tx("Déconnecté"))
   }
 
   async function handleAddNumber() {
     if (!newPhone || !/^\+[1-9]\d{7,14}$/.test(newPhone)) {
-      toast.error("Format invalide — ex: +212600000000"); return
+      toast.error(tx("Format invalide — ex: +212600000000")); return
     }
     try {
       const res = await authFetch(`${API}/api/whatsapp/${tenantId}/instance/create`, {
@@ -232,7 +233,7 @@ function IntegrationsManagement({ tenantId, settings, setSettings }: {
         setNewPhone("")
         await fetchInstances()
       } else { toast.error(data.error ?? "Erreur") }
-    } catch { toast.error("Erreur connexion") }
+    } catch { toast.error(tx("Erreur connexion")) }
   }
 
 
@@ -247,7 +248,7 @@ function IntegrationsManagement({ tenantId, settings, setSettings }: {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ padding: "6px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600,
             background: "color-mix(in srgb, var(--brand) 10%, transparent)", color: "var(--brand)", border: "1px solid color-mix(in srgb, var(--brand) 30%, transparent)" }}>
-            {settings.store_type === "youcan" ? "YouCan" : "Shopify"}
+            {settings.store_type === "youcan" ? tx("YouCan") : tx("Shopify")}
           </span>
           <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("integrations.store_connected")}</span>
         </div>
@@ -258,10 +259,10 @@ function IntegrationsManagement({ tenantId, settings, setSettings }: {
         {/* Carriers are managed in one place only: the Integrations page (credentials, auto-shipping, default carrier). */}
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-            {settings.delivery_provider ? `Actuel : ${settings.delivery_provider}` : "Aucun transporteur"}
+            {settings.delivery_provider ? tx("Actuel : {0}", [settings.delivery_provider]) : tx("Aucun transporteur")}
           </span>
           <a href="/integrations" style={{ padding: "8px 14px", borderRadius: 8, background: "var(--brand)", color: "#fff", fontSize: 12, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
-            Gérer les transporteurs
+            {tx("Gérer les transporteurs")}
           </a>
         </div>
       </div>
@@ -283,9 +284,9 @@ function IntegrationsManagement({ tenantId, settings, setSettings }: {
 
         {activeQR && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, marginTop: 16 }}>
-            <p style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text)", margin: 0 }}><Smartphone size={15} strokeWidth={2.2} /> Scannez avec WhatsApp</p>
+            <p style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text)", margin: 0 }}><Smartphone size={15} strokeWidth={2.2} /> {tx("Scannez avec WhatsApp")}</p>
             <div style={{ padding: 10, background: "#fff", borderRadius: 10 }}>
-              <img src={activeQR} width={180} height={180} alt="QR" />
+              <img src={activeQR} width={180} height={180} alt={tx("QR")} />
             </div>
             <button onClick={() => setActiveQR(null)} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer" }}><X size={13} strokeWidth={2.4} /> {t("integrations.close")}</button>
           </div>
@@ -358,10 +359,10 @@ export default function SettingsPage() {
     setSaving(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Non authentifié')
+      if (!user) throw new Error(tx("Non authentifié"))
       const { error } = await supabase.from('tenants').update(settings).eq('id', user.id)
       if (error) throw error
-      toast.success('Paramètres sauvegardés')
+      toast.success(tx("Paramètres sauvegardés"))
     } catch (err: any) {
       toast.error(err?.message ?? 'Erreur de sauvegarde')
     } finally {
@@ -373,7 +374,7 @@ export default function SettingsPage() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Topbar title={t('settings.title')} />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-        Chargement...
+        {tx("Chargement...")}
       </div>
     </div>
   )
@@ -405,7 +406,7 @@ export default function SettingsPage() {
               <div>
                 <label style={labelStyle}>{t('settings.companyName')}</label>
                 <input style={inputStyle} value={settings.company_name}
-                  placeholder="Ex: Maroc Beauty Store"
+                  placeholder={tx("Ex: Maroc Beauty Store")}
                   onChange={e => setSettings(s => ({ ...s, company_name: e.target.value }))} />
               </div>
             </div>
@@ -419,7 +420,7 @@ export default function SettingsPage() {
               background: 'var(--brand)', color: '#fff', border: 'none',
               fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: saving ? 0.7 : 1,
             }}>
-              {saving ? 'Sauvegarde...' : t('settings.save')}
+              {saving ? tx("Sauvegarde...") : t('settings.save')}
             </button>
           )}
         </div>

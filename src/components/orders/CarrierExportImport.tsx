@@ -5,6 +5,7 @@ import type { CSSProperties, ChangeEvent } from 'react'
 import { createClient } from '@/lib/supabase'
 import { fetchIntegrations, exportOrders, importTracking, type IntegrationItem } from '@/lib/integrations-api'
 
+import { tx } from '@/lib/i18n'
 export default function CarrierExportImport() {
   const supabase = createClient()
   const [tid, setTid] = useState<string | null>(null)
@@ -40,7 +41,7 @@ export default function CarrierExportImport() {
     setBusy('export'); setMsg(null)
     try {
       await exportOrders(tid, slug)
-      setMsg({ ok: true, text: 'Fichier exporté' })
+      setMsg({ ok: true, text: tx("Fichier exporté") })
     } catch (e: any) {
       setMsg({ ok: false, text: e?.message || 'Erreur export' })
     } finally { setBusy(null) }
@@ -52,7 +53,7 @@ export default function CarrierExportImport() {
     setBusy('import'); setMsg(null)
     try {
       const r = await importTracking(tid, slug, file)
-      setMsg({ ok: true, text: `${r.updated} mis à jour · ${r.delivered} livrés · ${r.skipped} ignorés` })
+      setMsg({ ok: true, text: tx("{0} mis à jour · {1} livrés · {2} ignorés", [r.updated, r.delivered, r.skipped]) })
     } catch (err: any) {
       setMsg({ ok: false, text: err?.message || 'Erreur import' })
     } finally {
@@ -77,11 +78,11 @@ export default function CarrierExportImport() {
       )}
 
       <button onClick={onExport} disabled={busy !== null} style={{ ...btn, opacity: busy ? 0.6 : 1 }}>
-        {busy === 'export' ? '…' : `Exporter ${current?.name ?? ''}`}
+        {busy === 'export' ? '…' : tx("Exporter {0}", [current?.name ?? ''])}
       </button>
 
       <button onClick={() => fileRef.current?.click()} disabled={busy !== null} style={{ ...btn, opacity: busy ? 0.6 : 1 }}>
-        {busy === 'import' ? '…' : 'Importer tracking'}
+        {busy === 'import' ? '…' : tx("Importer tracking")}
       </button>
       <input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={onImportFile} style={{ display: 'none' }} />
 

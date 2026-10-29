@@ -15,6 +15,7 @@ import { fetchWaMode, type WaMode } from '@/lib/whatsapp-mode'
 import OfficialNumberCard from '@/components/OfficialNumberCard'
 import { Plus, Check, X, Settings2, Power, Loader2, MessageCircle } from 'lucide-react'
 
+import { tx } from '@/lib/i18n'
 const card: React.CSSProperties = {
   background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: 18,
 }
@@ -60,7 +61,7 @@ export default function IntegrationsManager() {
         const d = await r.json()
         if (d.ok) setWaInstances(d.instances ?? [])
       } catch {}
-    } catch { toast.error('Erreur de chargement') }
+    } catch { toast.error(tx("Erreur de chargement")) }
     finally { setLoading(false) }
   }, [])
 
@@ -107,11 +108,11 @@ export default function IntegrationsManager() {
   async function submitConnect() {
     if (!tid || !modal) return
     const missing = missingFields(modal, form)
-    if (missing.length) { toast.error(`Champs requis : ${missing.map((f) => f.label).join(', ')}`); return }
+    if (missing.length) { toast.error(tx("Champs requis : {0}", [missing.map((f) => f.label).join(', ')])); return }
     setBusy(modal.slug)
     try {
       await connectIntegration(tid, modal.slug, form)
-      toast.success(`${modal.name} connecté ✓`)
+      toast.success(tx("{0} connecté ✓", [modal.name]))
       setModal(null); await load(tid)
     } catch (e: any) { toast.error(e?.message || 'Erreur') }
     finally { setBusy(null) }
@@ -129,11 +130,11 @@ export default function IntegrationsManager() {
   }
   async function remove(item: IntegrationItem) {
     if (!tid) return
-    if (!confirm(`Déconnecter ${item.name} ?`)) return
+    if (!confirm(tx("Déconnecter {0} ?", [item.name]))) return
     setBusy(item.slug)
     try {
       await disconnectIntegration(tid, item.slug)
-      toast.success('Déconnecté')
+      toast.success(tx("Déconnecté"))
       await load(tid)
     } catch (e: any) { toast.error(e?.message || 'Erreur') }
     finally { setBusy(null) }
@@ -141,11 +142,11 @@ export default function IntegrationsManager() {
 
   async function removeWa(instanceKey: string, phone: string) {
     if (!tid) return
-    if (!confirm(`Supprimer le numéro ${phone} ?`)) return
+    if (!confirm(tx("Supprimer le numéro {0} ?", [phone]))) return
     setWaBusy(true)
     try {
       await deleteWaInstance(tid, instanceKey)
-      toast.success('Numéro supprimé')
+      toast.success(tx("Numéro supprimé"))
       await refreshWa()
     } catch (e: any) { toast.error(e?.message || 'Erreur') }
     finally { setWaBusy(false) }
@@ -185,7 +186,7 @@ export default function IntegrationsManager() {
         if (online) {
           clearInterval(waPoll.current!)
           setWaQr(null); setWaModal(false); setWaPhone('')
-          toast.success('Numéro WhatsApp connecté ✓')
+          toast.success(tx("Numéro WhatsApp connecté ✓"))
           refreshWa()
         }
       } catch {}
@@ -194,7 +195,7 @@ export default function IntegrationsManager() {
 
   async function handleAddNumber() {
     const full = '+212' + waPhone.replace(/^\+?212/, '').replace(/\s/g, '')
-    if (waPhone.replace(/^\+?212/, '').length < 9) { toast.error('Numéro invalide'); return }
+    if (waPhone.replace(/^\+?212/, '').length < 9) { toast.error(tx("Numéro invalide")); return }
     setWaBusy(true)
     try {
       const res = await authFetch(`${WA_API}/api/whatsapp/${tid}/instance/create`, {
@@ -204,7 +205,7 @@ export default function IntegrationsManager() {
       const data = await res.json()
       if (data.ok && data.qrcode?.base64) {
         setWaQr(data.qrcode.base64); startWaPoll()
-        toast('Scannez le QR code avec WhatsApp')
+        toast(tx("Scannez le QR code avec WhatsApp"))
       } else {
         toast.error(data.error ?? 'Erreur lors de la création')
       }
@@ -212,16 +213,16 @@ export default function IntegrationsManager() {
     finally { setWaBusy(false) }
   }
 
-  if (loading) return <div style={{ minHeight: '50vh', display: 'grid', placeItems: 'center', color: 'var(--text-muted)' }}>Chargement...</div>
+  if (loading) return <div style={{ minHeight: '50vh', display: 'grid', placeItems: 'center', color: 'var(--text-muted)' }}>{tx("Chargement...")}</div>
 
   return (
     <div style={{ padding: '28px 24px 64px', maxWidth: 900, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>Mes intégrations</h1>
-      <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 6, marginBottom: 28 }}>Gérez vos plateformes, transporteurs et numéros WhatsApp.</p>
+      <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>{tx("Mes intégrations")}</h1>
+      <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 6, marginBottom: 28 }}>{tx("Gérez vos plateformes, transporteurs et numéros WhatsApp.")}</p>
 
       {/* ─── PLATEFORMES ─── */}
       <ConnectedSection
-        title="Plateforme e-commerce"
+        title={tx("Plateforme e-commerce")}
         connected={connected('ecommerce')}
         available={available('ecommerce')}
         onAdd={() => setAddCat(addCat === 'ecommerce' ? null : 'ecommerce')}
@@ -234,7 +235,7 @@ export default function IntegrationsManager() {
 
       {/* ─── LIVRAISON ─── */}
       <ConnectedSection
-        title="Société de livraison"
+        title={tx("Société de livraison")}
         connected={connected('carrier')}
         available={available('carrier')}
         onAdd={() => setAddCat(addCat === 'carrier' ? null : 'carrier')}
@@ -248,18 +249,18 @@ export default function IntegrationsManager() {
       {/* ─── WHATSAPP ─── */}
       {waMode?.provider === 'cloud' ? (
       <section style={{ marginBottom: 32 }}>
-        <h2 style={{ ...sectionTitle, marginBottom: 12 }}>WhatsApp</h2>
+        <h2 style={{ ...sectionTitle, marginBottom: 12 }}>{tx("WhatsApp")}</h2>
         <OfficialNumberCard displayNumber={waMode.displayNumber} />
       </section>
       ) : (
       <section style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <h2 style={sectionTitle}>WhatsApp</h2>
-          <button onClick={() => { setWaModal(true); setWaPhone(''); setWaQr(null) }} style={addBtn}><Plus size={15} /> Ajouter un numéro</button>
+          <h2 style={sectionTitle}>{tx("WhatsApp")}</h2>
+          <button onClick={() => { setWaModal(true); setWaPhone(''); setWaQr(null) }} style={addBtn}><Plus size={15} /> {tx("Ajouter un numéro")}</button>
         </div>
         {waInstances.length === 0 ? (
           <div style={{ ...card, color: 'var(--text-muted)', fontSize: 13.5, textAlign: 'center', padding: 24 }}>
-            Aucun numéro WhatsApp. Cliquez sur « Ajouter un numéro ».
+            {tx("Aucun numéro WhatsApp. Cliquez sur « Ajouter un numéro ».")}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -275,18 +276,18 @@ export default function IntegrationsManager() {
                       <MessageCircle size={20} color="#fff" strokeWidth={2.2} />
                     </div>
                     <div>
-                      <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>{wa.phone_number || 'Numéro WhatsApp'}</div>
+                      <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>{wa.phone_number || tx("Numéro WhatsApp")}</div>
                       <div style={{ fontSize: 12, color: statusColor, marginTop: 1 }}>
-                        {statusLabel} · {wa.messages_today ?? 0}/{wa.daily_limit ?? 300} msg
+                        {statusLabel} · {wa.messages_today ?? 0}/{wa.daily_limit ?? 300} {tx("msg")}
                       </div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <button onClick={() => toggleWa(wa.instance_key, wa.status)} disabled={waBusy} style={smallBtn}>
-                      <Power size={14} /> {wa.status === 'disabled' ? 'Activer' : 'Désactiver'}
+                      <Power size={14} /> {wa.status === 'disabled' ? tx("Activer") : tx("Désactiver")}
                     </button>
                     <button onClick={() => removeWa(wa.instance_key, wa.phone_number)} disabled={waBusy} style={{ ...smallBtn, color: 'var(--destructive)' }}>
-                      <X size={14} /> Supprimer
+                      <X size={14} /> {tx("Supprimer")}
                     </button>
                   </div>
                 </div>
@@ -302,7 +303,7 @@ export default function IntegrationsManager() {
         <div onClick={() => !waBusy && !waQr && setWaModal(false)} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.5)', display: 'grid', placeItems: 'center', padding: 16 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 400, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 22, textAlign: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Ajouter un numéro WhatsApp</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{tx("Ajouter un numéro WhatsApp")}</div>
               <button onClick={() => { setWaModal(false); setWaQr(null); if (waPoll.current) clearInterval(waPoll.current) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
             </div>
 
@@ -319,16 +320,16 @@ export default function IntegrationsManager() {
                   />
                 </div>
                 <button onClick={handleAddNumber} disabled={waBusy} style={{ ...addBtn, width: '100%', justifyContent: 'center', padding: 11 }}>
-                  {waBusy ? <Loader2 size={15} className="animate-spin" /> : <><MessageCircle size={15} /> Générer le QR code</>}
+                  {waBusy ? <Loader2 size={15} className="animate-spin" /> : <><MessageCircle size={15} /> {tx("Générer le QR code")}</>}
                 </button>
               </>
             ) : (
               <>
-                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>Ouvrez WhatsApp → Appareils connectés → Connecter un appareil → Scannez</p>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>{tx("Ouvrez WhatsApp → Appareils connectés → Connecter un appareil → Scannez")}</p>
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
-                  <img src={waQr} alt="QR WhatsApp" width={220} height={220} style={{ borderRadius: 10, border: '1px solid var(--border)' }} />
+                  <img src={waQr} alt={tx("QR WhatsApp")} width={220} height={220} style={{ borderRadius: 10, border: '1px solid var(--border)' }} />
                 </div>
-                <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>En attente de connexion...</div>
+                <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{tx("En attente de connexion...")}</div>
               </>
             )}
           </div>
@@ -340,7 +341,7 @@ export default function IntegrationsManager() {
         <div onClick={() => !busy && setModal(null)} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.5)', display: 'grid', placeItems: 'center', padding: 16 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 22 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{modal.connection ? 'Modifier' : 'Connecter'} {modal.name}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{modal.connection ? tx("Modifier") : tx("Connecter")} {modal.name}</div>
               <button onClick={() => !busy && setModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
             </div>
             {modal.oneClick && !manual && tid ? (
@@ -349,9 +350,9 @@ export default function IntegrationsManager() {
             ) : (<>
             <IntegrationFields item={modal} form={form} onChange={(k, v) => setForm((s) => ({ ...s, [k]: v }))} />
             <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-              <button onClick={() => setModal(null)} disabled={!!busy} style={{ ...smallBtn, flex: 1, justifyContent: 'center', padding: 10 }}>Annuler</button>
+              <button onClick={() => setModal(null)} disabled={!!busy} style={{ ...smallBtn, flex: 1, justifyContent: 'center', padding: 10 }}>{tx("Annuler")}</button>
               <button onClick={submitConnect} disabled={!!busy} style={{ ...addBtn, flex: 2, justifyContent: 'center', padding: 10 }}>
-                {busy ? <Loader2 size={15} className="animate-spin" /> : <><Check size={15} /> Enregistrer</>}
+                {busy ? <Loader2 size={15} className="animate-spin" /> : <><Check size={15} /> {tx("Enregistrer")}</>}
               </button>
             </div>
             </>)}
@@ -380,13 +381,13 @@ function ConnectedSection({ title, connected, available, single, onAdd, showAdd,
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <h2 style={sectionTitle}>{title}</h2>
         {canAdd && available.length > 0 && (
-          <button onClick={onAdd} style={addBtn}><Plus size={15} /> Ajouter</button>
+          <button onClick={onAdd} style={addBtn}><Plus size={15} /> {tx("Ajouter")}</button>
         )}
       </div>
 
       {connected.length === 0 && !showAdd && (
         <div style={{ ...card, color: 'var(--text-muted)', fontSize: 13.5, textAlign: 'center', padding: 24 }}>
-          Aucune intégration. Cliquez sur « Ajouter ».
+          {tx("Aucune intégration. Cliquez sur « Ajouter ».")}
         </div>
       )}
 
@@ -401,12 +402,12 @@ function ConnectedSection({ title, connected, available, single, onAdd, showAdd,
                 <div>
                   <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>{item.name}</div>
                   <div style={{ fontSize: 12, color: disabled ? 'var(--text-muted)' : failing ? 'var(--destructive)' : '#16a34a', marginTop: 1 }}>
-                    {disabled ? 'Désactivé' : failing ? 'Erreur de connexion' : item.method === 'api' ? 'Connecté · API' : 'Connecté · Manuel'}
-                    {item.connection?.isDefault && ' · Par défaut'}
+                    {disabled ? tx("Désactivé") : failing ? tx("Erreur de connexion") : item.method === 'api' ? tx("Connecté · API") : tx("Connecté · Manuel")}
+                    {item.connection?.isDefault && tx(" · Par défaut")}
                   </div>
                   {failing && (
                     <div style={{ fontSize: 12, color: 'var(--destructive)', marginTop: 3, maxWidth: 420 }}>
-                      ⚠️ {item.connection?.lastError || 'Clé refusée par le transporteur'} — cliquez sur « Modifier » pour mettre à jour la clé.
+                      ⚠️ {item.connection?.lastError || tx("Clé refusée par le transporteur")} {tx("— cliquez sur « Modifier » pour mettre à jour la clé.")}
                     </div>
                   )}
                 </div>
@@ -414,13 +415,13 @@ function ConnectedSection({ title, connected, available, single, onAdd, showAdd,
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {item.action && !disabled && (
                   <a href={item.action.url} target="_blank" rel="noopener noreferrer"
-                    title="Shopify s’ouvre avec le formulaire déjà placé : cliquez sur Enregistrer."
+                    title={tx("Shopify s’ouvre avec le formulaire déjà placé : cliquez sur Enregistrer.")}
                     style={{ ...smallBtn, background: 'var(--brand)', color: '#fff', border: 'none', textDecoration: 'none' }}>
                     {item.action.label}
                   </a>
                 )}
-                <button onClick={() => onPick(item)} disabled={busy === item.slug} style={smallBtn}><Settings2 size={14} /> Modifier</button>
-                <button onClick={() => onToggle(item)} disabled={busy === item.slug} style={smallBtn}><Power size={14} /> {disabled ? 'Activer' : 'Désactiver'}</button>
+                <button onClick={() => onPick(item)} disabled={busy === item.slug} style={smallBtn}><Settings2 size={14} /> {tx("Modifier")}</button>
+                <button onClick={() => onToggle(item)} disabled={busy === item.slug} style={smallBtn}><Power size={14} /> {disabled ? tx("Activer") : tx("Désactiver")}</button>
                 <button onClick={() => onRemove(item)} disabled={busy === item.slug} style={{ ...smallBtn, color: 'var(--destructive)' }}><X size={14} /></button>
               </div>
             </div>
@@ -430,7 +431,7 @@ function ConnectedSection({ title, connected, available, single, onAdd, showAdd,
 
       {showAdd && (
         <div style={{ ...card, marginTop: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10 }}>Choisir :</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10 }}>{tx("Choisir :")}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {available.map((item) => (
               <button key={item.slug} onClick={() => onPick(item)} style={smallBtn}>{item.name}</button>

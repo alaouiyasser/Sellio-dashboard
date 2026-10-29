@@ -6,6 +6,7 @@ import { Loader2, ArrowLeft, ShieldCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { apiPost, inputCls, primaryBtn } from '@/lib/auth-client'
 
+import { tx } from '@/lib/i18n'
 type Step = 'phone' | 'otp' | 'signup'
 
 export function PhoneAuthForm({
@@ -40,28 +41,28 @@ export function PhoneAuthForm({
   }
 
   async function requestOtp() {
-    if (!phone.trim()) { toast.error('Entrez votre numéro'); return }
+    if (!phone.trim()) { toast.error(tx("Entrez votre numéro")); return }
     setLoading(true)
     try {
       const { res, data } = await apiPost('/api/auth/phone/request-otp', { phone })
       if (!res.ok || !data.ok) {
         if (data.error === 'rate_limited' || data.error === 'cooldown') {
-          toast.error(`Réessayez dans ${data.retryAfterSeconds ?? 60}s`)
+          toast.error(tx("Réessayez dans {0}s", [data.retryAfterSeconds ?? 60]))
           setCooldown(data.retryAfterSeconds ?? 60)
-        } else if (data.error === 'invalid_phone') toast.error('Numéro invalide')
-        else toast.error("Échec d'envoi du code")
+        } else if (data.error === 'invalid_phone') toast.error(tx("Numéro invalide"))
+        else toast.error(tx("Échec d'envoi du code"))
         return
       }
       setStep('otp')
       setCooldown(data.cooldownSeconds ?? 60)
-      toast.success('Code envoyé sur WhatsApp')
+      toast.success(tx("Code envoyé sur WhatsApp"))
     } finally {
       setLoading(false)
     }
   }
 
   async function verifyOtp() {
-    if (!/^\d{6}$/.test(code)) { toast.error('Entrez le code à 6 chiffres'); return }
+    if (!/^\d{6}$/.test(code)) { toast.error(tx("Entrez le code à 6 chiffres")); return }
     setLoading(true)
     try {
       const { res, data } = await apiPost('/api/auth/phone/verify-otp', {
@@ -70,35 +71,35 @@ export function PhoneAuthForm({
       if (res.ok && data.status === 'authenticated') { await finishAuth(data, loginDest); return }
       if (res.ok && data.status === 'needs_signup') {
         setStep('signup')
-        toast.info('Nouveau compte — complétez vos infos')
+        toast.info(tx("Nouveau compte — complétez vos infos"))
         return
       }
-      if (data.error === 'invalid') toast.error(`Code incorrect (${data.remainingAttempts ?? 0} essais restants)`)
-      else if (data.error === 'expired') toast.error('Code expiré, redemandez-en un')
-      else if (data.error === 'locked') toast.error('Trop de tentatives, redemandez un code')
-      else toast.error('Vérification échouée')
+      if (data.error === 'invalid') toast.error(tx("Code incorrect ({0} essais restants)", [data.remainingAttempts ?? 0]))
+      else if (data.error === 'expired') toast.error(tx("Code expiré, redemandez-en un"))
+      else if (data.error === 'locked') toast.error(tx("Trop de tentatives, redemandez un code"))
+      else toast.error(tx("Vérification échouée"))
     } finally {
       setLoading(false)
     }
   }
 
   async function completeSignup() {
-    if (suStore.trim().length < 2) { toast.error('Nom de boutique requis'); return }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(suEmail)) { toast.error('Email invalide'); return }
+    if (suStore.trim().length < 2) { toast.error(tx("Nom de boutique requis")); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(suEmail)) { toast.error(tx("Email invalide")); return }
     setLoading(true)
     try {
       const { res, data } = await apiPost('/api/auth/phone/complete-signup', {
         phone, email: suEmail, storeName: suStore, rememberDevice: remember,
       })
       if (res.ok && data.status === 'authenticated') {
-        toast.success('Compte créé 🎉')
+        toast.success(tx("Compte créé 🎉"))
         await finishAuth(data, signupDest)
         return
       }
-      if (data.error === 'email_already_registered') toast.error('Cet email a déjà un compte')
-      else if (data.error === 'phone_already_registered') toast.error('Ce numéro a déjà un compte')
-      else if (data.error === 'phone_not_verified') { toast.error('Session expirée, recommencez'); setStep('phone'); setCode('') }
-      else toast.error('Création échouée')
+      if (data.error === 'email_already_registered') toast.error(tx("Cet email a déjà un compte"))
+      else if (data.error === 'phone_already_registered') toast.error(tx("Ce numéro a déjà un compte"))
+      else if (data.error === 'phone_not_verified') { toast.error(tx("Session expirée, recommencez")); setStep('phone'); setCode('') }
+      else toast.error(tx("Création échouée"))
     } finally {
       setLoading(false)
     }
@@ -111,9 +112,9 @@ export function PhoneAuthForm({
           onChange={(e) => setPhone(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && requestOtp()} className={inputCls} />
         <button onClick={requestOtp} disabled={loading} className={primaryBtn}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Recevoir le code'}
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : tx("Recevoir le code")}
         </button>
-        <p className="text-center text-xs text-muted-foreground">Un code WhatsApp vous sera envoyé</p>
+        <p className="text-center text-xs text-muted-foreground">{tx("Un code WhatsApp vous sera envoyé")}</p>
       </div>
     )
   }
@@ -123,23 +124,23 @@ export function PhoneAuthForm({
       <div className="flex flex-col gap-3">
         <button onClick={() => { setStep('phone'); setCode('') }}
           className="flex items-center gap-1 self-start text-xs text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-3.5 w-3.5" /> Changer de numéro
+          <ArrowLeft className="h-3.5 w-3.5" /> {tx("Changer de numéro")}
         </button>
-        <input inputMode="numeric" maxLength={6} placeholder="Code à 6 chiffres" value={code}
+        <input inputMode="numeric" maxLength={6} placeholder={tx("Code à 6 chiffres")} value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
           onKeyDown={(e) => e.key === 'Enter' && verifyOtp()}
           className={`${inputCls} text-center text-lg tracking-[0.3em]`} />
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
           <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)}
             className="h-4 w-4 rounded border-border accent-[var(--brand)]" />
-          Se souvenir de cet appareil
+          {tx("Se souvenir de cet appareil")}
         </label>
         <button onClick={verifyOtp} disabled={loading} className={primaryBtn}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Vérifier'}
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : tx("Vérifier")}
         </button>
         <button onClick={requestOtp} disabled={cooldown > 0 || loading}
           className="text-center text-xs text-brand transition disabled:text-muted-foreground">
-          {cooldown > 0 ? `Renvoyer dans ${cooldown}s` : 'Renvoyer le code'}
+          {cooldown > 0 ? tx("Renvoyer dans {0}s", [cooldown]) : tx("Renvoyer le code")}
         </button>
       </div>
     )
@@ -148,14 +149,14 @@ export function PhoneAuthForm({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2 rounded-lg bg-brand/5 p-3 text-xs text-muted-foreground">
-        <ShieldCheck className="h-4 w-4 shrink-0 text-brand" /> Numéro vérifié — créez votre compte
+        <ShieldCheck className="h-4 w-4 shrink-0 text-brand" /> {tx("Numéro vérifié — créez votre compte")}
       </div>
-      <input placeholder="Nom de votre boutique" value={suStore}
+      <input placeholder={tx("Nom de votre boutique")} value={suStore}
         onChange={(e) => setSuStore(e.target.value)} className={inputCls} />
-      <input type="email" placeholder="Email" value={suEmail}
+      <input type="email" placeholder={tx("Email")} value={suEmail}
         onChange={(e) => setSuEmail(e.target.value)} className={inputCls} />
       <button onClick={completeSignup} disabled={loading} className={primaryBtn}>
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Créer mon compte'}
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : tx("Créer mon compte")}
       </button>
     </div>
   )
