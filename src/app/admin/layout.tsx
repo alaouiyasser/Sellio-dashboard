@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Store, Receipt, ArrowLeft, ShieldCheck, Lock, Menu, X, Sun, Moon } from 'lucide-react'
+import { LayoutDashboard, Store, Receipt, ArrowLeft, ShieldCheck, Lock, Menu, X, Sun, Moon, Calculator } from 'lucide-react'
 import { adminApi, AdminError } from '@/lib/admin-api'
 import { useTheme } from '@/components/layout/ThemeProvider'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -12,6 +12,7 @@ import { btn } from '@/components/admin/ui'
 const NAV = [
   { href: '/admin', label: "Vue d'ensemble", icon: LayoutDashboard },
   { href: '/admin/merchants', label: 'Marchands', icon: Store },
+  { href: '/admin/economics', label: 'Rentabilité', icon: Calculator },
   { href: '/admin/expenses', label: 'Coûts & dépenses', icon: Receipt },
 ]
 
