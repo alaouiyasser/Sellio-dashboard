@@ -39,6 +39,17 @@ export interface Overview {
   messages: MessageCosts & { perOrder: number | null }
   pnl: Pnl
   series: { day: string; received: number; delivered: number; revenue: number; msgCost: number }[]
+  retention?: Retention
+  unit?: UnitEconomics
+  waCostPerMessageMad?: number
+}
+export interface Retention { previousPayers: number; kept: number; keptRate: number | null; monthlyChurn: number | null; payersNow: number }
+export interface UnitEconomics {
+  assumptions: { price: number; taxRate: number; aiMadPerOrder: number; minMargin: number; targetProfit: number; fallbackLifetimeMonths: number }
+  perDelivered: { whatsapp: number; ai: number; tax: number; variable: number; margin: number; marginPct: number } | null
+  monthly: { delivered: number; fixedCosts: number; ads: number; breakEvenDelivered: number | null; targetDelivered: number | null; targetProfit: number }
+  merchant: { payers: number; marginPerMonth: number | null; lifetimeMonths: number | null; lifetimeMeasured: boolean; ltv: number | null; cac: number | null; ltvToCac: number | null }
+  floorPrice: number | null
 }
 export interface Step { key: string; label: string; done: boolean }
 export interface MerchantLine {
