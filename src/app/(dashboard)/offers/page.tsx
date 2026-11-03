@@ -27,7 +27,7 @@ export default function OffersPage() {
 
   useEffect(() => {
     offersApi.list().then((r) => setOffers(r.offers)).catch((e) => toast.error(e.message)).finally(() => setLoading(false))
-    profitApi.get(30).then((r) => setProducts(r.products)).catch(() => {})
+    profitApi.get('days=30').then((r) => setProducts(r.products)).catch(() => {})
   }, [])
 
   const replace = (id: string) => (o: Offer | null) => setOffers((list) => (o ? list.map((x) => (x.id === id ? o : x)) : list.filter((x) => x.id !== id)))
