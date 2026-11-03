@@ -25,6 +25,8 @@ async function call(path: string, init?: RequestInit) {
 
 export const offersApi = {
   list: (): Promise<{ offers: Offer[] }> => call('/offers'),
+  /** Products of each connected store (from its orders). */
+  products: (): Promise<{ stores: string[]; products: Record<string, string[]>; all: string[] }> => call('/offers/products'),
   create: (f: OfferForm, status: 'draft' | 'active') => call('/offers', { method: 'POST', body: JSON.stringify({ ...f, value: f.value.replace(',', '.'), status }) }),
   setStatus: (id: string, status: OfferStatus): Promise<{ offer: Offer }> => call(`/offers/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   remove: (id: string) => call(`/offers/${id}`, { method: 'DELETE' }),

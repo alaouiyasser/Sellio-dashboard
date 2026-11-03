@@ -7,27 +7,27 @@ import Topbar from '@/components/layout/Topbar'
 import { useLang } from '@/components/layout/LanguageProvider'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { offersApi, type Offer, type OfferForm } from '@/lib/offers-api'
-import { profitApi } from '@/lib/profit-api'
 import { OfferCard } from '@/components/offers/OfferCard'
 
 import { tx } from '@/lib/i18n'
 const card: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 20 }
 const input: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, marginTop: 4 }
 const label: React.CSSProperties = { fontSize: 12, color: 'var(--text-muted)' }
+const STORE_NAMES: Record<string, string> = { youcan: 'YouCan', shopify: 'Shopify', woocommerce: 'WooCommerce' }
 const EMPTY: OfferForm = { title: '', productName: '', store: '', extraQty: 1, pricing: 'unit_price', value: '', message: '', startsAt: '', endsAt: '' }
 
 export default function OffersPage() {
   const { t } = useLang()
   const isMobile = useIsMobile()
   const [offers, setOffers] = useState<Offer[]>([])
-  const [products, setProducts] = useState<string[]>([])
+  const [catalog, setCatalog] = useState<{ stores: string[]; products: Record<string, string[]>; all: string[] }>({ stores: [], products: {}, all: [] })
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState<OfferForm>(EMPTY)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     offersApi.list().then((r) => setOffers(r.offers)).catch((e) => toast.error(e.message)).finally(() => setLoading(false))
-    profitApi.get('days=30').then((r) => setProducts(r.products)).catch(() => {})
+    offersApi.products().then(setCatalog).catch(() => {})
   }, [])
 
   const replace = (id: string) => (o: Offer | null) => setOffers((list) => (o ? list.map((x) => (x.id === id ? o : x)) : list.filter((x) => x.id !== id)))
@@ -44,6 +44,7 @@ export default function OffersPage() {
     finally { setSaving(false) }
   }
 
+  const products = form.store ? catalog.products[form.store] ?? [] : catalog.all
   const set = <K extends keyof OfferForm>(k: K, v: OfferForm[K]) => setForm((f) => ({ ...f, [k]: v }))
 
   return (
@@ -68,11 +69,9 @@ export default function OffersPage() {
                 <input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder={tx("ex. 2e flacon à 150 DH")} style={input} />
               </label>
               <label style={label}>{tx("Boutique")}
-                <select value={form.store} onChange={(e) => set('store', e.target.value)} style={input}>
+                <select value={form.store} onChange={(e) => setForm((f) => ({ ...f, store: e.target.value, productName: '' }))} style={input}>
                   <option value="">{tx("Toutes les boutiques")}</option>
-                  <option value="youcan">{tx("YouCan")}</option>
-                  <option value="shopify">{tx("Shopify")}</option>
-                  <option value="woocommerce">{tx("WooCommerce")}</option>
+                  {catalog.stores.map((st) => <option key={st} value={st}>{STORE_NAMES[st] ?? st}</option>)}
                 </select>
               </label>
               <label style={label}>{tx("Produit")}
@@ -80,6 +79,9 @@ export default function OffersPage() {
                   <option value="">{tx("Tous les produits")}</option>
                   {products.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
+                {form.store && products.length === 0 && (
+                  <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{tx('Aucun produit vendu sur cette boutique pour l’instant.')}</span>
+                )}
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <label style={label}>{tx("Unités ajoutées")}
