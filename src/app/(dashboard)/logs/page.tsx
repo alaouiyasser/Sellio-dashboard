@@ -44,7 +44,7 @@ export default function InboxPage() {
   const [active, setActive] = useState<Conversation | null>(null)
   const [thread, setThread] = useState<{ messages: InboxMessage[]; orders: InboxOrder[] } | null>(null)
   const [threadLoading, setThreadLoading] = useState(false)
-  const endRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   async function loadList(query = q) {
     setLoading(true); setError('')
@@ -56,7 +56,8 @@ export default function InboxPage() {
   }
 
   useEffect(() => { const id = setTimeout(() => loadList(q), 350); return () => clearTimeout(id) }, [q])
-  useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }) }, [thread])
+  // Scroll the thread itself to the last message (never the page).
+  useEffect(() => { const el = scrollRef.current; if (el) el.scrollTop = el.scrollHeight }, [thread])
 
   const shown = useMemo(() => (onlyWaiting ? list.filter((c) => c.waitingReply) : list), [list, onlyWaiting])
   const waiting = list.filter((c) => c.waitingReply).length
@@ -154,7 +155,7 @@ export default function InboxPage() {
         </div>
       )}
 
-      <div style={{ flex: 1, overflow: 'auto', padding: '14px 14px 20px', background: 'color-mix(in srgb, var(--brand) 4%, var(--bg))', display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '14px 14px 20px', background: 'color-mix(in srgb, var(--brand) 4%, var(--bg))', display: 'flex', flexDirection: 'column', gap: 6 }}>
         {threadLoading && <div style={{ textAlign: 'center', padding: 30 }}><Loader2 className="h-5 w-5 animate-spin" style={{ display: 'inline', color: 'var(--text-muted)' }} /></div>}
         {thread?.messages.map((m) => {
           const day = new Date(m.created_at).toDateString()
@@ -183,7 +184,6 @@ export default function InboxPage() {
           )
         })}
         {thread && thread.messages.length === 0 && <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', padding: 30 }}>{tx('Aucun message.')}</div>}
-        <div ref={endRef} />
       </div>
       <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border)', background: 'var(--card)', fontSize: 12, color: 'var(--text-muted)' }}>
         {tx('Les réponses sont envoyées automatiquement par Sellio. Pour écrire vous-même au client, ouvrez WhatsApp :')}{' '}
@@ -193,9 +193,9 @@ export default function InboxPage() {
   )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: isMobile ? 'calc(100dvh - 57px)' : '100dvh', overflow: 'hidden' }}>
       <Topbar title={t('nav.messages')} subtitle={tx('Conversations WhatsApp avec vos clients')} />
-      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(280px, 360px) 1fr', margin: isMobile ? 0 : 16, border: isMobile ? 'none' : '1px solid var(--border)', borderRadius: isMobile ? 0 : 16, overflow: 'hidden' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateRows: 'minmax(0, 1fr)', gridTemplateColumns: isMobile ? '1fr' : 'minmax(280px, 360px) 1fr', margin: isMobile ? 0 : 16, border: isMobile ? 'none' : '1px solid var(--border)', borderRadius: isMobile ? 0 : 16, overflow: 'hidden' }}>
         {isMobile ? (active ? threadPane : listPane) : <>{listPane}{threadPane}</>}
       </div>
     </div>

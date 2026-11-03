@@ -8,6 +8,8 @@ export interface ProductProfit {
   profitBeforeAds: number | null; profit: number | null; profitPerDelivered: number | null; margin: number | null
   confirmationRate: number | null; deliveryRate: number | null; returnRate: number | null
   costPerOrder: number | null; costPerDelivered: number | null; breakEvenCpa: number | null; roas: number | null; missingCost: boolean
+  adsDirect: number; adsShared: number; price: number | null
+  orderShare: number; confirmedShare: number; deliveredShare: number; returnedShare: number; orderValue: number; orderUnits: number
 }
 export interface AdEntry { id: number; spent_on: string; amount_mad: number; product_name: string | null; channel: string | null }
 export interface ProfitData {
@@ -20,6 +22,7 @@ export interface ProfitData {
       profitBeforeAds: number | null; profit: number | null; profitPerDelivered: number | null; margin: number | null
       deliveryRate: number | null; returnRate: number | null; breakEvenCpa: number | null; roas: number | null
     }
+    feePerDelivered: number; storeAds: number
     missing: { productCosts: string[]; shippingCost: boolean; returnCost: boolean }
   }
   costs: Record<string, number>
