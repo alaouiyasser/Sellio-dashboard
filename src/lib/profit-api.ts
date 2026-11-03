@@ -2,17 +2,24 @@ import { authFetch } from './api-fetch'
 import { API_BASE } from './auth-client'
 
 export interface ProductProfit {
-  name: string; orders: number; delivered: number; returned: number
-  revenue: number; goods: number; delivery: number; fees: number; ads: number
-  profit: number | null; profitPerDelivered: number | null; margin: number | null
-  costPerOrder: number | null; roas: number | null; missingCost: boolean
+  name: string; orders: number; confirmed: number; cancelled: number; delivered: number; returned: number
+  units: number; avgPrice: number | null
+  revenue: number; goods: number; shipping: number; returns: number; delivery: number; fees: number; ads: number
+  profitBeforeAds: number | null; profit: number | null; profitPerDelivered: number | null; margin: number | null
+  confirmationRate: number | null; deliveryRate: number | null; returnRate: number | null
+  costPerOrder: number | null; costPerDelivered: number | null; breakEvenCpa: number | null; roas: number | null; missingCost: boolean
 }
 export interface AdEntry { id: number; spent_on: string; amount_mad: number; product_name: string | null; channel: string | null }
 export interface ProfitData {
   days: number
   report: {
     products: ProductProfit[]
-    totals: { orders: number; delivered: number; revenue: number; goods: number; delivery: number; fees: number; ads: number; profit: number | null; margin: number | null; roas: number | null }
+    totals: {
+      orders: number; confirmed: number; cancelled: number; delivered: number; returned: number; units: number
+      revenue: number; goods: number; shipping: number; returns: number; delivery: number; fees: number; ads: number
+      profitBeforeAds: number | null; profit: number | null; profitPerDelivered: number | null; margin: number | null
+      deliveryRate: number | null; returnRate: number | null; breakEvenCpa: number | null; roas: number | null
+    }
     missing: { productCosts: string[]; shippingCost: boolean; returnCost: boolean }
   }
   costs: Record<string, number>
@@ -31,7 +38,7 @@ async function call(path: string, init?: RequestInit) {
 }
 
 export const profitApi = {
-  get: (days: number): Promise<ProfitData> => call(`?days=${days}`),
+  get: (query: string): Promise<ProfitData> => call(`?${query}`),
   saveCosts: (body: { products: { name: string; unitCost: string }[]; shippingCost: string; returnCost: string }) =>
     call('/costs', { method: 'PUT', body: JSON.stringify(body) }),
   addAd: (body: { spentOn: string; amount: string; product: string; channel: string }) =>

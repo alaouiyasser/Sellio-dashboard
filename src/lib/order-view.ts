@@ -43,3 +43,24 @@ export const statusLabel = (status: string, locale: string = txLocale()) => {
   const s = ORDER_STATUS[status] ?? ORDER_STATUS.pending!
   return { label: s.label[locale] ?? s.label.fr!, bg: s.bg, color: s.color }
 }
+
+/** Status groups the merchant thinks in (filters, dashboard, KPIs). */
+export const STATUS_GROUPS: Record<string, string[]> = {
+  pending: ['pending', 'sent', 'awaiting_upsell', 'awaiting_shipping_info', 'awaiting_cancel_reason', 'awaiting_modify_choice', 'awaiting_modification', 'awaiting_modify_confirmation', 'modified'],
+  confirmed: ['confirmed'],
+  shipping: ['in_delivery', 'awaiting_delivery_check', 'needs_merchant_confirm', 'delivery_issue', 'delivery_unconfirmed'],
+  delivered: ['delivered'],
+  returned: ['returned'],
+  cancelled: ['canceled', 'cancelled'],
+}
+export const groupOf = (status: string) => Object.keys(STATUS_GROUPS).find((g) => STATUS_GROUPS[g]!.includes(status)) ?? 'pending'
+
+/** Confirmed by the customer, whatever happened after (shipped, delivered, returned). */
+export const isConfirmed = (o: { status: string; confirmed_at?: string | null }) =>
+  !!o.confirmed_at || ['confirmed', ...STATUS_GROUPS.shipping!, 'delivered', 'returned'].includes(o.status)
+
+export const customerName = (o: { customer_name?: string | null }) => String(o.customer_name ?? '').trim()
+
+/** "Robe Lina ×2, Sac Nour" */
+export const productsLine = (o: { items?: unknown }) =>
+  orderItems(o).map((i) => `${itemName(i)}${Number(i.quantity) > 1 ? ` ×${i.quantity}` : ''}`).join(', ')

@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Loader2, Wallet, MapPin, Package, Truck, XCircle, Tag, Info } from 'lucide-react'
+import { Loader2, Wallet, MapPin, Package, Truck, XCircle, Tag, Info, Star, MessageSquareQuote, Sparkles } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { carrierName } from '@/lib/shipping-api'
-import { fetchAnalytics, type AnalyticsData, type GroupRow } from '@/lib/analytics-api'
+import { fetchAnalytics, fetchFeedbackSummary, type AnalyticsData, type GroupRow, type FeedbackStats, type FeedbackSummary } from '@/lib/analytics-api'
+import PeriodFilter from '@/components/common/PeriodFilter'
+import { presetPeriod, periodQuery, type Period } from '@/lib/period'
 
 import { tx } from '@/lib/i18n'
 const card: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 20 }
@@ -112,19 +114,23 @@ function GroupTable({ rows, label, showRevenue }: { rows: GroupRow[]; label: str
 
 export default function AnalyticsPage() {
   const isMobile = useIsMobile()
-  const [days, setDays] = useState(30)
+  const [period, setPeriod] = useState<Period>(() => presetPeriod('30d'))
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [summary, setSummary] = useState<FeedbackSummary | null | undefined>(undefined)
 
   useEffect(() => {
     let alive = true
     setLoading(true)
-    fetchAnalytics(days)
+    const q = periodQuery(period)
+    fetchAnalytics(q)
       .then((d) => { if (alive) setData(d) })
       .catch((e) => toast.error((e as Error).message))
       .finally(() => { if (alive) setLoading(false) })
+    setSummary(undefined)
+    fetchFeedbackSummary(q).then((s) => { if (alive) setSummary(s) }).catch(() => { if (alive) setSummary(null) })
     return () => { alive = false }
-  }, [days])
+  }, [period])
 
   const d = data
   const reasonsTotal = d?.cancelReasons.reduce((a, r) => a + r.count, 0) ?? 0
@@ -133,15 +139,8 @@ export default function AnalyticsPage() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Topbar title={tx("Analytiques")} subtitle={tx("Où vous gagnez, où vous perdez, et quoi changer")} />
       <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? 16 : 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {[7, 30, 90].map((n) => (
-            <button key={n} onClick={() => setDays(n)} aria-pressed={days === n} style={{
-              padding: '7px 14px', borderRadius: 999, fontSize: 13, cursor: 'pointer',
-              border: `1px solid ${days === n ? 'var(--brand)' : 'var(--border)'}`,
-              background: days === n ? 'color-mix(in srgb, var(--brand) 10%, transparent)' : 'var(--card)',
-              color: days === n ? 'var(--brand)' : 'var(--text)', fontWeight: days === n ? 600 : 400,
-            }}>{n} {tx("jours")}</button>
-          ))}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <PeriodFilter value={period} onChange={setPeriod} />
           {loading && <Loader2 className="h-4 w-4 animate-spin" style={{ color: 'var(--text-muted)' }} />}
         </div>
 
@@ -163,7 +162,7 @@ export default function AnalyticsPage() {
                 </div>
                 <div style={card}>
                   <div style={head}><XCircle size={16} strokeWidth={2.2} color="var(--destructive)" /> {tx("Pourquoi ils annulent")}</div>
-                  <div style={sub}>{tx("Ce que les clients répondent sur WhatsApp (")}{reasonsTotal} {tx("annulation")}{reasonsTotal > 1 ? 's' : ''}).</div>
+                  <div style={sub}>{tx("Ce que les clients répondent sur WhatsApp et sur leur lien de suivi ({0} annulations).", [reasonsTotal])}</div>
                   {d.cancelReasons.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{tx("Aucune annulation sur la période.")}</div>
                     : d.cancelReasons.map((r) => (
                       <div key={r.reason} style={{ marginBottom: 10 }}>
@@ -173,11 +172,16 @@ export default function AnalyticsPage() {
                         <div style={{ height: 4, borderRadius: 4, background: 'var(--border)' }}>
                           <div style={{ width: `${r.share ?? 0}%`, height: '100%', borderRadius: 4, background: 'var(--destructive)' }} />
                         </div>
+                        {r.examples?.map((e) => (
+                          <div key={e} dir="auto" style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 4, fontStyle: 'italic' }}>« {e} »</div>
+                        ))}
                       </div>
                     ))}
                 </div>
               </div>
             </div>
+
+            <CustomerVoice fb={d.feedback ?? null} summary={summary} isMobile={isMobile} />
 
             <div style={card}>
               <div style={head}><MapPin size={16} strokeWidth={2.2} color="var(--brand)" /> {tx("Villes")}</div>
@@ -259,6 +263,100 @@ export default function AnalyticsPage() {
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+const KIND_LABEL: Record<string, string> = { review: 'Avis', complaint: 'Réclamation', cancel: 'Annulation' }
+const stars = (n: number) => '★★★★★'.slice(0, Math.round(n)) + '☆☆☆☆☆'.slice(0, 5 - Math.round(n))
+
+/** Reviews, complaints and cancel reasons customers leave on their tracking link, read by the AI. */
+function CustomerVoice({ fb, summary, isMobile }: { fb: FeedbackStats | null; summary: FeedbackSummary | null | undefined; isMobile: boolean }) {
+  const empty = !fb || (fb.reviews === 0 && fb.complaints.length === 0 && fb.cancelReasons.length === 0 && fb.quotes.length === 0)
+  const bar = (rows: { key: string; label: string; count: number }[], color: string) => {
+    const total = rows.reduce((a, r) => a + r.count, 0) || 1
+    return rows.map((r) => (
+      <div key={r.key} style={{ marginBottom: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 3, color: 'var(--text)' }}><span>{tx(r.label)}</span><span style={{ fontWeight: 600 }}>{r.count}</span></div>
+        <div style={{ height: 4, borderRadius: 4, background: 'var(--border)' }}><div style={{ width: `${(r.count / total) * 100}%`, height: '100%', borderRadius: 4, background: color }} /></div>
+      </div>
+    ))
+  }
+  return (
+    <div style={card}>
+      <div style={head}><MessageSquareQuote size={16} strokeWidth={2.2} color="var(--brand)" /> {tx('Ce que disent vos clients')}</div>
+      <div style={sub}>{tx('Notes, réclamations et raisons d’annulation laissées par vos clients sur leur lien de suivi WhatsApp. L’IA les résume et le Coach IA s’en sert.')}</div>
+      {empty ? (
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+          {tx('Pas encore d’avis sur la période. Chaque client reçoit son lien de suivi : une fois livré, il peut noter chaque produit ; s’il annule, il peut dire pourquoi.')}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {summary === undefined ? (
+            <div style={{ fontSize: 12.5, color: 'var(--text-muted)', display: 'flex', gap: 6, alignItems: 'center' }}><Loader2 className="h-4 w-4 animate-spin" /> {tx('L’IA lit les avis…')}</div>
+          ) : summary && (
+            <div style={{ padding: 14, borderRadius: 12, background: 'color-mix(in srgb, var(--brand) 7%, transparent)' }}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12.5, fontWeight: 600, color: 'var(--brand)', marginBottom: 6 }}><Sparkles size={14} /> {tx('Résumé IA')}</div>
+              <div style={{ fontSize: 13.5, color: 'var(--text)', lineHeight: 1.6 }}>{summary.summary}</div>
+              {summary.themes.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+                  {summary.themes.map((t) => (
+                    <span key={t.theme} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 999, fontWeight: 500,
+                      background: t.tone === 'positive' ? 'color-mix(in srgb, var(--success) 14%, transparent)' : 'color-mix(in srgb, var(--destructive) 12%, transparent)',
+                      color: t.tone === 'positive' ? 'var(--success)' : 'var(--destructive)' }}>{t.theme} · {t.count}</span>
+                  ))}
+                </div>
+              )}
+              {summary.actions.length > 0 && (
+                <ul style={{ margin: '10px 0 0', paddingInlineStart: 18, fontSize: 13, color: 'var(--text)', lineHeight: 1.6 }}>
+                  {summary.actions.map((a) => <li key={a}>{a}</li>)}
+                </ul>
+              )}
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0,1fr))', gap: 20 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Star size={14} color="var(--warning)" /> {fb!.averageRating === null ? tx('Notes') : tx('Note moyenne {0}/5', [fb!.averageRating])}
+                <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>({fb!.reviews})</span>
+              </div>
+              {fb!.products.length === 0 ? <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{tx('Aucune note.')}</div> : fb!.products.map((p) => (
+                <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 12.5, padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
+                  <span style={{ color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                  <span style={{ whiteSpace: 'nowrap', color: p.average <= 2.5 ? 'var(--destructive)' : p.average >= 4 ? 'var(--success)' : 'var(--warning)' }} title={tx('{0} avis, dont {1} à 1-2 étoiles', [p.reviews, p.lowRatings])}>
+                    {stars(p.average)} {p.average}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>{tx('Réclamations')}</div>
+              {fb!.complaints.length === 0 ? <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{tx('Aucune réclamation.')}</div> : bar(fb!.complaints, 'var(--warning)')}
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>{tx('Raisons d’annulation choisies')}</div>
+              {fb!.cancelReasons.length === 0 ? <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{tx('Aucune.')}</div> : bar(fb!.cancelReasons, 'var(--destructive)')}
+            </div>
+          </div>
+
+          {fb!.quotes.length > 0 && (
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>{tx('Leurs mots')}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0,1fr))', gap: 10 }}>
+                {fb!.quotes.map((q, i) => (
+                  <div key={i} style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg)' }}>
+                    <div dir="auto" style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>« {q.text} »</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 4 }}>
+                      {tx(KIND_LABEL[q.kind] ?? 'Avis')}{q.rating ? ` · ${stars(q.rating)}` : ''}{q.product ? ` · ${q.product}` : ''}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
