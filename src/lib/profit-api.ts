@@ -11,7 +11,7 @@ export interface ProductProfit {
   adsDirect: number; adsShared: number; price: number | null
   orderShare: number; confirmedShare: number; deliveredShare: number; returnedShare: number; orderValue: number; orderUnits: number
 }
-export interface AdEntry { id: number; spent_on: string; amount_mad: number; product_name: string | null; channel: string | null }
+export interface AdEntry { id: number; spent_on: string; spent_to?: string | null; amount_total?: number; amount_mad: number; product_name: string | null; channel: string | null }
 export interface ProfitData {
   days: number
   report: {
@@ -44,7 +44,7 @@ export const profitApi = {
   get: (query: string): Promise<ProfitData> => call(`?${query}`),
   saveCosts: (body: { products: { name: string; unitCost: string }[]; shippingCost: string; returnCost: string }) =>
     call('/costs', { method: 'PUT', body: JSON.stringify(body) }),
-  addAd: (body: { spentOn: string; amount: string; product: string; channel: string }) =>
+  addAd: (body: { spentOn: string; spentTo?: string; amount: string; product: string; channel: string }) =>
     call('/ads', { method: 'POST', body: JSON.stringify(body) }),
   deleteAd: (id: number) => call(`/ads/${id}`, { method: 'DELETE' }),
 }

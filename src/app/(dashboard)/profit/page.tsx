@@ -30,7 +30,9 @@ const th: React.CSSProperties = { padding: '6px 8px', fontWeight: 500, textAlign
 const td: React.CSSProperties = { padding: '9px 8px', textAlign: 'right', whiteSpace: 'nowrap', fontSize: 13 }
 const dh = (n: number | null | undefined) => (n === null || n === undefined || !Number.isFinite(n) ? '—' : `${Math.round(n).toLocaleString('fr-MA')} DH`)
 const signColor = (n: number | null) => (n === null ? 'var(--text-muted)' : n < 0 ? 'var(--destructive)' : 'var(--success)')
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
+const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000) + 1
+const shortDay = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(intlLocale(), { day: '2-digit', month: '2-digit' })
 const parse = (s: string): number | null => { const n = Number(String(s).replace(',', '.').trim()); return s.trim() === '' || !Number.isFinite(n) || n < 0 ? null : n }
 const same = (a?: string | null, b?: string | null) => (a ?? '').trim().toLowerCase() === (b ?? '').trim().toLowerCase()
 const CHANNELS = [['facebook', 'Facebook / Instagram'], ['tiktok', 'TikTok'], ['google', 'Google'], ['snapchat', 'Snapchat'], ['autre', 'Autre']]
@@ -86,7 +88,7 @@ export default function ProfitPage() {
   const [shipping, setShipping] = useState('')
   const [returns, setReturns] = useState('')
   const [assumed, setAssumed] = useState('70')
-  const [ad, setAd] = useState({ spentOn: today(), amount: '', channel: 'facebook' })
+  const [ad, setAd] = useState({ spentOn: today(), spentTo: today(), amount: '', channel: 'facebook' })
   const [dirty, setDirty] = useState(false)
 
   async function load(p = period, keepInputs = false) {
@@ -249,11 +251,15 @@ export default function ProfitPage() {
                   <Step n={3} title={tx('Publicité')} hint={isStore
                     ? tx('Une dépense « toute la boutique » est répartie entre les produits selon leur nombre de commandes.')
                     : tx('Ajoutez ici ce que vous dépensez pour ce produit (par jour ou par semaine).')}>
-                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1.2fr 1fr 1.2fr', gap: 8 }}>
-                      <label style={label}>{tx('Date')}
-                        <input type="date" value={ad.spentOn} max={today()} onChange={(e) => setAd({ ...ad, spentOn: e.target.value })} style={{ ...input, marginTop: 4 }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      <label style={label}>{tx('Du')}
+                        <input type="date" value={ad.spentOn} max={today()}
+                          onChange={(e) => setAd({ ...ad, spentOn: e.target.value, spentTo: ad.spentTo < e.target.value ? e.target.value : ad.spentTo })} style={{ ...input, marginTop: 4 }} />
                       </label>
-                      <label style={label}>{tx('Montant (DH)')}
+                      <label style={label}>{tx('Au')}
+                        <input type="date" value={ad.spentTo} min={ad.spentOn} max={today()} onChange={(e) => setAd({ ...ad, spentTo: e.target.value })} style={{ ...input, marginTop: 4 }} />
+                      </label>
+                      <label style={label}>{tx('Montant total (DH)')}
                         <input inputMode="decimal" value={ad.amount} onChange={(e) => setAd({ ...ad, amount: e.target.value })} placeholder={tx('ex. 300')} style={{ ...input, marginTop: 4 }} />
                       </label>
                       <label style={label}>{tx('Plateforme')}
@@ -262,6 +268,11 @@ export default function ProfitPage() {
                         </select>
                       </label>
                     </div>
+                    {ad.spentTo > ad.spentOn && Number(ad.amount.replace(',', '.')) > 0 && (
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+                        {tx('{0} sur {1} jours, soit {2} par jour.', [dh(Number(ad.amount.replace(',', '.'))), daysBetween(ad.spentOn, ad.spentTo), dh(Number(ad.amount.replace(',', '.')) / daysBetween(ad.spentOn, ad.spentTo))])}
+                      </div>
+                    )}
                     <button onClick={addAd} style={{ ...btn, marginTop: 10 }}>
                       {isStore ? tx('Ajouter une dépense pour toute la boutique') : tx('Ajouter la dépense')}
                     </button>
@@ -269,11 +280,18 @@ export default function ProfitPage() {
                       {productAds.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{tx('Aucune dépense sur la période.')}</div>}
                       {productAds.map((a) => (
                         <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderTop: '1px solid var(--border)', fontSize: 13 }}>
-                          <span style={{ color: 'var(--text-muted)', width: 82, flexShrink: 0 }}>{new Date(a.spent_on).toLocaleDateString(intlLocale())}</span>
+                          <span style={{ color: 'var(--text-muted)', flexShrink: 0, minWidth: 82 }}>
+                            {shortDay(a.spent_on)}{a.spent_to ? ` → ${shortDay(a.spent_to)}` : ''}
+                          </span>
                           <span style={{ flex: 1, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {a.product_name ?? tx('Toute la boutique')}{a.channel ? <span style={{ color: 'var(--text-muted)' }}> · {CHANNELS.find(([v]) => v === a.channel)?.[1] ?? a.channel}</span> : null}
                           </span>
-                          <span style={{ fontWeight: 600, color: 'var(--text)' }}>{dh(a.amount_mad)}</span>
+                          <span style={{ fontWeight: 600, color: 'var(--text)', textAlign: 'end' }}>
+                            {dh(a.amount_mad)}
+                            {a.amount_total !== undefined && Math.round(a.amount_total) !== Math.round(a.amount_mad) && (
+                              <span style={{ display: 'block', fontSize: 11, fontWeight: 400, color: 'var(--text-muted)' }}>{tx('sur {0} au total', [dh(a.amount_total)])}</span>
+                            )}
+                          </span>
                           <button onClick={() => removeAd(a.id)} aria-label={tx('Supprimer la dépense')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
                             <Trash2 size={14} />
                           </button>
