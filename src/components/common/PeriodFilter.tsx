@@ -1,6 +1,6 @@
 'use client'
 // Today / this week / this month / … / a custom range. Same control on every merchant page.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CalendarRange } from 'lucide-react'
 import { PRESETS, presetPeriod, customPeriod, dayInput, type Period, type PresetKey } from '@/lib/period'
 import { tx, intlLocale } from '@/lib/i18n'
@@ -10,6 +10,8 @@ export default function PeriodFilter({ value, onChange, presets }: {
 }) {
   const [from, setFrom] = useState(dayInput(value.from))
   const [to, setTo] = useState(dayInput(new Date(value.to.getTime() - 1)))
+  // Follow the period when the page restores the merchant's last choice.
+  useEffect(() => { setFrom(dayInput(value.from)); setTo(dayInput(new Date(value.to.getTime() - 1))) }, [value.from.getTime(), value.to.getTime()])
   const list = PRESETS.filter((p) => !presets || presets.includes(p.key))
   const pick = (k: PresetKey) => {
     if (k === 'custom') { const c = customPeriod(from, to); onChange(c ?? { ...value, key: 'custom' }); return }

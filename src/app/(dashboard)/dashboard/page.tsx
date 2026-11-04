@@ -7,6 +7,7 @@ import Topbar from '@/components/layout/Topbar'
 import { useLang } from '@/components/layout/LanguageProvider'
 import OrdersChart from '@/components/charts/OrdersChart'
 import PeriodFilter from '@/components/common/PeriodFilter'
+import { usePagePeriod } from '@/hooks/usePagePeriod'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import {
   Package, CheckCircle2, Truck, TrendingUp, TrendingDown, Wallet,
@@ -18,7 +19,6 @@ import { tx, intlLocale } from '@/lib/i18n'
 
 const OLIVE = 'var(--brand)'
 const COLORS = ['var(--success)', 'var(--destructive)', 'var(--warning)', 'var(--brand)']
-const PERIOD_KEY = 'sellio-dashboard-period'
 
 export default function OverviewPage() {
   const supabase = createClient()
@@ -26,18 +26,14 @@ export default function OverviewPage() {
   const isMobile = useIsMobile()
 
   const [loading, setLoading] = useState(true)
-  const [period, setPeriod] = useState<Period>(() => presetPeriod('30d'))
-  useEffect(() => {
-    try { const k = localStorage.getItem(PERIOD_KEY); if (k && k !== 'custom' && k !== '30d') setPeriod(presetPeriod(k as any)) } catch { /* default */ }
-  }, [])
+  const [period, setPeriod, periodReady] = usePagePeriod('dashboard')
   const [orders, setOrders] = useState<any[]>([])
   const [companyName, setCompanyName] = useState('')
 
-  useEffect(() => { fetchData(period) }, [period])
+  useEffect(() => { if (periodReady) fetchData(period) }, [period, periodReady])
 
   async function fetchData(p: Period) {
     setLoading(true)
-    try { localStorage.setItem(PERIOD_KEY, p.key) } catch { /* fine */ }
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     const [rows, { data: tenant }] = await Promise.all([

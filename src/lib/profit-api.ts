@@ -46,5 +46,7 @@ export const profitApi = {
     call('/costs', { method: 'PUT', body: JSON.stringify(body) }),
   addAd: (body: { spentOn: string; spentTo?: string; amount: string; product: string; channel: string }) =>
     call('/ads', { method: 'POST', body: JSON.stringify(body) }),
+  updateAd: (id: number, body: { spentOn: string; spentTo?: string; amount: string; product: string; channel: string }) =>
+    call(`/ads/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteAd: (id: number) => call(`/ads/${id}`, { method: 'DELETE' }),
 }

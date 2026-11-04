@@ -8,6 +8,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { carrierName } from '@/lib/shipping-api'
 import { fetchAnalytics, fetchFeedbackSummary, type AnalyticsData, type GroupRow, type FeedbackStats, type FeedbackSummary } from '@/lib/analytics-api'
 import PeriodFilter from '@/components/common/PeriodFilter'
+import { usePagePeriod } from '@/hooks/usePagePeriod'
 import { presetPeriod, periodQuery, type Period } from '@/lib/period'
 
 import { tx } from '@/lib/i18n'
@@ -114,12 +115,13 @@ function GroupTable({ rows, label, showRevenue }: { rows: GroupRow[]; label: str
 
 export default function AnalyticsPage() {
   const isMobile = useIsMobile()
-  const [period, setPeriod] = useState<Period>(() => presetPeriod('30d'))
+  const [period, setPeriod, periodReady] = usePagePeriod('analytics')
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState<FeedbackSummary | null | undefined>(undefined)
 
   useEffect(() => {
+    if (!periodReady) return
     let alive = true
     setLoading(true)
     const q = periodQuery(period)
@@ -130,7 +132,7 @@ export default function AnalyticsPage() {
     setSummary(undefined)
     fetchFeedbackSummary(q).then((s) => { if (alive) setSummary(s) }).catch(() => { if (alive) setSummary(null) })
     return () => { alive = false }
-  }, [period])
+  }, [period, periodReady])
 
   const d = data
   const reasonsTotal = d?.cancelReasons.reduce((a, r) => a + r.count, 0) ?? 0
