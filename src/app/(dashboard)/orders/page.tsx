@@ -8,6 +8,7 @@ import Topbar from '@/components/layout/Topbar'
 import { useLang } from '@/components/layout/LanguageProvider'
 import CarrierExportImport from '@/components/orders/CarrierExportImport'
 import PeriodFilter from '@/components/common/PeriodFilter'
+import { usePagePeriod } from '@/hooks/usePagePeriod'
 import { orderCity, statusLabel, groupOf, customerName, productsLine, STATUS_GROUPS } from '@/lib/order-view'
 import { presetPeriod, ordersInPeriod, type Period } from '@/lib/period'
 import { tx, intlLocale } from '@/lib/i18n'
@@ -31,10 +32,11 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [group, setGroup] = useState('all')
-  const [period, setPeriod] = useState<Period>(() => presetPeriod('30d'))
+  const [period, setPeriod, periodReady] = usePagePeriod('orders')
   const [page, setPage] = useState(1)
 
   useEffect(() => {
+    if (!periodReady) return
     fetchOrders(period)
     let channel: any = null
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -44,7 +46,7 @@ export default function OrdersPage() {
         .subscribe()
     })
     return () => { if (channel) supabase.removeChannel(channel) }
-  }, [period])
+  }, [period, periodReady])
 
   async function fetchOrders(p: Period, silent = false) {
     if (!silent) setLoading(true)

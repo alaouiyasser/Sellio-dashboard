@@ -7,25 +7,28 @@
 // Everything is recomputed live while typing; "Enregistrer" stores the costs.
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Loader2, Trash2, Info } from 'lucide-react'
+import { Loader2, Trash2, Info, Pencil } from 'lucide-react'
 import Topbar from '@/components/layout/Topbar'
 import { useLang } from '@/components/layout/LanguageProvider'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { profitApi, type ProfitData, type ProductProfit } from '@/lib/profit-api'
+import { profitApi, type ProfitData, type ProductProfit, type AdEntry } from '@/lib/profit-api'
 import PeriodFilter from '@/components/common/PeriodFilter'
+import { usePagePeriod } from '@/hooks/usePagePeriod'
 import { presetPeriod, periodQuery, type Period } from '@/lib/period'
 import { tx, intlLocale } from '@/lib/i18n'
 
 const card: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 20 }
 const input: React.CSSProperties = {
   width: '100%', padding: '9px 10px', borderRadius: 8, border: '1px solid var(--border)',
-  background: 'var(--bg)', color: 'var(--text)', fontSize: 14,
+  background: 'var(--bg)', color: 'var(--text)', fontSize: 14, minWidth: 0, boxSizing: 'border-box',
 }
 const btn: React.CSSProperties = {
   padding: '9px 16px', borderRadius: 10, border: 'none', background: 'var(--brand)', color: '#fff',
   fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
 }
-const label: React.CSSProperties = { fontSize: 12.5, color: 'var(--text-muted)', display: 'block' }
+const label: React.CSSProperties = { fontSize: 12.5, color: 'var(--text-muted)', display: 'block', minWidth: 0 }
+const iconBtn: React.CSSProperties = { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 6, borderRadius: 6 }
+const linkBtn: React.CSSProperties = { background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--brand)', fontWeight: 600, fontSize: 'inherit' }
 const th: React.CSSProperties = { padding: '6px 8px', fontWeight: 500, textAlign: 'right', whiteSpace: 'nowrap', fontSize: 12, color: 'var(--text-muted)' }
 const td: React.CSSProperties = { padding: '9px 8px', textAlign: 'right', whiteSpace: 'nowrap', fontSize: 13 }
 const dh = (n: number | null | undefined) => (n === null || n === undefined || !Number.isFinite(n) ? '—' : `${Math.round(n).toLocaleString('fr-MA')} DH`)
@@ -79,7 +82,7 @@ function calc(p: ProductProfit, cost: number | null, ship: number, ret: number, 
 export default function ProfitPage() {
   const { t } = useLang()
   const isMobile = useIsMobile()
-  const [period, setPeriod] = useState<Period>(() => presetPeriod('30d'))
+  const [period, setPeriod, periodReady] = usePagePeriod('profit')
   const [selected, setSelected] = useState<string>('')
   const [data, setData] = useState<ProfitData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -88,7 +91,8 @@ export default function ProfitPage() {
   const [shipping, setShipping] = useState('')
   const [returns, setReturns] = useState('')
   const [assumed, setAssumed] = useState('70')
-  const [ad, setAd] = useState({ spentOn: today(), spentTo: today(), amount: '', channel: 'facebook' })
+  const [editing, setEditing] = useState<AdEntry | null>(null)
+  const [lastChannel, setLastChannel] = useState('facebook')
   const [dirty, setDirty] = useState(false)
 
   async function load(p = period, keepInputs = false) {
@@ -106,7 +110,8 @@ export default function ProfitPage() {
     } catch (e) { toast.error((e as Error).message) }
     finally { setLoading(false) }
   }
-  useEffect(() => { load(period, true) }, [period])
+  useEffect(() => { if (periodReady) load(period, true) }, [period, periodReady])
+  useEffect(() => { setEditing(null) }, [selected, period])
 
   async function saveCosts() {
     setSaving(true)
@@ -122,17 +127,26 @@ export default function ProfitPage() {
     finally { setSaving(false) }
   }
 
-  async function addAd() {
-    if (!(Number(ad.amount.replace(',', '.')) > 0)) { toast.error(tx('Entrez le montant dépensé')); return }
+  async function submitAd(f: AdFields) {
+    const amount = f.amount.replace(',', '.').trim()
+    if (!(Number(amount) > 0)) { toast.error(tx('Entrez le montant dépensé')); return false }
     try {
-      await profitApi.addAd({ ...ad, amount: ad.amount.replace(',', '.'), product: selected === STORE ? '' : selected })
-      toast.success(tx('Dépense ajoutée'))
-      setAd({ ...ad, amount: '' })
+      if (editing) {
+        await profitApi.updateAd(editing.id, { ...f, amount, product: editing.product_name ?? '' })
+        toast.success(tx('Dépense modifiée'))
+        setEditing(null)
+      } else {
+        await profitApi.addAd({ ...f, amount, product: selected === STORE ? '' : selected })
+        toast.success(tx('Dépense ajoutée'))
+      }
+      setLastChannel(f.channel)
       await load(period, true)
-    } catch (e) { toast.error((e as Error).message) }
+      return true
+    } catch (e) { toast.error((e as Error).message); return false }
   }
 
   async function removeAd(id: number) {
+    if (editing?.id === id) setEditing(null)
     try { await profitApi.deleteAd(id); toast.success(tx('Dépense supprimée')); await load(period, true) }
     catch (e) { toast.error((e as Error).message) }
   }
@@ -196,7 +210,7 @@ export default function ProfitPage() {
             {r.products.length === 0 ? (
               <div style={{ ...card, fontSize: 13, color: 'var(--text-muted)' }}>{tx('Aucune commande sur cette période.')}</div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 5fr) minmax(0, 7fr)', gap: 16, alignItems: 'start' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) minmax(0, 1fr)', gap: 16, alignItems: 'start' }}>
                 {/* ── The sheet, filled in order ── */}
                 <div style={{ ...card, display: 'flex', flexDirection: 'column', gap: 18 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
@@ -250,61 +264,52 @@ export default function ProfitPage() {
 
                   <Step n={3} title={tx('Publicité')} hint={isStore
                     ? tx('Une dépense « toute la boutique » est répartie entre les produits selon leur nombre de commandes.')
-                    : tx('Ajoutez ici ce que vous dépensez pour ce produit (par jour ou par semaine).')}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                      <label style={label}>{tx('Du')}
-                        <input type="date" value={ad.spentOn} max={today()}
-                          onChange={(e) => setAd({ ...ad, spentOn: e.target.value, spentTo: ad.spentTo < e.target.value ? e.target.value : ad.spentTo })} style={{ ...input, marginTop: 4 }} />
-                      </label>
-                      <label style={label}>{tx('Au')}
-                        <input type="date" value={ad.spentTo} min={ad.spentOn} max={today()} onChange={(e) => setAd({ ...ad, spentTo: e.target.value })} style={{ ...input, marginTop: 4 }} />
-                      </label>
-                      <label style={label}>{tx('Montant total (DH)')}
-                        <input inputMode="decimal" value={ad.amount} onChange={(e) => setAd({ ...ad, amount: e.target.value })} placeholder={tx('ex. 300')} style={{ ...input, marginTop: 4 }} />
-                      </label>
-                      <label style={label}>{tx('Plateforme')}
-                        <select value={ad.channel} onChange={(e) => setAd({ ...ad, channel: e.target.value })} style={{ ...input, marginTop: 4 }}>
-                          {CHANNELS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                        </select>
-                      </label>
-                    </div>
-                    {ad.spentTo > ad.spentOn && Number(ad.amount.replace(',', '.')) > 0 && (
-                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
-                        {tx('{0} sur {1} jours, soit {2} par jour.', [dh(Number(ad.amount.replace(',', '.'))), daysBetween(ad.spentOn, ad.spentTo), dh(Number(ad.amount.replace(',', '.')) / daysBetween(ad.spentOn, ad.spentTo))])}
-                      </div>
-                    )}
-                    <button onClick={addAd} style={{ ...btn, marginTop: 10 }}>
-                      {isStore ? tx('Ajouter une dépense pour toute la boutique') : tx('Ajouter la dépense')}
-                    </button>
-                    <div style={{ marginTop: 12 }}>
+                    : tx('Ce que vous avez dépensé pour ce produit. Une campagne de plusieurs jours : mettez le premier et le dernier jour.')}>
+                    <AdForm key={editing?.id ?? 'new'} initial={editing ? {
+                      spentOn: editing.spent_on, spentTo: editing.spent_to ?? editing.spent_on,
+                      amount: String(editing.amount_total ?? editing.amount_mad), channel: editing.channel ?? 'facebook',
+                    } : { ...adDefaults(period), amount: '', channel: lastChannel }}
+                      editing={!!editing} onCancel={() => setEditing(null)} onSubmit={submitAd} />
+
+                    <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {productAds.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{tx('Aucune dépense sur la période.')}</div>}
-                      {productAds.map((a) => (
-                        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderTop: '1px solid var(--border)', fontSize: 13 }}>
-                          <span style={{ color: 'var(--text-muted)', flexShrink: 0, minWidth: 82 }}>
-                            {shortDay(a.spent_on)}{a.spent_to ? ` → ${shortDay(a.spent_to)}` : ''}
-                          </span>
-                          <span style={{ flex: 1, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {a.product_name ?? tx('Toute la boutique')}{a.channel ? <span style={{ color: 'var(--text-muted)' }}> · {CHANNELS.find(([v]) => v === a.channel)?.[1] ?? a.channel}</span> : null}
-                          </span>
-                          <span style={{ fontWeight: 600, color: 'var(--text)', textAlign: 'end' }}>
-                            {dh(a.amount_mad)}
-                            {a.amount_total !== undefined && Math.round(a.amount_total) !== Math.round(a.amount_mad) && (
-                              <span style={{ display: 'block', fontSize: 11, fontWeight: 400, color: 'var(--text-muted)' }}>{tx('sur {0} au total', [dh(a.amount_total)])}</span>
-                            )}
-                          </span>
-                          <button onClick={() => removeAd(a.id)} aria-label={tx('Supprimer la dépense')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      ))}
+                      {productAds.map((a) => {
+                        const partial = a.amount_total !== undefined && Math.round(a.amount_total) !== Math.round(a.amount_mad)
+                        return (
+                          <div key={a.id} style={{
+                            display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto auto', gap: 8, alignItems: 'center', padding: '8px 10px', borderRadius: 10,
+                            border: `1px solid ${editing?.id === a.id ? 'var(--brand)' : 'var(--border)'}`, background: 'var(--bg)',
+                          }}>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {a.product_name ?? tx('Toute la boutique')}
+                              </div>
+                              <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                                {shortDay(a.spent_on)}{a.spent_to ? ` → ${shortDay(a.spent_to)}` : ''} · {CHANNELS.find(([v]) => v === a.channel)?.[1] ?? a.channel ?? '—'}
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'end' }}>
+                              <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap' }}>{dh(a.amount_mad)}</div>
+                              {partial && <div style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{tx('sur {0} au total', [dh(a.amount_total)])}</div>}
+                            </div>
+                            <div style={{ display: 'flex' }}>
+                              <button onClick={() => setEditing(a)} aria-label={tx('Modifier la dépense')} title={tx('Modifier')} style={iconBtn}><Pencil size={14} /></button>
+                              <button onClick={() => removeAd(a.id)} aria-label={tx('Supprimer la dépense')} title={tx('Supprimer')} style={iconBtn}><Trash2 size={14} /></button>
+                            </div>
+                          </div>
+                        )
+                      })}
                       {!isStore && product!.p.adsShared > 0 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '7px 0', borderTop: '1px solid var(--border)', fontSize: 13, color: 'var(--text-muted)' }}>
-                          <span>{tx('Part de la pub « toute la boutique » ({0} des commandes)', [`${Math.round((product!.p.orderShare / Math.max(1, r.totals.orders)) * 100)} %`])}</span>
-                          <span style={{ fontWeight: 600 }}>{dh(product!.p.adsShared)}</span>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 8, padding: '8px 10px', borderRadius: 10, border: '1px dashed var(--border)', fontSize: 12.5, color: 'var(--text-muted)' }}>
+                          <span>
+                            {tx('Sa part de la pub « toute la boutique » ({0} des commandes)', [`${Math.round((product!.p.orderShare / Math.max(1, r.totals.orders)) * 100)} %`])}
+                            {' · '}<button onClick={() => setSelected(STORE)} style={{ ...linkBtn }}>{tx('voir ou modifier')}</button>
+                          </span>
+                          <span style={{ fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap' }}>{dh(product!.p.adsShared)}</span>
                         </div>
                       )}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0 0', borderTop: '1px solid var(--border)', fontSize: 13.5, fontWeight: 700, color: 'var(--text)' }}>
-                        <span>{tx('Total publicité')}</span><span>{dh(view.real.ads)}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 2px 0', fontSize: 13.5, fontWeight: 700, color: 'var(--text)' }}>
+                        <span>{tx('Total publicité sur la période')}</span><span>{dh(view.real.ads)}</span>
                       </div>
                     </div>
                   </Step>
@@ -477,5 +482,59 @@ function ResultCard({ view, missingCost, noShipping, rate, isMobile }: {
         <span>{advice}{noShipping && !missingCost ? ` ${tx('Renseignez aussi les frais de livraison (étape 2).')}` : ''}</span>
       </div>
     </div>
+  )
+}
+
+interface AdFields { spentOn: string; spentTo: string; amount: string; channel: string }
+
+/** New spend defaults to the period on screen (never after today). */
+function adDefaults(p: Period): Pick<AdFields, 'spentOn' | 'spentTo'> {
+  const day = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const t = today()
+  const from = day(p.from), to = day(new Date(p.to.getTime() - 1))
+  const end = to > t ? t : to
+  return { spentOn: from > end ? end : from, spentTo: end }
+}
+
+function AdForm({ initial, editing, onSubmit, onCancel }: {
+  initial: AdFields; editing: boolean; onSubmit: (f: AdFields) => Promise<boolean>; onCancel: () => void
+}) {
+  const [f, setF] = useState<AdFields>(initial)
+  const [busy, setBusy] = useState(false)
+  // A new period on screen → the dates follow it (not while correcting a spend).
+  useEffect(() => { if (!editing) setF((x) => ({ ...x, spentOn: initial.spentOn, spentTo: initial.spentTo })) }, [initial.spentOn, initial.spentTo, editing])
+  const n = Number(f.amount.replace(',', '.'))
+  const days = daysBetween(f.spentOn, f.spentTo)
+  return (
+    <form onSubmit={async (e) => { e.preventDefault(); setBusy(true); const ok = await onSubmit(f); setBusy(false); if (ok && !editing) setF((x) => ({ ...x, amount: '' })) }}
+      style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: editing ? 12 : 0, borderRadius: 12, background: editing ? 'color-mix(in srgb, var(--brand) 6%, transparent)' : undefined }}>
+      {editing && <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--brand)' }}>{tx('Modifier la dépense')}</div>}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 8 }}>
+        <label style={label}>{tx('Du')}
+          <input type="date" value={f.spentOn} max={today()} required
+            onChange={(e) => setF({ ...f, spentOn: e.target.value, spentTo: f.spentTo < e.target.value ? e.target.value : f.spentTo })} style={{ ...input, marginTop: 4 }} />
+        </label>
+        <label style={label}>{tx('Au')}
+          <input type="date" value={f.spentTo} min={f.spentOn} max={today()} required onChange={(e) => setF({ ...f, spentTo: e.target.value })} style={{ ...input, marginTop: 4 }} />
+        </label>
+        <label style={label}>{days > 1 ? tx('Montant total sur ces {0} jours (DH)', [days]) : tx('Montant (DH)')}
+          <input inputMode="decimal" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} placeholder={tx('ex. 300')} required style={{ ...input, marginTop: 4 }} />
+        </label>
+        <label style={label}>{tx('Plateforme')}
+          <select value={f.channel} onChange={(e) => setF({ ...f, channel: e.target.value })} style={{ ...input, marginTop: 4 }}>
+            {CHANNELS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </label>
+      </div>
+      {days > 1 && n > 0 && (
+        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{tx('Soit {0} par jour.', [dh(n / days)])}</div>
+      )}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button type="submit" disabled={busy} style={{ ...btn, opacity: busy ? 0.7 : 1 }}>
+          {busy && <Loader2 className="h-4 w-4 animate-spin" />} {editing ? tx('Enregistrer la modification') : tx('Ajouter la dépense')}
+        </button>
+        {editing && <button type="button" onClick={onCancel} style={{ ...btn, background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' }}>{tx('Annuler')}</button>}
+      </div>
+    </form>
   )
 }
