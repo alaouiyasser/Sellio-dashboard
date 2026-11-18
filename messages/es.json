@@ -144,5 +144,21 @@
     "save": "💾 Guardar",
     "qr_scan": "Escanea el código QR con WhatsApp",
     "close": "✕ Cerrar"
+  },
+  "pwa": {
+    "install": "Instalar app",
+    "iosTitle": "Instalar Sellio en iPhone",
+    "iosSubtitle": "Como una app de verdad, en 3 segundos",
+    "iosStep1": "En Safari, toca Compartir",
+    "iosStep2": "Elige «Añadir a pantalla de inicio»",
+    "iosStep3": "Toca «Añadir»: el icono de Sellio aparece en tu pantalla.",
+    "macTitle": "Instalar Sellio en Mac",
+    "macStep1": "En Safari, abre el menú «Archivo» arriba de la pantalla",
+    "macStep2": "Elige «Añadir al Dock»",
+    "macStep3": "Haz clic en «Añadir»: Sellio se abre como una app desde el Dock.",
+    "otherTitle": "Instalar Sellio",
+    "otherStep1": "Abre el menú del navegador (⋮ arriba a la derecha)",
+    "otherStep2": "Elige «Instalar aplicación» o «Añadir a pantalla de inicio»",
+    "otherStep3": "Confirma: el icono de Sellio aparece en tu pantalla."
   }
 }

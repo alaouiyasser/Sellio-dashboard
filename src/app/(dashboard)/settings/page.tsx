@@ -211,10 +211,19 @@ function IntegrationsManagement({ tenantId, settings, setSettings }: {
     setInstances(data ?? [])
   }
 
+  // Through the API: the browser session may only READ whatsapp_instances (RLS), so the
+  // direct update this used to do was silently refused and nothing was disconnected.
   async function handleDisconnect(key: string) {
-    await supabase.from("whatsapp_instances").update({ status: "offline" }).eq("instance_key", key)
-    fetchInstances()
-    toast.success(tx("Déconnecté"))
+    try {
+      const res = await authFetch(`${API}/api/whatsapp/${tenantId}/instances/${encodeURIComponent(key)}/toggle`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: false }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.ok) { toast.error(data.error ?? tx("Erreur")); return }
+      await fetchInstances()
+      toast.success(tx("Déconnecté"))
+    } catch { toast.error(tx("Erreur connexion")) }
   }
 
   async function handleAddNumber() {

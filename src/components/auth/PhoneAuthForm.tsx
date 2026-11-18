@@ -77,6 +77,8 @@ export function PhoneAuthForm({
       if (data.error === 'invalid') toast.error(tx("Code incorrect ({0} essais restants)", [data.remainingAttempts ?? 0]))
       else if (data.error === 'expired') toast.error(tx("Code expiré, redemandez-en un"))
       else if (data.error === 'locked') toast.error(tx("Trop de tentatives, redemandez un code"))
+      else if (data.error === 'phone_not_verified_on_account') toast.error(tx("Ce numéro est lié à un compte Google/email : connectez-vous avec Google ou votre email"))
+      else if (data.error === 'phone_conflict') toast.error(tx("Ce numéro est lié à plusieurs comptes : contactez le support Sellio"))
       else toast.error(tx("Vérification échouée"))
     } finally {
       setLoading(false)

@@ -69,7 +69,7 @@ export default function IntegrationsManager() {
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return
-      const { data: t } = await supabase.from('tenants').select('id').eq('email', data.user.email).single()
+      const { data: t } = await supabase.from('tenants').select('id').eq('id', data.user.id).single()
       if (t) { setTid(t.id); load(t.id) }
     })
   }, [load])
