@@ -18,7 +18,7 @@ export default function IntegrationsPage() {
       const { data: tenant } = await supabase
         .from('tenants')
         .select('id, onboarding_completed')
-        .eq('email', data.user.email)
+        .eq('id', data.user.id)
         .single()
       if (tenant) {
         setTenantId(tenant.id)

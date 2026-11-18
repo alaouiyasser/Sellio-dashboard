@@ -1,0 +1,18 @@
+{
+  "name": "Sellio",
+  "short_name": "Sellio",
+  "description": "Confirmation COD automatique sur WhatsApp",
+  "id": "/",
+  "start_url": "/orders",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B0060",
+  "theme_color": "#1800AD",
+  "lang": "fr",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

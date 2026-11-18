@@ -144,5 +144,21 @@
     "save": "💾 حفظ",
     "qr_scan": "امسح رمز QR عبر واتساب",
     "close": "✕ إغلاق"
+  },
+  "pwa": {
+    "install": "ثبّت التطبيق",
+    "iosTitle": "ثبّت Sellio فالآيفون",
+    "iosSubtitle": "بحال شي تطبيق، ف 3 ثواني",
+    "iosStep1": "ف Safari، ورك على زر المشاركة",
+    "iosStep2": "ختار « على الشاشة الرئيسية »",
+    "iosStep3": "ورك على « إضافة »: غادي تبان أيقونة Sellio فالشاشة ديالك.",
+    "macTitle": "ثبّت Sellio فالماك",
+    "macStep1": "ف Safari، حل القائمة « Fichier / File » الفوق",
+    "macStep2": "ختار « Ajouter au Dock »",
+    "macStep3": "ورك على « Ajouter »: Sellio غادي يتحل بحال تطبيق من الـDock.",
+    "otherTitle": "ثبّت Sellio",
+    "otherStep1": "حل القائمة ديال المتصفح (⋮ الفوق على اليمين)",
+    "otherStep2": "ختار « Installer l'application » ولا « Ajouter à l'écran d'accueil »",
+    "otherStep3": "أكّد: غادي تبان أيقونة Sellio فالشاشة ديالك."
   }
 }

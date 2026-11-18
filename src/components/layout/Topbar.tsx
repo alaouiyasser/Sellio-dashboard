@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import LangSwitcher from './LangSwitcher'
 import NotificationBell from './NotificationBell'
+import InstallAppButton from '@/components/pwa/InstallAppButton'
 import { Sun, Moon } from 'lucide-react'
 
 interface TopbarProps {
@@ -20,7 +21,12 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
   useEffect(() => {
     async function fetchUser() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user?.email) {
+      // Phone sign-ups have an internal login address (…@phone.sellioagency.com): use the store name.
+      if (user?.email?.endsWith('@phone.sellioagency.com')) {
+        const { data: t } = await supabase.from('tenants').select('name').eq('id', user.id).maybeSingle()
+        const parts = String(t?.name ?? '').trim().split(/\s+/)
+        setInitials(((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? parts[0]?.[1] ?? '')).toUpperCase() || '??')
+      } else if (user?.email) {
         const parts = user.email.split('@')[0].split(/[._-]/)
         setInitials(((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? parts[0]?.[1] ?? '')).toUpperCase())
       }
@@ -43,6 +49,7 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
       </div>
 
       <div className="topbar-right" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <InstallAppButton />
         <span className="topbar-lang"><LangSwitcher /></span>
 
         <NotificationBell />
