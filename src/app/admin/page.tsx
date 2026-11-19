@@ -1,4 +1,5 @@
 'use client'
+import { Bot } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -10,7 +11,7 @@ import {
 } from 'lucide-react'
 import { adminApi, type Overview, type MerchantLine } from '@/lib/admin-api'
 import {
-  Card, Kpi, Bar, Badge, PeriodPicker, PageHead, Skeleton, ErrorBox, mad, int, pct,
+  Card, Kpi, Bar, Badge, PeriodPicker, PageHead, btn, Skeleton, ErrorBox, mad, int, pct,
   PURPOSE_LABEL, FLAG_META, EXPENSE_LABEL,
 } from '@/components/admin/ui'
 
@@ -41,7 +42,12 @@ export default function AdminOverviewPage() {
       <PageHead
         title="Vue d'ensemble"
         subtitle={data ? `Du ${new Date(data.period.from).toLocaleDateString('fr-FR')} au ${new Date(data.period.to).toLocaleDateString('fr-FR')} · WhatsApp : ${data.waProvider === 'cloud' ? 'Cloud API (payant)' : 'Evolution (gratuit)'}` : 'Santé financière et opérationnelle de Sellio'}
-        right={<PeriodPicker value={days} onChange={setDays} />}
+        right={
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <Link href="/admin/ops" style={{ ...btn('primary'), textDecoration: 'none' }}><Bot size={15} /> Agents</Link>
+            <PeriodPicker value={days} onChange={setDays} />
+          </div>
+        }
       />
 
       {error && <ErrorBox message={error} onRetry={load} />}
