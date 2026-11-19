@@ -24,8 +24,8 @@ export default function DevCard() {
     catch (e) { setMsg((e as Error).message) } finally { setBusy(null) }
   }
   async function scout() {
-    setBusy('scout'); setMsg('Veille en cours (1 à 3 minutes)…')
-    try { const r = await adminApi.devScoutNow(); setMsg(`${r.count} proposition(s).`); load() }
+    setBusy('scout'); setMsg(null)
+    try { await adminApi.devScoutNow(); setMsg('Veille lancée. Le résultat (ou l’erreur exacte) arrive en notification dans 1 à 3 minutes.') }
     catch (e) { setMsg((e as Error).message) } finally { setBusy(null) }
   }
 
