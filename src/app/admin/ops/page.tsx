@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Bell, BellRing, FileText, UserCheck, AlertTriangle, FlaskConical, RefreshCw, Send } from 'lucide-react'
 import { adminApi, type OpsItem } from '@/lib/admin-api'
 import { Card, Badge, PageHead, Skeleton, ErrorBox, dateFr, btn } from '@/components/admin/ui'
+import MarketingCard from '@/components/admin/MarketingCard'
 
 const KIND: Record<OpsItem['kind'], { label: string; icon: typeof FileText; tone: 'brand' | 'success' | 'warning' | 'muted' }> = {
   daily_report: { label: 'Rapport', icon: FileText, tone: 'brand' },
@@ -90,6 +91,8 @@ export default function AdminOpsPage() {
         </div>
         {msg && <div style={{ marginTop: 12, fontSize: 12.5, color: 'var(--text)' }}>{msg}</div>}
       </Card>
+
+      <MarketingCard />
 
       {error && <ErrorBox message={error} onRetry={load} />}
       {!items && !error && <><Skeleton h={90} /><Skeleton h={90} /></>}

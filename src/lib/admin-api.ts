@@ -71,6 +71,13 @@ export interface Expense { id: number; spent_on: string; category: ExpenseCatego
 
 export interface OpsItem { id: number; kind: 'daily_report' | 'lead' | 'alert' | 'test'; title: string; body: string | null; link: string | null; created_at: string }
 
+export interface ScriptStats { code: string; ads: number; spend: number; impressions: number; video_3s: number; thruplay: number; conversations: number; hookRate: number | null; holdRate: number | null; costPerConversation: number | null; enough: boolean }
+export interface MarketingOverview {
+  connected: boolean; stats: ScriptStats[]
+  notes: { id: number; code: string | null; note: string; created_at: string }[]
+  scripts: { code: string; title: string; hook: string | null; created_at: string }[]
+}
+
 export const adminApi = {
   me: () => call<{ founder: boolean }>('/me'),
   overview: (days: number) => call<Overview>(`/overview?days=${days}`),
@@ -86,4 +93,7 @@ export const adminApi = {
   pushKey: () => call<{ publicKey: string }>('/push/key'),
   pushSubscribe: (endpoint: string) => call<{ ok: true }>('/push/subscribe', { method: 'POST', body: JSON.stringify({ endpoint }) }),
   pushTest: () => call<{ ok: true }>('/push/test', { method: 'POST' }),
+  marketing: () => call<MarketingOverview>('/marketing'),
+  marketingNote: (code: string, note: string) => call<{ ok: true }>('/marketing/feedback', { method: 'POST', body: JSON.stringify({ code, note }) }),
+  marketingScript: (b: { code: string; title: string; hook?: string }) => call<{ ok: true }>('/marketing/scripts', { method: 'POST', body: JSON.stringify(b) }),
 }
