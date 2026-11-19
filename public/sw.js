@@ -23,3 +23,43 @@ self.addEventListener('fetch', (event) => {
   if (req.mode !== 'navigate') return
   event.respondWith(fetch(req).catch(() => caches.match(OFFLINE_URL)))
 })
+
+// ─── Founder notifications (agents' reports, leads, alerts) ──────────────────
+// Pushes carry no payload: ask the API what to show for this device.
+self.addEventListener('push', (event) => {
+  event.waitUntil((async () => {
+    let item = null
+    try {
+      const sub = await self.registration.pushManager.getSubscription()
+      if (sub) {
+        const res = await fetch('/api/push/latest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: sub.endpoint }),
+        })
+        if (res.ok) item = await res.json()
+      }
+    } catch (e) { /* show the generic notification below */ }
+    await self.registration.showNotification(item?.title || 'Sellio', {
+      body: item?.body || 'Jdid f la console Sellio',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { link: item?.link || '/admin/ops' },
+    })
+  })())
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = (event.notification.data && event.notification.data.link) || '/admin/ops'
+  event.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    for (const w of wins) {
+      if ('focus' in w) {
+        if ('navigate' in w) await w.navigate(url).catch(() => {})
+        return w.focus()
+      }
+    }
+    return self.clients.openWindow(url)
+  })())
+})

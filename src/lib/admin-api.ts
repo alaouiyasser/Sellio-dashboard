@@ -69,6 +69,8 @@ export interface MerchantDetail {
 export type ExpenseCategory = 'ads' | 'infra' | 'tools' | 'other'
 export interface Expense { id: number; spent_on: string; category: ExpenseCategory; label: string; amount_mad: number; created_at?: string }
 
+export interface OpsItem { id: number; kind: 'daily_report' | 'lead' | 'alert' | 'test'; title: string; body: string | null; link: string | null; created_at: string }
+
 export const adminApi = {
   me: () => call<{ founder: boolean }>('/me'),
   overview: (days: number) => call<Overview>(`/overview?days=${days}`),
@@ -79,4 +81,9 @@ export const adminApi = {
   expenses: (days = 365) => call<{ expenses: Expense[] }>(`/expenses?days=${days}`),
   addExpense: (e: Omit<Expense, 'id' | 'created_at'>) => call<{ expense: Expense }>('/expenses', { method: 'POST', body: JSON.stringify(e) }),
   deleteExpense: (id: number) => call<{ ok: true }>(`/expenses/${id}`, { method: 'DELETE' }),
+  opsFeed: () => call<{ items: OpsItem[] }>('/ops/feed'),
+  reportNow: () => call<{ ok: true }>('/ops/report-now', { method: 'POST' }),
+  pushKey: () => call<{ publicKey: string }>('/push/key'),
+  pushSubscribe: (endpoint: string) => call<{ ok: true }>('/push/subscribe', { method: 'POST', body: JSON.stringify({ endpoint }) }),
+  pushTest: () => call<{ ok: true }>('/push/test', { method: 'POST' }),
 }
