@@ -5,12 +5,14 @@ import { Bell, BellRing, FileText, UserCheck, AlertTriangle, FlaskConical, Refre
 import { adminApi, type OpsItem } from '@/lib/admin-api'
 import { Card, Badge, PageHead, Skeleton, ErrorBox, dateFr, btn } from '@/components/admin/ui'
 import MarketingCard from '@/components/admin/MarketingCard'
+import DevCard from '@/components/admin/DevCard'
 
 const KIND: Record<OpsItem['kind'], { label: string; icon: typeof FileText; tone: 'brand' | 'success' | 'warning' | 'muted' }> = {
   daily_report: { label: 'Rapport', icon: FileText, tone: 'brand' },
   lead: { label: 'Lead', icon: UserCheck, tone: 'success' },
   alert: { label: 'Alerte', icon: AlertTriangle, tone: 'warning' },
   test: { label: 'Test', icon: FlaskConical, tone: 'muted' },
+  dev: { label: 'Dev', icon: FlaskConical, tone: 'brand' },
 }
 
 function keyBytes(b64url: string): Uint8Array {
@@ -92,6 +94,7 @@ export default function AdminOpsPage() {
         {msg && <div style={{ marginTop: 12, fontSize: 12.5, color: 'var(--text)' }}>{msg}</div>}
       </Card>
 
+      <DevCard />
       <MarketingCard />
 
       {error && <ErrorBox message={error} onRetry={load} />}

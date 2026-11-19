@@ -69,7 +69,7 @@ export interface MerchantDetail {
 export type ExpenseCategory = 'ads' | 'infra' | 'tools' | 'other'
 export interface Expense { id: number; spent_on: string; category: ExpenseCategory; label: string; amount_mad: number; created_at?: string }
 
-export interface OpsItem { id: number; kind: 'daily_report' | 'lead' | 'alert' | 'test'; title: string; body: string | null; link: string | null; created_at: string }
+export interface OpsItem { id: number; kind: 'daily_report' | 'lead' | 'alert' | 'test' | 'dev'; title: string; body: string | null; link: string | null; created_at: string }
 
 export interface ScriptStats { code: string; ads: number; spend: number; impressions: number; video_3s: number; thruplay: number; conversations: number; hookRate: number | null; holdRate: number | null; costPerConversation: number | null; enough: boolean }
 export interface MarketingOverview {
@@ -77,6 +77,8 @@ export interface MarketingOverview {
   notes: { id: number; code: string | null; note: string; created_at: string }[]
   scripts: { code: string; title: string; hook: string | null; created_at: string }[]
 }
+
+export interface DevProposal { id: number; title: string; category: string; what: string; benefit: string; effort: 'S' | 'M' | 'L'; risk: string | null; sources: string[]; status: 'new' | 'approved' | 'rejected' | 'done'; issue_url: string | null; created_at: string }
 
 export const adminApi = {
   me: () => call<{ founder: boolean }>('/me'),
@@ -94,6 +96,9 @@ export const adminApi = {
   pushSubscribe: (endpoint: string) => call<{ ok: true }>('/push/subscribe', { method: 'POST', body: JSON.stringify({ endpoint }) }),
   pushTest: () => call<{ ok: true }>('/push/test', { method: 'POST' }),
   marketing: () => call<MarketingOverview>('/marketing'),
+  devProposals: () => call<{ proposals: DevProposal[] }>('/dev/proposals'),
+  devScoutNow: () => call<{ count: number }>('/dev/scout-now', { method: 'POST' }),
+  devDecide: (id: number, decision: 'approve' | 'reject') => call<{ ok: true; issueUrl?: string }>(`/dev/proposals/${id}`, { method: 'POST', body: JSON.stringify({ decision }) }),
   marketingNote: (code: string, note: string) => call<{ ok: true }>('/marketing/feedback', { method: 'POST', body: JSON.stringify({ code, note }) }),
   marketingScript: (b: { code: string; title: string; hook?: string }) => call<{ ok: true }>('/marketing/scripts', { method: 'POST', body: JSON.stringify(b) }),
 }
