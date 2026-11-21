@@ -10,7 +10,8 @@
     "logout": "Déconnexion",
     "integrations": "Intégrations",
     "profit": "Rentabilité",
-    "offers": "Offres"
+    "offers": "Offres",
+    "store": "Ma boutique"
   },
   "kpi": {
     "total": "Total commandes",

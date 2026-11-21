@@ -1,0 +1,103 @@
+'use client'
+// "Messages automatiques": a welcome message in darija with the store link, where to paste it
+// (WhatsApp Business greeting + away message, Meta Business Suite instant reply) and one link
+// per product for quick replies. Nothing is sent by Sellio here: the merchant copies and pastes.
+import { useState } from 'react'
+import { productUrl, storeUrl, type Product } from '@/lib/store-api'
+import { tx } from '@/lib/i18n'
+import { CopyButton, card, chip, h2, input, muted } from './ui'
+
+/** Welcome message: darija in Latin letters (as most customers write) or in Arabic letters. */
+function welcome(script: 'latin' | 'arabic', name: string, link: string) {
+  return script === 'latin'
+    ? `Salam 👋 Merhba bik f ${name}!\nChouf ga3 les produits w les prix dyalna w commandi direct men hna 👇\n${link}\nL-khlass 3and l-livraison 💵🚚 W ila 3andek chi so2al, ana hna.`
+    : `السلام عليكم 👋 مرحبا بيك ف ${name}!\nشوف جميع المنتوجات والأثمنة ديالنا وكوموندي نيشان من هنا 👇\n${link}\nالخلاص عند التوصيل 💵🚚 وإلا عندك شي سؤال، أنا هنا.`
+}
+function away(script: 'latin' | 'arabic', link: string) {
+  return script === 'latin'
+    ? `Salam 👋 Chokran 3la l-message dyalek! Daba ma nqderch njaweb, ghadi nrj3 lik f a9rab wa9t.\nT9der tcommandi direct men hna: ${link}`
+    : `السلام عليكم 👋 شكرا على الميساج ديالك! دابا ما نقدرش نجاوب، غادي نرجع ليك ف أقرب وقت.\nتقدر تكوموندي نيشان من هنا: ${link}`
+}
+
+export default function MessagesStep({ storeName, slug, products }: { storeName: string; slug: string; products: Product[] }) {
+  const [script, setScript] = useState<'latin' | 'arabic'>('latin')
+  const link = storeUrl(slug)
+  const [msg, setMsg] = useState<string | null>(null)
+  const welcomeText = msg ?? welcome(script, storeName, link)
+  const awayText = away(script, link)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div>
+        <h2 style={h2}>{tx('Messages automatiques')}</h2>
+        <p style={muted}>{tx('Quand un client vous écrit, il reçoit tout de suite le lien de votre boutique. Copiez ces messages dans WhatsApp Business et Meta Business Suite.')}</p>
+      </div>
+
+      <div style={card}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+          <strong style={{ fontSize: 14, color: 'var(--text)' }}>{tx('Message de bienvenue (darija)')}</strong>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button type="button" style={chip(script === 'latin')} onClick={() => { setScript('latin'); setMsg(null) }}>{tx('Lettres latines')}</button>
+            <button type="button" style={chip(script === 'arabic')} onClick={() => { setScript('arabic'); setMsg(null) }}>{tx('Lettres arabes')}</button>
+          </div>
+        </div>
+        <textarea value={welcomeText} onChange={(e) => setMsg(e.target.value)} rows={5} dir={script === 'arabic' ? 'rtl' : 'ltr'}
+          style={{ ...input, resize: 'vertical', fontSize: 14, lineHeight: 1.5 }} />
+        <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+          <CopyButton text={welcomeText} />
+          <CopyButton text={link} label={tx('Copier le lien de la boutique')} />
+        </div>
+      </div>
+
+      <div style={card}>
+        <strong style={{ fontSize: 14, color: 'var(--text)' }}>{tx('WhatsApp Business')}</strong>
+        <ol style={ol}>
+          <li>{tx('Ouvrez WhatsApp Business → Paramètres → Outils professionnels.')}</li>
+          <li>{tx('Message de bienvenue : activez-le, collez le message ci-dessus, enregistrez.')}</li>
+          <li>{tx('Message d’absence : activez-le, choisissez « Toujours envoyer » ou « En dehors des heures d’ouverture », collez le message ci-dessous.')}</li>
+          <li>{tx('Réponses rapides : créez un raccourci par produit (ex : /parfum1) avec son lien, plus bas.')}</li>
+        </ol>
+        <div style={{ marginTop: 10 }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>{tx('Message d’absence')}</span>
+          <textarea readOnly value={awayText} rows={3} dir={script === 'arabic' ? 'rtl' : 'ltr'} style={{ ...input, marginTop: 6, resize: 'vertical' }} />
+          <div style={{ marginTop: 8 }}><CopyButton text={awayText} /></div>
+        </div>
+      </div>
+
+      <div style={card}>
+        <strong style={{ fontSize: 14, color: 'var(--text)' }}>{tx('Instagram et Messenger (Meta Business Suite)')}</strong>
+        <ol style={ol}>
+          <li>{tx('Ouvrez Meta Business Suite → Boîte de réception → Automatisations.')}</li>
+          <li>{tx('Choisissez « Réponse instantanée » et activez-la pour Instagram et Messenger.')}</li>
+          <li>{tx('Collez le message de bienvenue, puis enregistrez.')}</li>
+        </ol>
+      </div>
+
+      <div style={card}>
+        <strong style={{ fontSize: 14, color: 'var(--text)' }}>{tx('Un lien par produit (réponses rapides)')}</strong>
+        <p style={{ ...muted, fontSize: 12, margin: '4px 0 10px' }}>{tx('Quand un client demande un produit, envoyez son lien : il voit la photo, le prix et commande directement.')}</p>
+        {products.length === 0 ? (
+          <p style={{ ...muted, fontSize: 12 }}>{tx('Ajoutez des produits pour avoir leurs liens.')}</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {products.map((p) => {
+              const u = productUrl(slug, p.slug)
+              return (
+                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 8, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg)' }}>
+                  {p.images?.[0] ? <img src={p.images[0]} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }} /> : <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--border)' }} />}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{p.name}</div>
+                    <div dir="ltr" style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u}</div>
+                  </div>
+                  <CopyButton text={u} />
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const ol: React.CSSProperties = { margin: '8px 0 0', paddingInlineStart: 20, fontSize: 13, color: 'var(--text)', lineHeight: 1.7 }

@@ -1,17 +1,36 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
-import { Loader2, ArrowLeft } from 'lucide-react'
+import { Loader2, ArrowLeft, Globe, Store } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { apiPost, inputCls, primaryBtn } from '@/lib/auth-client'
 import { AuthShell } from '@/components/auth/AuthShell'
 import { PasswordField } from '@/components/auth/PasswordField'
 
 import { tx } from '@/lib/i18n'
+import { PLAN_LABEL, PLAN_PRICE_DH, parsePlan, type Plan } from '@/lib/store-api'
+
+const noSubscribe = () => () => {}
+
 export default function SignupPage() {
   const supabase = createClient()
-  const [step, setStep] = useState<'form' | 'otp'>('form')
+  const [formStep, setStep] = useState<'form' | 'otp'>('form')
+  // ?plan=demarrage|croissance from the pricing page is kept and sent to the API. Without it we
+  // ask whether the merchant already has a website (yes → Croissance, no → Démarrage).
+  const search = useSyncExternalStore(noSubscribe, () => window.location.search, () => null)
+  const ready = search !== null
+  const urlPlan = parsePlan(new URLSearchParams(search ?? '').get('plan'))
+  const [picked, setPicked] = useState<Plan | null>(null)
+  const [asking, setAsking] = useState(false)
+  const plan = picked ?? urlPlan
+  const step: 'site' | 'form' | 'otp' = !plan || asking ? 'site' : formStep
+  function choosePlan(p: Plan) {
+    setPicked(p); setAsking(false)
+    const u = new URL(window.location.href)
+    u.searchParams.set('plan', p)
+    window.history.replaceState(null, '', u.toString())
+  }
   const [loading, setLoading] = useState(false)
   const [cooldown, setCooldown] = useState(0)
 
@@ -70,10 +89,12 @@ export default function SignupPage() {
         return
       }
 
-      const { res, data } = await apiPost('/api/auth/phone/complete-signup', { phone, email, storeName: store, rememberDevice: true })
+      const chosen: Plan = plan ?? 'croissance'
+      const { res, data } = await apiPost(`/api/auth/phone/complete-signup?plan=${chosen}`, { phone, email, storeName: store, rememberDevice: true, plan: chosen })
       if (!(res.ok && data.status === 'authenticated')) {
         if (data.error === 'email_already_registered') toast.error(tx("Cet email a deja un compte"))
         else if (data.error === 'phone_already_registered') toast.error(tx("Ce numero a deja un compte"))
+        else if (data.error === 'invalid_plan') { toast.error(tx("Plan inconnu, choisissez à nouveau")); setStep('form'); setAsking(true) }
         else toast.error(tx("Creation echouee"))
         return
       }
@@ -87,21 +108,52 @@ export default function SignupPage() {
       }
 
       toast.success(tx("Compte cree"))
-      window.location.href = '/onboarding'
+      // No website → build the Sellio store; with a website → connect Shopify / YouCan / WooCommerce.
+      window.location.href = chosen === 'demarrage' ? '/store' : '/onboarding'
     } finally { setLoading(false) }
   }
 
   return (
     <AuthShell
       subtitle={tx("Creez votre compte gratuitement")}
-      footer={step === 'form'
+      footer={step !== 'otp'
         ? (<>{tx("Deja un compte ?")}{' '}
             <button type="button" onClick={() => { window.location.href = '/login' }}
               className="font-medium text-brand hover:underline">{tx("Se connecter")}</button></>)
         : undefined}
     >
-      {step === 'form' ? (
+      {!ready ? (
+        <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-brand" /></div>
+      ) : step === 'site' ? (
         <div className="flex flex-col gap-3">
+          <p className="text-center text-base font-semibold text-foreground">{tx("Vous avez déjà un site ?")}</p>
+          <button type="button" onClick={() => choosePlan('croissance')}
+            className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-start transition hover:border-brand">
+            <Globe className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
+            <span>
+              <span className="block text-sm font-semibold text-foreground">{tx("Oui, j'ai un site")}</span>
+              <span className="block text-xs text-muted-foreground">{tx("Shopify, YouCan ou WooCommerce : vous le connectez à Sellio.")}</span>
+            </span>
+          </button>
+          <button type="button" onClick={() => choosePlan('demarrage')}
+            className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-start transition hover:border-brand">
+            <Store className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
+            <span>
+              <span className="block text-sm font-semibold text-foreground">{tx("Non, je crée ma boutique Sellio")}</span>
+              <span className="block text-xs text-muted-foreground">{tx("Plan Démarrage proposé : {0} DH par commande livrée. Mise en ligne après un virement d’activation, ajouté à votre solde en crédits.", [PLAN_PRICE_DH])}</span>
+            </span>
+          </button>
+        </div>
+      ) : step === 'form' ? (
+        <div className="flex flex-col gap-3">
+          {plan && (
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs">
+              <span className="text-muted-foreground">
+                <span className="font-semibold text-foreground">{tx("Plan {0}", [tx(PLAN_LABEL[plan])])}</span>{tx(" : {0} DH par commande livrée", [PLAN_PRICE_DH])}
+              </span>
+              <button type="button" onClick={() => setAsking(true)} className="shrink-0 font-medium text-brand hover:underline">{tx("Changer")}</button>
+            </div>
+          )}
           <input autoComplete="name" placeholder={tx("Nom et prenom")} value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
           <input autoComplete="organization" placeholder={tx("Nom de la boutique")} value={store} onChange={(e) => setStore(e.target.value)} className={inputCls} />
           <input type="email" autoComplete="email" placeholder={tx("Email")} value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
