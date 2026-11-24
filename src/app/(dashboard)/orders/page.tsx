@@ -24,6 +24,7 @@ const GROUPS: { key: string; label: () => string }[] = [
   { key: 'delivered', label: () => tx('Livrées') },
   { key: 'returned', label: () => tx('Retournées') },
   { key: 'cancelled', label: () => tx('Annulées') },
+  { key: 'blocked', label: () => tx('Bloquées') },
 ]
 
 export default function OrdersPage() {

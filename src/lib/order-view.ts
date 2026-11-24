@@ -36,6 +36,7 @@ export const ORDER_STATUS: Record<string, { label: Record<string, string>; bg: s
   canceled:  { label: { fr: 'Annulé',     en: 'Cancelled', ar: 'ملغي',         es: 'Cancelado'   }, bg: 'rgba(239,68,68,0.15)',  color: '#EF4444' },
   returned:  { label: { fr: 'Retourné',   en: 'Returned',  ar: 'مرتجع',        es: 'Devuelto'    }, bg: 'rgba(249,115,22,0.15)', color: '#F97316' },
   in_delivery: { label: { fr: 'En livraison', en: 'In delivery', ar: 'جاري التوصيل', es: 'En reparto' }, bg: 'rgba(59,130,246,0.15)', color: '#3B82F6' },
+  blocked:   { label: { fr: 'Bloquée',    en: 'Blocked',   ar: 'محظورة',       es: 'Bloqueada'   }, bg: 'rgba(136,19,55,0.22)',  color: '#BE123C' },
   delivery_unconfirmed: { label: { fr: 'Non confirmé', en: 'Unconfirmed', ar: 'غير مؤكد', es: 'Sin confirmar' }, bg: 'rgba(156,163,175,0.15)', color: '#9CA3AF' },
 }
 
@@ -52,6 +53,7 @@ export const STATUS_GROUPS: Record<string, string[]> = {
   delivered: ['delivered'],
   returned: ['returned'],
   cancelled: ['canceled', 'cancelled'],
+  blocked: ['blocked'],
 }
 export const groupOf = (status: string) => Object.keys(STATUS_GROUPS).find((g) => STATUS_GROUPS[g]!.includes(status)) ?? 'pending'
 
