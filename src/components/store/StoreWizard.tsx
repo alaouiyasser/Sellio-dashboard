@@ -1,17 +1,20 @@
 'use client'
-// "Ma boutique": the store builder wizard with a live phone preview.
+// "Ma boutique", first pass: the store builder wizard with a live phone preview.
 //   1 Que vendez-vous ? → 2 Type de site → 3 Thème → 4 Couleurs → 5 Marque et infos → 6 Catégories
-//   → 7 Produits (each one in a category) → 8 Sections → 9 Messages automatiques → Activer
+//   → 7 Produits (each one in a category) → 8 Sections → 9 Messages automatiques → Terminer
 // Each "Suivant" saves the step to the API (the store is created at the end of step 1).
+// "Terminer" sets sections.setup_done, plays the congratulations screen, then « Voir ma boutique » /
+// « Mettre en ligne ». From then on "Ma boutique" is a management space: Produits, Catégories,
+// Pages, Apparence, Messages automatiques, Paramètres, with the status and the link on top.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import {
-  ArrowLeft, ArrowRight, Check, ExternalLink, Eye, ImagePlus, Loader2, Package, Pencil, Plus, Rocket, Trash2, X,
+  ArrowLeft, ArrowRight, Check, ExternalLink, Eye, ImagePlus, Loader2, Package, PartyPopper, Pencil, Plus, Rocket, RotateCcw, Save, Trash2, X,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import {
-  COLOR_LABELS, FONTS, FONTS_HREF, PALETTES, PROFILES, SITE_TYPES, STATUS_LABEL, THEMES,
+  COLOR_LABELS, FONTS, FONTS_HREF, PALETTES, PROFILES, SETUP_DONE_KEY, SITE_TYPES, STATUS_LABEL, THEMES,
   filtersFor, presetSections, profileOf, sectionsFor, storeApi, storeUrl, storeUrlParts, type ProfilePreset,
   type Category, type ColorKey, type Colors, type Product, type SiteType, type Store, type StoreProfile, type StoreStatus, type ThemeId,
 } from '@/lib/store-api'
@@ -21,14 +24,23 @@ import ProductEditor from './ProductEditor'
 import CategoriesStep from './CategoriesStep'
 import MessagesStep from './MessagesStep'
 import ActivateStep from './ActivateStep'
-import { btn, card, choice, h2, input, label, muted } from './ui'
+import Celebration from './Celebration'
+import PagesPanel from './PagesPanel'
+import { CopyButton, btn, card, choice, h2, input, label, muted } from './ui'
 
 const STEPS = [
   'Que vendez-vous ?', 'Type de site', 'Thème', 'Couleurs', 'Marque et infos', 'Catégories', 'Produits', 'Sections', 'Messages automatiques',
 ] as const
 const CATEGORIES = 5, PRODUCTS = 6, SECTIONS_STEP = 7, MESSAGES = 8
-const ACTIVATE = STEPS.length // the last screen, after the 9 steps
+const OLD_ACTIVATE = 9 // the "Activer" screen of the previous wizard: a merchant saved there has finished it
 const STEP_KEY = 'sellio-store-step-v2' // v2: Catégories became its own step (before Produits)
+
+/** Tabs of the management space (after the first pass). */
+const TABS = [
+  { id: 'products', label: 'Produits' }, { id: 'categories', label: 'Catégories' }, { id: 'pages', label: 'Pages' },
+  { id: 'appearance', label: 'Apparence' }, { id: 'messages', label: 'Messages automatiques' }, { id: 'settings', label: 'Paramètres' },
+] as const
+type Tab = typeof TABS[number]['id']
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/
 
 interface Draft extends PreviewData { profile: StoreProfile; slug: string }
@@ -60,6 +72,12 @@ export default function StoreWizard() {
   const [editing, setEditing] = useState<{ id: string | null; categoryId: string } | null>(null)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const logoRef = useRef<HTMLInputElement>(null)
+  /** 'wizard' the first time; 'manage' once the wizard was finished (sections.setup_done). */
+  const [mode, setMode] = useState<'wizard' | 'manage'>('wizard')
+  const [tab, setTab] = useState<Tab>('products')
+  const [celebrate, setCelebrate] = useState(false)
+  /** The « Voir ma boutique » / « Mettre en ligne » screen right after the congratulations. */
+  const [justDone, setJustDone] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -78,14 +96,20 @@ export default function StoreWizard() {
           setProducts(p); setCategories(c)
           let saved = NaN
           try { saved = Number(localStorage.getItem(STEP_KEY)) } catch {}
-          setStep(Number.isInteger(saved) && saved >= 0 && saved <= ACTIVATE ? saved : c.length || s.site_type === 'landing' ? PRODUCTS : CATEGORIES)
+          const done = !!s.sections?.[SETUP_DONE_KEY] || s.status !== 'draft' || saved === OLD_ACTIVATE
+          if (done) {
+            setMode('manage')
+            // Finished before the flag existed: write it, so every device opens the management space.
+            if (!s.sections?.[SETUP_DONE_KEY]) storeApi.update({ sections: { ...(s.sections ?? {}), [SETUP_DONE_KEY]: true } }).then(setStore).catch(() => {})
+          }
+          setStep(Number.isInteger(saved) && saved >= 0 && saved <= MESSAGES ? saved : c.length || s.site_type === 'landing' ? PRODUCTS : CATEGORIES)
         }
       } catch (e) { toast.error((e as Error).message) }
       finally { setLoading(false) }
     })()
   }, [])
 
-  useEffect(() => { if (store) try { localStorage.setItem(STEP_KEY, String(step)) } catch {} }, [step, store])
+  useEffect(() => { if (store && mode === 'wizard') try { localStorage.setItem(STEP_KEY, String(step)) } catch {} }, [step, store, mode])
 
   const set = (patch: Partial<Draft>) => setD((x) => ({ ...x, ...patch }))
   const activeProducts = products.filter((p) => p.status === 'active').length
@@ -93,13 +117,39 @@ export default function StoreWizard() {
 
   function pickProfile(p: StoreProfile) {
     const pre = profileOf(p)
-    set({ profile: p, siteType: pre.siteType, sections: presetSections(p) })
+    // The niche's sections, keeping the "wizard finished" flag.
+    set({ profile: p, siteType: pre.siteType, sections: { ...presetSections(p), ...(d.sections[SETUP_DONE_KEY] && { [SETUP_DONE_KEY]: true }) } })
   }
 
   const needsCategories = d.siteType !== 'landing'
 
+  /** Save what wizard step `at` changes; returns the saved store (null: nothing to save / refused). */
+  async function persist(at: number): Promise<Store | null> {
+    let s = store
+    if (at === 0) {
+      const body = { profile: d.profile, siteType: d.siteType, sections: d.sections }
+      s = s ? await storeApi.update(body) : await storeApi.create({ ...body, name: d.name.trim().length >= 2 ? d.name.trim() : tx('Ma boutique') })
+      if (!store) { setD((x) => ({ ...x, slug: s!.slug, name: s!.name })); const [p, c] = await Promise.all([storeApi.products(), storeApi.categories()]); setProducts(p); setCategories(c) }
+    } else if (!s) {
+      toast.error(tx('Choisissez d’abord ce que vous vendez')); setStep(0); return null
+    } else if (at === 1) s = await storeApi.update({ siteType: d.siteType })
+    else if (at === 2) s = await storeApi.update({ theme: d.theme })
+    else if (at === 3) s = await storeApi.update({ colors: d.colors, font: d.font })
+    else if (at === 4) {
+      if (d.name.trim().length < 2) { toast.error(tx('Donnez un nom à la boutique')); return null }
+      if (d.slug !== s.slug && !SLUG_RE.test(d.slug)) { toast.error(tx('Adresse invalide : 3 à 40 caractères, lettres, chiffres et tirets')); return null }
+      s = await storeApi.update({
+        name: d.name.trim(), ...(d.slug !== s.slug && { slug: d.slug }), logoUrl: d.logoUrl, whatsapp: d.whatsapp.trim() || null,
+        city: d.city.trim() || null, deliveryText: d.deliveryText.trim() || null, returnText: d.returnText.trim() || null,
+      })
+      setD((x) => ({ ...x, whatsapp: s!.whatsapp ?? '', slug: s!.slug }))
+    } else if (at === SECTIONS_STEP) s = await storeApi.update({ sections: d.sections })
+    setStore(s)
+    return s
+  }
+
   /** Save what the current step changed, then go to `to`. */
-  async function saveAndGo(to: number) {
+  async function saveAndGo(to: number): Promise<boolean> {
     // Products always go in a category: categories first (except a landing page).
     // The current step is still saved, then the merchant lands on Catégories.
     if (to >= PRODUCTS && step <= CATEGORIES && store && needsCategories && categories.length === 0) {
@@ -108,31 +158,41 @@ export default function StoreWizard() {
     }
     setSaving(true)
     try {
-      let s = store
-      if (step === 0) {
-        const body = { profile: d.profile, siteType: d.siteType, sections: d.sections }
-        s = s ? await storeApi.update(body) : await storeApi.create({ ...body, name: d.name.trim().length >= 2 ? d.name.trim() : tx('Ma boutique') })
-        if (!store) { setD((x) => ({ ...x, slug: s!.slug, name: s!.name })); const [p, c] = await Promise.all([storeApi.products(), storeApi.categories()]); setProducts(p); setCategories(c) }
-      } else if (!s) {
-        toast.error(tx('Choisissez d’abord ce que vous vendez')); setStep(0); return
-      } else if (step === 1) s = await storeApi.update({ siteType: d.siteType })
-      else if (step === 2) s = await storeApi.update({ theme: d.theme })
-      else if (step === 3) s = await storeApi.update({ colors: d.colors, font: d.font })
-      else if (step === 4) {
-        if (d.name.trim().length < 2) { toast.error(tx('Donnez un nom à la boutique')); return }
-        if (d.slug !== s.slug && !SLUG_RE.test(d.slug)) { toast.error(tx('Adresse invalide : 3 à 40 caractères, lettres, chiffres et tirets')); return }
-        s = await storeApi.update({
-          name: d.name.trim(), ...(d.slug !== s.slug && { slug: d.slug }), logoUrl: d.logoUrl, whatsapp: d.whatsapp.trim() || null,
-          city: d.city.trim() || null, deliveryText: d.deliveryText.trim() || null, returnText: d.returnText.trim() || null,
-        })
-        setD((x) => ({ ...x, whatsapp: s!.whatsapp ?? '', slug: s!.slug }))
-      } else if (step === SECTIONS_STEP) s = await storeApi.update({ sections: d.sections })
-      setStore(s)
+      if (!(await persist(step))) return false // refused (message already shown)
       setEditing(null)
       setStep(to)
       window.scrollTo({ top: 0, behavior: 'smooth' })
+      return true
+    } catch (e) { toast.error((e as Error).message); return false }
+    finally { setSaving(false) }
+  }
+
+  /** Last step: mark the wizard as finished, then the congratulations screen. */
+  async function finish() {
+    setSaving(true)
+    try {
+      const s = await storeApi.update({ sections: { ...d.sections, [SETUP_DONE_KEY]: true } })
+      setStore(s); set({ sections: s.sections ?? d.sections })
+      setEditing(null)
+      setCelebrate(true)
     } catch (e) { toast.error((e as Error).message) }
     finally { setSaving(false) }
+  }
+
+  /** Management space: save the fields of a tab (several wizard steps at once). */
+  async function saveTab(steps: number[]) {
+    setSaving(true)
+    try {
+      for (const at of steps) if (!(await persist(at))) return
+      toast.success(tx('Modifications enregistrées'))
+    } catch (e) { toast.error((e as Error).message) }
+    finally { setSaving(false) }
+  }
+
+  /** « Mettre en ligne »: Paramètres, at the activation block. */
+  function goLive() {
+    setJustDone(false); setMode('manage'); setEditing(null); setTab('settings')
+    setTimeout(() => document.getElementById('store-activation')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
   }
 
   async function removeProduct(p: Product) {
@@ -157,8 +217,17 @@ export default function StoreWizard() {
 
   if (loading) return <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)' }}>{tx('Chargement...')}</div>
 
-  const stepBody = (() => {
-    switch (step) {
+  /** Categories first: opens the categories (wizard step or management tab). */
+  const toCategories = () => (mode === 'manage' ? setTab('categories') : setStep(CATEGORIES))
+  /** « Ajouter un produit » from a category: the product editor, in that category. */
+  async function addProductIn(categoryId: string) {
+    if (mode === 'manage') { setTab('products'); setEditing({ id: null, categoryId }); return }
+    if (await saveAndGo(PRODUCTS)) setEditing({ id: null, categoryId })
+  }
+
+  /** Body of wizard step `i` (the management tabs reuse them). */
+  const bodyOf = (i: number) => {
+    switch (i) {
       case 0: return (
         <Section title={tx('Que vendez-vous ?')} hint={tx('Nous préparons les sections, les filtres et les champs produit de votre niche. Vous pourrez tout changer.')}>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(auto-fill, minmax(170px, 1fr))', gap: 10 }}>
@@ -281,7 +350,10 @@ export default function StoreWizard() {
           </div>
         </Section>
       )
-      case CATEGORIES: return <CategoriesStep profile={d.profile} siteType={d.siteType} categories={categories} onChange={setCategories} />
+      case CATEGORIES: return (
+        <CategoriesStep profile={d.profile} siteType={d.siteType} categories={categories} onChange={setCategories}
+          preview={d} products={products.filter((p) => p.status === 'active')} onAddProduct={addProductIn} />
+      )
       case PRODUCTS: return (
         <Section title={tx('Produits')} hint={needsCategories ? tx('Ajoutez vos produits dans leurs catégories, avec leurs options, prix et stock.') : tx('Ajoutez votre produit avec ses options, prix et stock.')}>
           {editing ? (
@@ -298,7 +370,7 @@ export default function StoreWizard() {
           ) : categories.length === 0 ? (
             <div>
               <p style={muted}>{tx('Créez d’abord au moins une catégorie : chaque produit est rangé dans une catégorie.')}</p>
-              <button type="button" onClick={() => setStep(CATEGORIES)} style={{ ...btn('primary'), marginTop: 10 }}>{tx('Créer mes catégories')}</button>
+              <button type="button" onClick={toCategories} style={{ ...btn('primary'), marginTop: 10 }}>{tx('Créer mes catégories')}</button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -348,14 +420,82 @@ export default function StoreWizard() {
           </>)}
         </Section>
       )
-      case MESSAGES: return <MessagesStep storeName={d.name} slug={d.slug} products={products.filter((p) => p.status === 'active')} />
-      default: return <ActivateStep slug={d.slug} activeProducts={activeProducts} onStatus={(st) => setStore((s) => (s && s.status !== st ? { ...s, status: st } : s))} />
+      case MESSAGES: return (
+        <MessagesStep storeName={d.name} slug={d.slug} whatsapp={store?.whatsapp ?? null} products={products.filter((p) => p.status === 'active')}
+          onEditWhatsapp={() => (mode === 'manage' ? setTab('settings') : saveAndGo(4))} />
+      )
+      default: return null
+    }
+  }
+
+  const activate = <ActivateStep slug={d.slug} activeProducts={activeProducts} onStatus={(st) => setStore((s) => (s && s.status !== st ? { ...s, status: st } : s))} />
+  const saved = fromStore(store, d.name)
+  const changed = (keys: (keyof Draft)[]) => keys.some((k) => JSON.stringify(d[k]) !== JSON.stringify(saved[k]))
+  const saveBar = (steps: number[], keys: (keyof Draft)[]) => {
+    const dirty = changed(keys)
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
+        {dirty && <span style={{ fontSize: 12, color: 'var(--warning)' }}>{tx('Modifications non enregistrées')}</span>}
+        <button type="button" onClick={() => saveTab(steps)} disabled={saving || !dirty} style={btn('primary', saving || !dirty)}>
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {tx('Enregistrer')}
+        </button>
+      </div>
+    )
+  }
+
+  /** Body of a management tab. */
+  const tabBody = (() => {
+    switch (tab) {
+      case 'products': return bodyOf(PRODUCTS)
+      case 'categories': return bodyOf(CATEGORIES)
+      case 'pages': return (<>
+        <PagesPanel slug={d.slug} siteType={d.siteType} products={products} onSiteType={(siteType) => set({ siteType })} />
+        {saveBar([1], ['siteType'])}
+      </>)
+      case 'appearance': return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {bodyOf(2)}{bodyOf(3)}{bodyOf(SECTIONS_STEP)}
+          {saveBar([2, 3, SECTIONS_STEP], ['theme', 'colors', 'font', 'sections'])}
+        </div>
+      )
+      case 'messages': return bodyOf(MESSAGES)
+      case 'settings': return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>{bodyOf(4)}{saveBar([4], ['name', 'slug', 'logoUrl', 'whatsapp', 'city', 'deliveryText', 'returnText'])}</div>
+          <div id="store-activation" style={{ scrollMarginTop: 16 }}>{activate}</div>
+          <div style={card}>
+            <h2 style={h2}>{tx('Assistant de création')}</h2>
+            <p style={{ ...muted, marginBottom: 12 }}>{tx('Repassez par toutes les étapes, par exemple pour changer de niche. Ce qui est enregistré est gardé.')}</p>
+            <button type="button" onClick={() => { setEditing(null); setStep(0); setMode('wizard'); window.scrollTo({ top: 0 }) }} style={btn('ghost')}><RotateCcw size={14} /> {tx('Refaire l’assistant')}</button>
+          </div>
+        </div>
+      )
     }
   })()
+
+  const ownPhone = mode === 'manage' ? tab === 'categories' && needsCategories : step === CATEGORIES && needsCategories
+  const sidePreview = ownPhone ? null : isMobile ? (
+    <div>
+      <button type="button" onClick={() => setShowPreview((v) => !v)} style={{ ...btn('ghost'), width: '100%' }}><Eye size={14} /> {showPreview ? tx('Masquer l’aperçu') : tx('Voir l’aperçu')}</button>
+      {showPreview && <div style={{ marginTop: 12 }}>{preview}</div>}
+    </div>
+  ) : (
+    <div style={{ position: 'sticky', top: 16 }}>
+      {preview}
+      <p style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 8 }}>{tx('Aperçu en direct')}</p>
+    </div>
+  )
+  const layout = (main: React.ReactNode) => (
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile || ownPhone ? '1fr' : 'minmax(0, 1fr) 320px', gap: 24, alignItems: 'start' }}>
+      <div style={{ minWidth: 0 }}>{main}</div>
+      {sidePreview}
+    </div>
+  )
 
   return (
     <div style={{ padding: isMobile ? 12 : 24 }}>
       <link rel="stylesheet" href={FONTS_HREF} precedence="default" />
+      {celebrate && <Celebration name={d.name} logoUrl={d.logoUrl} colors={d.colors} font={d.font} onDone={() => { setCelebrate(false); setMode('manage'); setTab('products'); setJustDone(true); window.scrollTo({ top: 0 }) }} />}
 
       {/* Status + link */}
       {store && (
@@ -366,62 +506,90 @@ export default function StoreWizard() {
           <a href={storeUrl(store.slug)} target="_blank" rel="noreferrer" dir="ltr" style={{ fontSize: 12, color: 'var(--brand)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
             {storeUrl(store.slug).replace(/^https?:\/\//, '')} <ExternalLink size={12} />
           </a>
+          {mode === 'manage' && <CopyButton text={storeUrl(store.slug)} label={tx('Copier le lien')} />}
           {status !== 'online' && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{tx('(aperçu visible par vous seul)')}</span>}
+          {mode === 'manage' && status === 'draft' && !justDone && (
+            <button type="button" onClick={goLive} style={{ ...btn('primary'), marginInlineStart: 'auto', padding: '8px 14px' }}><Rocket size={14} /> {tx('Mettre en ligne')}</button>
+          )}
         </div>
       )}
 
-      {/* Stepper */}
-      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 6, marginBottom: 16 }}>
-        {[...STEPS, 'Activer'].map((s, i) => {
-          const on = i === step, done = !!store && i < step
-          const reachable = !!store || i === 0
-          return (
-            <button key={s} type="button" disabled={!reachable || saving || !!editing} onClick={() => { if (i !== step) saveAndGo(i) }}
-              style={{
-                flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, fontSize: 12, fontWeight: 600,
-                border: `1px solid ${on ? 'var(--brand)' : 'var(--border)'}`, background: on ? 'var(--brand)' : 'var(--card)',
-                color: on ? '#fff' : reachable ? 'var(--text)' : 'var(--text-muted)', cursor: reachable ? 'pointer' : 'not-allowed', opacity: reachable ? 1 : 0.6,
-              }}>
-              {i === ACTIVATE ? <Rocket size={12} /> : done ? <Check size={12} /> : <span>{i + 1}</span>} {tx(s)}
-            </button>
-          )
-        })}
-      </div>
+      {mode === 'manage' ? (<>
+        {justDone && store && (
+          <div style={{ ...card, marginBottom: 16, borderColor: 'var(--brand)', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <PartyPopper size={26} style={{ color: 'var(--brand)', flexShrink: 0 }} aria-hidden />
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <h2 style={h2}>{tx('Votre boutique est prête')}</h2>
+              <p style={muted}>{status === 'online' ? tx('Elle est en ligne : partagez son lien.') : tx('Regardez-la comme vos clients, puis mettez-la en ligne quand vous voulez.')}</p>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <a href={storeUrl(store.slug)} target="_blank" rel="noreferrer" style={{ ...btn('ghost'), textDecoration: 'none' }}><ExternalLink size={14} /> {tx('Voir ma boutique')}</a>
+              {status === 'draft' && <button type="button" onClick={goLive} style={btn('primary')}><Rocket size={14} /> {tx('Mettre en ligne')}</button>}
+              <button type="button" onClick={() => setJustDone(false)} style={btn('ghost')} aria-label={tx('Fermer')}><X size={14} /></button>
+            </div>
+          </div>
+        )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) 320px', gap: 24, alignItems: 'start' }}>
-        <div style={{ minWidth: 0 }}>
-          {step < ACTIVATE && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>{tx('Étape {0} sur {1}', [step + 1, STEPS.length])}</div>}
-          {stepBody}
+        {/* Management tabs */}
+        <div role="tablist" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 6, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
+          {TABS.map((t) => {
+            const on = t.id === tab
+            return (
+              <button key={t.id} type="button" role="tab" aria-selected={on} disabled={!!editing && t.id !== 'products'} onClick={() => setTab(t.id)}
+                style={{
+                  flexShrink: 0, padding: '8px 14px', fontSize: 13, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer',
+                  borderBottom: `2px solid ${on ? 'var(--brand)' : 'transparent'}`, color: on ? 'var(--brand)' : 'var(--text)', marginBottom: -7,
+                  opacity: editing && t.id !== 'products' ? 0.5 : 1,
+                }}>
+                {tx(t.label)}
+              </button>
+            )
+          })}
+        </div>
+        {layout(tabBody)}
+      </>) : (<>
+        {/* Stepper */}
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 6, marginBottom: 16 }}>
+          {STEPS.map((s, i) => {
+            const on = i === step, done = !!store && i < step
+            const reachable = !!store || i === 0
+            return (
+              <button key={s} type="button" disabled={!reachable || saving || !!editing} onClick={() => { if (i !== step) saveAndGo(i) }}
+                style={{
+                  flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, fontSize: 12, fontWeight: 600,
+                  border: `1px solid ${on ? 'var(--brand)' : 'var(--border)'}`, background: on ? 'var(--brand)' : 'var(--card)',
+                  color: on ? '#fff' : reachable ? 'var(--text)' : 'var(--text-muted)', cursor: reachable ? 'pointer' : 'not-allowed', opacity: reachable ? 1 : 0.6,
+                }}>
+                {done ? <Check size={12} /> : <span>{i + 1}</span>} {tx(s)}
+              </button>
+            )
+          })}
+        </div>
+
+        {layout(<>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>{tx('Étape {0} sur {1}', [step + 1, STEPS.length])}</div>
+          {bodyOf(step)}
           <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'space-between' }}>
             <button type="button" onClick={() => saveAndGo(step - 1)} disabled={step === 0 || saving} style={btn('ghost', step === 0 || saving)}><ArrowLeft size={14} /> {tx('Retour')}</button>
-            {step < ACTIVATE && (
+            {step === MESSAGES ? (
+              <button type="button" onClick={finish} disabled={saving || !!editing} style={btn('primary', saving || !!editing)}>
+                {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} {tx('Terminer')}
+              </button>
+            ) : (
               <button type="button" onClick={() => saveAndGo(step + 1)} disabled={saving || !!editing} style={btn('primary', saving || !!editing)}>
-                {saving && <Loader2 size={14} className="animate-spin" />}
-                {step === ACTIVATE - 1 ? tx('Activer la boutique') : tx('Suivant')} <ArrowRight size={14} />
+                {saving && <Loader2 size={14} className="animate-spin" />} {tx('Suivant')} <ArrowRight size={14} />
               </button>
             )}
           </div>
-        </div>
-
-        {isMobile ? (
-          <div>
-            <button type="button" onClick={() => setShowPreview((v) => !v)} style={{ ...btn('ghost'), width: '100%' }}><Eye size={14} /> {showPreview ? tx('Masquer l’aperçu') : tx('Voir l’aperçu')}</button>
-            {showPreview && <div style={{ marginTop: 12 }}>{preview}</div>}
-          </div>
-        ) : (
-          <div style={{ position: 'sticky', top: 16 }}>
-            {preview}
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 8 }}>{tx('Aperçu en direct')}</p>
-          </div>
-        )}
-      </div>
+        </>)}
+      </>)}
     </div>
   )
 }
 
 const grid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }
 
-/** Step 1 card: the niche photo (public/store-niches/<id>.webp), or its colour + emoji until the photo is there. */
+/** Step 1 card: the niche photo (public/store-niches/<id>.webp), or its colour + icon until the photo is there. */
 function NicheCard({ p, on, onPick }: { p: ProfilePreset; on: boolean; onPick: () => void }) {
   const [broken, setBroken] = useState(false)
   return (
@@ -429,7 +597,7 @@ function NicheCard({ p, on, onPick }: { p: ProfilePreset; on: boolean; onPick: (
       <div style={{ position: 'relative', height: 96, width: '100%', background: `linear-gradient(135deg, ${p.tint}, color-mix(in srgb, ${p.tint} 55%, #ffffff))`, display: 'grid', placeItems: 'center' }}>
         {!broken
           ? <img src={p.photo} alt="" onError={() => setBroken(true)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-          : <span style={{ fontSize: 34 }} aria-hidden>{p.emoji}</span>}
+          : <p.icon size={34} color="#fff" aria-hidden />}
         {on && <span style={{ position: 'absolute', top: 6, insetInlineEnd: 6, width: 22, height: 22, borderRadius: 999, background: 'var(--brand)', color: '#fff', display: 'grid', placeItems: 'center' }}><Check size={13} /></span>}
       </div>
       <div style={{ padding: '8px 10px 10px' }}>

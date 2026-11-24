@@ -34,7 +34,7 @@ export default function ActivateStep({ slug, activeProducts, onStatus }: {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div>
-        <h2 style={h2}>{tx('Activer la boutique')}</h2>
+        <h2 style={h2}>{tx('Mettre en ligne')}</h2>
         <p style={muted}>{tx('Votre boutique est visible par vous seul tant qu’elle n’est pas activée.')}</p>
       </div>
 

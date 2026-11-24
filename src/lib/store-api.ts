@@ -1,6 +1,7 @@
 // Store builder V1 (issue #69), PR 3a — merchant side of the Sellio store ("Ma boutique").
 // Endpoints: /api/store/* (sellio/apps/api/src/routes/store-builder.routes.ts). Field names
 // and allowed values mirror sellio/apps/api/src/modules/store-builder/store-builder.ts.
+import { Baby, Car, Droplets, Headphones, House, Leaf, Package, ShoppingBag, Shirt, SprayCan, Target, Watch, type LucideIcon } from 'lucide-react'
 import { tx } from './i18n'
 import { authFetch } from './api-fetch'
 import { API_BASE } from './auth-client'
@@ -83,7 +84,8 @@ export const storeApi = {
   categories: () => call<{ categories: Category[] }>('/store/categories').then((d) => d.categories),
   createCategory: (name: string, parentId: string | null = null) =>
     call<{ category: Category }>('/store/categories', json('POST', { name, parentId })).then((d) => d.category),
-  updateCategory: (id: string, b: { name?: string; parentId?: string | null }) =>
+  /** name, parent, or photo (imageUrl: an image uploaded with uploadImage, or null to remove it). */
+  updateCategory: (id: string, b: { name?: string; parentId?: string | null; imageUrl?: string | null }) =>
     call<{ category: Category }>(`/store/categories/${id}`, json('PATCH', b)).then((d) => d.category),
   deleteCategory: (id: string) => call(`/store/categories/${id}`, { method: 'DELETE' }),
   reorderCategories: (order: Array<{ id: string; parentId: string | null; position: number }>) =>
@@ -163,7 +165,7 @@ export function storeUrlParts(): { before: string; after: string } {
 
 export interface OptionPreset { name: string; values: string[] }
 export interface ProfilePreset {
-  id: StoreProfile; label: string; hint: string; emoji: string; siteType: SiteType
+  id: StoreProfile; label: string; hint: string; icon: LucideIcon; siteType: SiteType
   /** Card photo of step 1 (public/store-niches/<id>.webp); a coloured card if the file is missing. */
   photo: string; tint: string
   options: OptionPreset[]
@@ -186,25 +188,25 @@ const photo = (id: string) => `/store-niches/${id}.webp`
 
 export const PROFILES: ProfilePreset[] = [
   {
-    id: 'streetwear', label: 'Streetwear', hint: 'Hoodies, t-shirts, sneakers', emoji: '🧢', siteType: 'boutique', photo: photo('streetwear'), tint: '#1f2937',
+    id: 'streetwear', label: 'Streetwear', hint: 'Hoodies, t-shirts, sneakers', icon: Shirt, siteType: 'boutique', photo: photo('streetwear'), tint: '#1f2937',
     options: [{ name: 'Taille', values: SIZES }, { name: 'Pointure', values: ['38', '39', '40', '41', '42', '43', '44', '45'] }, { name: 'Couleur', values: COLORS_CLOTHES }],
     sections: STORE('new_arrivals', 'size_guide'), filters: ['filter_size', 'filter_color', 'filter_price'],
     fields: { colorSwatches: true, vehicles: false }, categories: ['Hoodies', 'T-shirts', 'Pantalons', 'Sneakers', 'Accessoires'],
   },
   {
-    id: 'mode', label: 'Mode', hint: 'Vêtements et chaussures, homme et femme', emoji: '👗', siteType: 'boutique', photo: photo('mode'), tint: '#9d174d',
+    id: 'mode', label: 'Mode', hint: 'Vêtements et chaussures, homme et femme', icon: ShoppingBag, siteType: 'boutique', photo: photo('mode'), tint: '#9d174d',
     options: [{ name: 'Taille', values: SIZES }, { name: 'Pointure', values: ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'] }, { name: 'Couleur', values: COLORS_CLOTHES }],
     sections: STORE('new_arrivals', 'size_guide'), filters: ['filter_size', 'filter_color', 'filter_gender', 'filter_price'],
     fields: { colorSwatches: true, vehicles: false }, categories: ['Femme', 'Homme', 'Chaussures', 'Sacs', 'Accessoires'],
   },
   {
-    id: 'modeste', label: 'Mode modeste', hint: 'Abayas, djellabas, kaftans', emoji: '🧕', siteType: 'boutique', photo: photo('modeste'), tint: '#6b4f3a',
+    id: 'modeste', label: 'Mode modeste', hint: 'Abayas, djellabas, kaftans', icon: Shirt, siteType: 'boutique', photo: photo('modeste'), tint: '#6b4f3a',
     options: [{ name: 'Taille', values: ['S', 'M', 'L', 'XL', 'XXL', 'Taille unique'] }, { name: 'Longueur', values: ['52', '54', '56', '58', '60'] }, { name: 'Couleur', values: COLORS_CLOTHES }],
     sections: STORE('new_arrivals', 'size_guide'), filters: ['filter_size', 'filter_color', 'filter_price'],
     fields: { colorSwatches: true, vehicles: false }, categories: ['Abayas', 'Djellabas', 'Kaftans', 'Hijabs', 'Ensembles'],
   },
   {
-    id: 'parfums', label: 'Parfums', hint: 'Contenances, homme / femme, décants', emoji: '🌸', siteType: 'boutique', photo: photo('parfums'), tint: '#7c3aed',
+    id: 'parfums', label: 'Parfums', hint: 'Contenances, homme / femme, décants', icon: SprayCan, siteType: 'boutique', photo: photo('parfums'), tint: '#7c3aed',
     options: [
       { name: 'Contenance', values: ['5 ml', '10 ml', '30 ml', '50 ml', '100 ml'] },
       { name: 'Type', values: ['Eau de parfum', 'Eau de toilette', 'Huile parfumée', 'Musc'] },
@@ -213,7 +215,7 @@ export const PROFILES: ProfilePreset[] = [
     fields: { colorSwatches: false, vehicles: false }, categories: ['Homme', 'Femme', 'Décants', 'Coffrets'],
   },
   {
-    id: 'beaute', label: 'Beauté et skincare', hint: 'Soins visage, corps, cheveux', emoji: '🧴', siteType: 'boutique', photo: photo('beaute'), tint: '#db2777',
+    id: 'beaute', label: 'Beauté et skincare', hint: 'Soins visage, corps, cheveux', icon: Droplets, siteType: 'boutique', photo: photo('beaute'), tint: '#db2777',
     options: [
       { name: 'Contenance', values: ['30 ml', '50 ml', '100 ml', '200 ml', '500 ml'] },
       { name: 'Type de peau', values: ['Tous types', 'Normale', 'Sèche', 'Grasse', 'Mixte', 'Sensible'] },
@@ -222,25 +224,25 @@ export const PROFILES: ProfilePreset[] = [
     fields: { colorSwatches: false, vehicles: false }, categories: ['Visage', 'Corps', 'Cheveux', 'Maquillage', 'Coffrets'],
   },
   {
-    id: 'beldi', label: 'Naturel et beldi', hint: 'Huiles, savon beldi, miel, amlou', emoji: '🌿', siteType: 'boutique', photo: photo('beldi'), tint: '#4d7c0f',
+    id: 'beldi', label: 'Naturel et beldi', hint: 'Huiles, savon beldi, miel, amlou', icon: Leaf, siteType: 'boutique', photo: photo('beldi'), tint: '#4d7c0f',
     options: [{ name: 'Format', values: ['100 g', '250 g', '500 g', '1 kg', '100 ml', '250 ml', '500 ml', '1 L'] }],
     sections: STORE('benefits', 'how_to_use'), filters: ['filter_price'],
     fields: { colorSwatches: false, vehicles: false }, categories: ['Huiles', 'Savon et ghassoul', 'Miel et amlou', 'Épices', 'Plantes'],
   },
   {
-    id: 'bijoux', label: 'Montres et bijoux', hint: 'Montres, bagues, colliers, bracelets', emoji: '⌚', siteType: 'boutique', photo: photo('bijoux'), tint: '#a16207',
+    id: 'bijoux', label: 'Montres et bijoux', hint: 'Montres, bagues, colliers, bracelets', icon: Watch, siteType: 'boutique', photo: photo('bijoux'), tint: '#a16207',
     options: [{ name: 'Taille de bague', values: ['50', '52', '54', '56', '58', '60', '62'] }, { name: 'Finition', values: ['Doré', 'Argenté', 'Rosé', 'Noir'] }],
     sections: STORE('new_arrivals'), filters: ['filter_gender', 'filter_price'],
-    fields: { colorSwatches: false, vehicles: false }, categories: ['Montres', 'Bagues', 'Colliers', 'Bracelets', 'Boucles d’oreilles'],
+    fields: { colorSwatches: false, vehicles: false }, categories: ['Montres', 'Bracelets', 'Colliers', 'Bagues', 'Boucles d’oreilles'],
   },
   {
-    id: 'maison', label: 'Maison et cuisine', hint: 'Cuisine, déco, rangement', emoji: '🏠', siteType: 'boutique', photo: photo('maison'), tint: '#0f766e',
+    id: 'maison', label: 'Maison et cuisine', hint: 'Cuisine, déco, rangement', icon: House, siteType: 'boutique', photo: photo('maison'), tint: '#0f766e',
     options: [{ name: 'Taille', values: ['Petit', 'Moyen', 'Grand'] }, { name: 'Couleur', values: ['Noir', 'Blanc', 'Gris', 'Beige', 'Bois', 'Doré'] }],
     sections: STORE('new_arrivals', 'benefits'), filters: ['filter_color', 'filter_price'],
     fields: { colorSwatches: true, vehicles: false }, categories: ['Cuisine', 'Décoration', 'Rangement', 'Linge de maison'],
   },
   {
-    id: 'enfants', label: 'Bébé et enfants', hint: 'Vêtements par âge, jouets, puériculture', emoji: '🧸', siteType: 'boutique', photo: photo('enfants'), tint: '#0284c7',
+    id: 'enfants', label: 'Bébé et enfants', hint: 'Vêtements par âge, jouets, puériculture', icon: Baby, siteType: 'boutique', photo: photo('enfants'), tint: '#0284c7',
     options: [
       { name: 'Âge', values: ['0-3 mois', '3-6 mois', '6-12 mois', '1-2 ans', '2-3 ans', '3-4 ans', '4-6 ans', '6-8 ans'] },
       { name: 'Couleur', values: ['Blanc', 'Rose', 'Bleu', 'Jaune', 'Vert', 'Gris'] },
@@ -249,25 +251,25 @@ export const PROFILES: ProfilePreset[] = [
     fields: { colorSwatches: true, vehicles: false }, categories: ['Bébé', 'Fille', 'Garçon', 'Jouets', 'Puériculture'],
   },
   {
-    id: 'gadgets', label: 'Gadgets et électronique', hint: 'Accessoires téléphone, audio, maison connectée', emoji: '🎧', siteType: 'boutique', photo: photo('gadgets'), tint: '#1652f0',
+    id: 'gadgets', label: 'Gadgets et électronique', hint: 'Accessoires téléphone, audio, maison connectée', icon: Headphones, siteType: 'boutique', photo: photo('gadgets'), tint: '#1652f0',
     options: [{ name: 'Couleur', values: ['Noir', 'Blanc', 'Gris', 'Bleu', 'Rose'] }, { name: 'Modèle', values: ['iPhone', 'Samsung', 'Xiaomi', 'Universel'] }],
     sections: STORE('benefits', 'how_it_works'), filters: ['filter_color', 'filter_brand', 'filter_price'],
     fields: { colorSwatches: true, vehicles: false }, categories: ['Téléphone et accessoires', 'Audio', 'Montres connectées', 'Maison connectée'],
   },
   {
-    id: 'auto', label: 'Pièces auto', hint: 'Recherche par marque, modèle et année', emoji: '🚗', siteType: 'boutique', photo: photo('auto'), tint: '#b91c1c',
+    id: 'auto', label: 'Pièces auto', hint: 'Recherche par marque, modèle et année', icon: Car, siteType: 'boutique', photo: photo('auto'), tint: '#b91c1c',
     options: [{ name: 'Position', values: ['Avant', 'Arrière', 'Gauche', 'Droite'] }, { name: 'État', values: ['Neuf', 'Occasion'] }],
     sections: STORE('vehicle_search'), filters: ['filter_vehicle', 'filter_brand', 'filter_price'],
     fields: { colorSwatches: false, vehicles: true }, categories: ['Freinage', 'Moteur', 'Éclairage', 'Carrosserie', 'Accessoires'],
   },
   {
-    id: 'mono', label: 'Mono-produit (landing)', hint: 'Un produit gagnant, une page qui vend', emoji: '🎯', siteType: 'landing', photo: photo('mono'), tint: '#ea580c',
+    id: 'mono', label: 'Mono-produit (landing)', hint: 'Un produit gagnant, une page qui vend', icon: Target, siteType: 'landing', photo: photo('mono'), tint: '#ea580c',
     options: [{ name: 'Couleur', values: ['Noir', 'Blanc', 'Gris', 'Bleu', 'Rose'] }],
     sections: ['hero', 'benefits', 'gallery', 'how_it_works', 'trust', 'faq', 'delivery', 'whatsapp_button', 'footer'], filters: [],
     fields: { colorSwatches: true, vehicles: false }, categories: [],
   },
   {
-    id: 'autre', label: 'Autre', hint: 'Sections et champs généraux, à vous de compléter', emoji: '🛍️', siteType: 'boutique', photo: photo('autre'), tint: '#475569',
+    id: 'autre', label: 'Autre', hint: 'Sections et champs généraux, à vous de compléter', icon: Package, siteType: 'boutique', photo: photo('autre'), tint: '#475569',
     options: [], sections: GENERAL_SECTIONS, filters: ['filter_price'],
     fields: { colorSwatches: false, vehicles: false }, categories: [],
   },
@@ -339,6 +341,11 @@ export function sectionsFor(profile: StoreProfile, siteType: SiteType) {
   return SECTIONS.filter((s) => allowed.has(s.id) && (siteType !== 'landing' || !catalogue.includes(s.id)))
 }
 export const filtersFor = (profile: StoreProfile) => FILTERS.filter((f) => profileOf(profile).filters.includes(f.id))
+
+/** store.sections key set when the merchant finished the wizard once: "Ma boutique" then opens as a
+ *  management space (on every device). The API accepts any lowercase key in sections; the storefront
+ *  only reads the section and filter ids it knows. */
+export const SETUP_DONE_KEY = 'setup_done'
 
 /** Sections + filters a niche turns on (every known key is written, so the store keeps the merchant's "off"). */
 export function presetSections(profile: StoreProfile): Record<string, boolean> {
