@@ -271,7 +271,7 @@ function IntegrationsManagement({ tenantId, settings, setSettings }: {
           <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
             {settings.delivery_provider ? tx("Actuel : {0}", [settings.delivery_provider]) : tx("Aucun transporteur")}
           </span>
-          <a href="/integrations" style={{ padding: "8px 14px", borderRadius: 8, background: "var(--brand)", color: "#fff", fontSize: 12, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <a href="/livraison" style={{ padding: "8px 14px", borderRadius: 8, background: "var(--brand)", color: "#fff", fontSize: 12, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
             {tx("Gérer les transporteurs")}
           </a>
         </div>

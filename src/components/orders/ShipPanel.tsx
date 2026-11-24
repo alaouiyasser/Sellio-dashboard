@@ -75,7 +75,7 @@ export default function ShipPanel({ tenantId, order, onShipped }: {
       ) : carriers.length === 0 ? (
         <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
           {tx("Aucun transporteur avec API connecté.")}{' '}
-          <a href="/integrations" style={{ color: 'var(--brand)', fontWeight: 600 }}>{tx("Connecter Ozon ou Ameex")}</a>
+          <a href="/livraison" style={{ color: 'var(--brand)', fontWeight: 600 }}>{tx("Connecter Ozon ou Ameex")}</a>
           {' '}{tx("— ou utilisez l'export Excel.")}
         </div>
       ) : (

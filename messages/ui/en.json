@@ -1076,5 +1076,8 @@
  "Hors ligne": "Offline",
  "Clair": "Light",
  "Sombre": "Dark",
- "Le thème clair est utilisé par défaut.": "The light theme is used by default."
+ "Le thème clair est utilisé par défaut.": "The light theme is used by default.",
+ "Boutiques": "Stores",
+ "Connectez vos transporteurs pour expédier vos commandes.": "Connect your carriers to ship your orders.",
+ "Connectez votre boutique YouCan, Shopify ou WooCommerce.": "Connect your YouCan, Shopify or WooCommerce store."
 }
