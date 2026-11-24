@@ -62,10 +62,12 @@ export default function LoginPage() {
   }
 
   async function emailLogin() {
-    if (!email || !password) { toast.error(tx("Remplissez email et mot de passe")); return }
+    if (!email || !password) { toast.error(tx("Remplissez email ou téléphone et mot de passe")); return }
+    const login = loginIdentifier(email)
+    if (!login) { toast.error(tx("Email ou numéro de téléphone invalide")); return }
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) toast.error(tx("Email ou mot de passe incorrect"))
+    const { error } = await supabase.auth.signInWithPassword({ email: login, password })
+    if (error) toast.error(tx("Identifiant ou mot de passe incorrect"))
     else window.location.href = '/orders'
     setLoading(false)
   }
@@ -98,7 +100,7 @@ export default function LoginPage() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <input type="email" placeholder={tx("Email")} value={email}
+        <input type="text" inputMode="email" autoComplete="username" placeholder={tx("Email ou téléphone")} value={email}
           onChange={(e) => setEmail(e.target.value)} className={inputCls} />
         <PasswordField value={password} onChange={setPassword} placeholder={tx("Mot de passe")} onEnter={emailLogin} />
         <div className="flex justify-end">
@@ -111,4 +113,18 @@ export default function LoginPage() {
       </div>
     </AuthShell>
   )
+}
+
+/**
+ * Login accepts an email or a Moroccan phone number. Phone accounts sign in with their internal
+ * login address p<digits>@phone.sellioagency.com (same rule as the API's phoneLoginEmail).
+ */
+function loginIdentifier(input: string): string | null {
+  const v = input.trim()
+  if (v.includes('@')) return v
+  let s = v.replace(/[\s().\-]/g, '')
+  if (s.startsWith('00')) s = s.slice(2)
+  const digits = s.replace(/\D/g, '')
+  const nsn = digits.startsWith('212') ? digits.slice(3) : digits.startsWith('0') ? digits.slice(1) : digits
+  return /^[5-7]\d{8}$/.test(nsn) ? `p212${nsn}@phone.sellioagency.com` : null
 }

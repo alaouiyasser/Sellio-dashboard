@@ -16,6 +16,7 @@ import {
 import { orderCity, orderItems, itemName, statusLabel, isConfirmed, groupOf, customerName, productsLine } from '@/lib/order-view'
 import { presetPeriod, ordersInPeriod, spanDays, type Period } from '@/lib/period'
 import { tx, intlLocale } from '@/lib/i18n'
+import { PLAN_LABEL, PLAN_PRICE_DH, parsePlan, type Plan } from '@/lib/store-api'
 
 const OLIVE = 'var(--brand)'
 const COLORS = ['var(--success)', 'var(--destructive)', 'var(--warning)', 'var(--brand)']
@@ -29,6 +30,16 @@ export default function OverviewPage() {
   const [period, setPeriod, periodReady] = usePagePeriod('dashboard')
   const [orders, setOrders] = useState<any[]>([])
   const [companyName, setCompanyName] = useState('')
+  const [plan, setPlan] = useState<Plan | null>(null)
+
+  // Separate query: an account whose tenants.plan column is missing still loads the page.
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      const { data } = await supabase.from('tenants').select('plan').eq('id', user.id).maybeSingle()
+      setPlan(parsePlan((data as { plan?: string } | null)?.plan) ?? 'croissance')
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { if (periodReady) fetchData(period) }, [period, periodReady])
 
@@ -106,7 +117,18 @@ export default function OverviewPage() {
       <Topbar title={t('nav.dashboard')} subtitle={companyName || tx("Business overview")} />
       <div style={{ flex: 1, overflow: 'auto', overflowX: 'hidden', padding: isMobile ? 12 : 24 }}>
 
-        <div style={{ marginBottom: 16 }}><PeriodFilter value={period} onChange={setPeriod} /></div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 16 }}>
+          <PeriodFilter value={period} onChange={setPeriod} />
+          {plan && (
+            <a href={plan === 'demarrage' ? '/store' : '/credits'} style={{
+              display: 'inline-flex', alignItems: 'center', padding: '7px 12px', borderRadius: 999, textDecoration: 'none',
+              border: '1px solid color-mix(in srgb, var(--brand) 30%, var(--border))', background: 'color-mix(in srgb, var(--brand) 6%, var(--card))',
+              fontSize: 12.5, color: 'var(--text)',
+            }}>
+              <span><strong style={{ color: 'var(--brand)' }}>{tx(PLAN_LABEL[plan])}</strong>{tx(' : {0} DH par commande livrée', [PLAN_PRICE_DH])}</span>
+            </a>
+          )}
+        </div>
 
         {loading ? (
           <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)' }}>{tx("Chargement...")}</div>

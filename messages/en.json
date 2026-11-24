@@ -10,7 +10,8 @@
     "logout": "Logout",
     "integrations": "Integrations",
     "profit": "Profit",
-    "offers": "Offers"
+    "offers": "Offers",
+    "store": "My store"
   },
   "kpi": {
     "total": "Total orders",

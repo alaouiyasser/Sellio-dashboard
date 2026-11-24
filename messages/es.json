@@ -10,7 +10,8 @@
     "logout": "Cerrar sesión",
     "integrations": "Integraciones",
     "profit": "Rentabilidad",
-    "offers": "Ofertas"
+    "offers": "Ofertas",
+    "store": "Mi tienda"
   },
   "kpi": {
     "total": "Total pedidos",
