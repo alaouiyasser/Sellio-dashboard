@@ -1,7 +1,7 @@
 'use client'
 // Live phone preview of the store while the merchant fills the wizard. It only shows what the
 // merchant entered (no invented products, reviews or counters): empty parts show a placeholder.
-import { ImageIcon, MessageCircle, Search, ShoppingBag, Truck } from 'lucide-react'
+import { Banknote, CheckCircle2, ImageIcon, MapPin, MessageCircle, Search, ShoppingBag, Truck } from 'lucide-react'
 import { fontCss, type Category, type Colors, type Product, type SiteType, type ThemeId } from '@/lib/store-api'
 import { tx } from '@/lib/i18n'
 
@@ -157,15 +157,15 @@ export default function PhonePreview({ d, products, categories }: { d: PreviewDa
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 700, marginBottom: 4 }}><Truck size={12} /> {tx('Livraison')}</div>
               {d.deliveryText && <div style={{ marginBottom: 4 }}>{d.deliveryText}</div>}
               {d.returnText && <div style={{ opacity: 0.8 }}>{d.returnText}</div>}
-              {d.city && <div style={{ opacity: 0.7, marginTop: 4 }}>📍 {d.city}</div>}
+              {d.city && <div style={{ opacity: 0.7, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={11} /> {d.city}</div>}
             </div>
           )}
           {on('banners') && !landing && <div style={{ padding: '4px 12px' }}>{img(null, 70)}</div>}
 
           {on('trust') && (
             <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', padding: '10px 12px', fontSize: 10, fontWeight: 600 }}>
-              <span>💵 {tx('Paiement à la livraison')}</span>
-              <span>✅ {tx('Confirmation sur WhatsApp')}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Banknote size={12} /> {tx('Paiement à la livraison')}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><CheckCircle2 size={12} /> {tx('Confirmation sur WhatsApp')}</span>
             </div>
           )}
 

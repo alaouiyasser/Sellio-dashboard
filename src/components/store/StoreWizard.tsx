@@ -281,7 +281,7 @@ export default function StoreWizard() {
           </div>
         </Section>
       )
-      case CATEGORIES: return <CategoriesStep profile={d.profile} siteType={d.siteType} categories={categories} onChange={setCategories} />
+      case CATEGORIES: return <CategoriesStep profile={d.profile} siteType={d.siteType} categories={categories} onChange={setCategories} onContinue={() => saveAndGo(PRODUCTS)} />
       case PRODUCTS: return (
         <Section title={tx('Produits')} hint={needsCategories ? tx('Ajoutez vos produits dans leurs catégories, avec leurs options, prix et stock.') : tx('Ajoutez votre produit avec ses options, prix et stock.')}>
           {editing ? (
@@ -394,7 +394,7 @@ export default function StoreWizard() {
           {stepBody}
           <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'space-between' }}>
             <button type="button" onClick={() => saveAndGo(step - 1)} disabled={step === 0 || saving} style={btn('ghost', step === 0 || saving)}><ArrowLeft size={14} /> {tx('Retour')}</button>
-            {step < ACTIVATE && (
+            {step < ACTIVATE && !(step === CATEGORIES && needsCategories) && (
               <button type="button" onClick={() => saveAndGo(step + 1)} disabled={saving || !!editing} style={btn('primary', saving || !!editing)}>
                 {saving && <Loader2 size={14} className="animate-spin" />}
                 {step === ACTIVATE - 1 ? tx('Activer la boutique') : tx('Suivant')} <ArrowRight size={14} />
@@ -421,7 +421,7 @@ export default function StoreWizard() {
 
 const grid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }
 
-/** Step 1 card: the niche photo (public/store-niches/<id>.webp), or its colour + emoji until the photo is there. */
+/** Step 1 card: the niche photo (public/store-niches/<id>.webp), or its colour + icon until the photo is there. */
 function NicheCard({ p, on, onPick }: { p: ProfilePreset; on: boolean; onPick: () => void }) {
   const [broken, setBroken] = useState(false)
   return (
@@ -429,7 +429,7 @@ function NicheCard({ p, on, onPick }: { p: ProfilePreset; on: boolean; onPick: (
       <div style={{ position: 'relative', height: 96, width: '100%', background: `linear-gradient(135deg, ${p.tint}, color-mix(in srgb, ${p.tint} 55%, #ffffff))`, display: 'grid', placeItems: 'center' }}>
         {!broken
           ? <img src={p.photo} alt="" onError={() => setBroken(true)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-          : <span style={{ fontSize: 34 }} aria-hidden>{p.emoji}</span>}
+          : <p.icon size={34} color="#fff" aria-hidden />}
         {on && <span style={{ position: 'absolute', top: 6, insetInlineEnd: 6, width: 22, height: 22, borderRadius: 999, background: 'var(--brand)', color: '#fff', display: 'grid', placeItems: 'center' }}><Check size={13} /></span>}
       </div>
       <div style={{ padding: '8px 10px 10px' }}>
