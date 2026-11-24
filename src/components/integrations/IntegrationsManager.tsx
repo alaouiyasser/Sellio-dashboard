@@ -13,7 +13,8 @@ import StoreOneClick from './StoreOneClick'
 import { toast } from 'sonner'
 import { fetchWaMode, type WaMode } from '@/lib/whatsapp-mode'
 import OfficialNumberCard from '@/components/OfficialNumberCard'
-import { Plus, Check, X, Settings2, Power, Loader2, MessageCircle } from 'lucide-react'
+import { Plus, Check, X, Settings2, Power, Loader2, MessageCircle, AlertTriangle } from 'lucide-react'
+import BrandLogo from '@/components/common/BrandLogo'
 
 import { tx } from '@/lib/i18n'
 const card: React.CSSProperties = {
@@ -48,6 +49,15 @@ export default function IntegrationsManager() {
   const waPoll = useRef<ReturnType<typeof setInterval> | null>(null)
   const [waMode, setWaMode] = useState<WaMode | null>(null)
   useEffect(() => { fetchWaMode().then(setWaMode) }, [])
+
+  // Menu "Livraison" (/integrations#livraison): scroll to the carriers once the list is shown.
+  useEffect(() => {
+    if (loading) return
+    const go = () => { if (window.location.hash === '#livraison') document.getElementById('livraison')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
+    go()
+    window.addEventListener('hashchange', go)
+    return () => window.removeEventListener('hashchange', go)
+  }, [loading])
 
   const load = useCallback(async (tenantId: string) => {
     try {
@@ -112,7 +122,7 @@ export default function IntegrationsManager() {
     setBusy(modal.slug)
     try {
       await connectIntegration(tid, modal.slug, form)
-      toast.success(tx("{0} connecté ✓", [modal.name]))
+      toast.success(tx("{0} connecté", [modal.name]))
       setModal(null); await load(tid)
     } catch (e: any) { toast.error(e?.message || 'Erreur') }
     finally { setBusy(null) }
@@ -186,7 +196,7 @@ export default function IntegrationsManager() {
         if (online) {
           clearInterval(waPoll.current!)
           setWaQr(null); setWaModal(false); setWaPhone('')
-          toast.success(tx("Numéro WhatsApp connecté ✓"))
+          toast.success(tx("Numéro WhatsApp connecté"))
           refreshWa()
         }
       } catch {}
@@ -235,6 +245,7 @@ export default function IntegrationsManager() {
 
       {/* ─── LIVRAISON ─── */}
       <ConnectedSection
+        id="livraison"
         title={tx("Société de livraison")}
         connected={connected('carrier')}
         available={available('carrier')}
@@ -267,7 +278,7 @@ export default function IntegrationsManager() {
             {waInstances.map((wa) => {
               const online = wa.status === 'online'
               const isDisabled = wa.status === 'disabled'
-              const statusLabel = isDisabled ? 'Désactivé ⛔' : online ? 'En ligne 🟢' : 'Hors ligne'
+              const statusLabel = isDisabled ? tx('Désactivé') : online ? tx('En ligne') : tx('Hors ligne')
               const statusColor = isDisabled ? 'var(--text-muted)' : online ? '#16a34a' : 'var(--text-muted)'
               return (
                 <div key={wa.instance_key} style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
@@ -310,7 +321,7 @@ export default function IntegrationsManager() {
             {!waQr ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 16, border: '1px solid var(--border)', borderRadius: 9, overflow: 'hidden', background: 'var(--bg)' }}>
-                  <span style={{ padding: '11px 12px', fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', background: 'var(--card)', borderRight: '1px solid var(--border)', whiteSpace: 'nowrap' }}>🇲🇦 +212</span>
+                  <span style={{ padding: '11px 12px', fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', background: 'var(--card)', borderRight: '1px solid var(--border)', whiteSpace: 'nowrap' }}>+212</span>
                   <input
                     value={waPhone}
                     onChange={(e) => setWaPhone(e.target.value.replace(/[^0-9]/g, ''))}
@@ -363,7 +374,7 @@ export default function IntegrationsManager() {
   )
 }
 
-function ConnectedSection({ title, connected, available, single, onAdd, showAdd, onPick, onToggle, onRemove, busy }: {
+function ConnectedSection({ id, title, connected, available, single, onAdd, showAdd, onPick, onToggle, onRemove, busy }: {
   title: string
   connected: IntegrationItem[]
   available: IntegrationItem[]
@@ -374,10 +385,11 @@ function ConnectedSection({ title, connected, available, single, onAdd, showAdd,
   onToggle: (i: IntegrationItem) => void
   onRemove: (i: IntegrationItem) => void
   busy: string | null
+  id?: string
 }) {
   const canAdd = !single || connected.length === 0
   return (
-    <section style={{ marginBottom: 32 }}>
+    <section id={id} style={{ marginBottom: 32, scrollMarginTop: 72 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <h2 style={sectionTitle}>{title}</h2>
         {canAdd && available.length > 0 && (
@@ -398,7 +410,7 @@ function ConnectedSection({ title, connected, available, single, onAdd, showAdd,
           return (
             <div key={item.slug} style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', opacity: disabled ? 0.6 : 1, ...(failing && { borderColor: 'var(--destructive)' }) }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 38, height: 38, borderRadius: 9, background: 'var(--bg)', display: 'grid', placeItems: 'center', fontWeight: 800, color: 'var(--brand)', fontSize: 16 }}>{item.name[0]}</div>
+                <BrandLogo id={item.slug} name={item.name} kind={item.category === 'carrier' ? 'carrier' : item.category === 'ecommerce' ? 'ecommerce' : 'other'} size={38} fallbackSrc={item.logo} />
                 <div>
                   <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>{item.name}</div>
                   <div style={{ fontSize: 12, color: disabled ? 'var(--text-muted)' : failing ? 'var(--destructive)' : '#16a34a', marginTop: 1 }}>
@@ -407,7 +419,7 @@ function ConnectedSection({ title, connected, available, single, onAdd, showAdd,
                   </div>
                   {failing && (
                     <div style={{ fontSize: 12, color: 'var(--destructive)', marginTop: 3, maxWidth: 420 }}>
-                      ⚠️ {item.connection?.lastError || tx("Clé refusée par le transporteur")} {tx("— cliquez sur « Modifier » pour mettre à jour la clé.")}
+                      <AlertTriangle size={13} strokeWidth={1.8} style={{ verticalAlign: -2, marginInlineEnd: 5 }} />{item.connection?.lastError || tx("Clé refusée par le transporteur")} {tx("— cliquez sur « Modifier » pour mettre à jour la clé.")}
                     </div>
                   )}
                 </div>

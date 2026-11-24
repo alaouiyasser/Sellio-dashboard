@@ -165,7 +165,8 @@ export function storeUrlParts(): { before: string; after: string } {
 
 export interface OptionPreset { name: string; values: string[] }
 export interface ProfilePreset {
-  id: StoreProfile; label: string; hint: string; icon: LucideIcon; siteType: SiteType
+  id: StoreProfile; label: string; hint: string; /** Shown on the step-1 card while the niche photo is missing. */
+  icon: LucideIcon; siteType: SiteType
   /** Card photo of step 1 (public/store-niches/<id>.webp); a coloured card if the file is missing. */
   photo: string; tint: string
   options: OptionPreset[]

@@ -597,7 +597,7 @@ function NicheCard({ p, on, onPick }: { p: ProfilePreset; on: boolean; onPick: (
       <div style={{ position: 'relative', height: 96, width: '100%', background: `linear-gradient(135deg, ${p.tint}, color-mix(in srgb, ${p.tint} 55%, #ffffff))`, display: 'grid', placeItems: 'center' }}>
         {!broken
           ? <img src={p.photo} alt="" onError={() => setBroken(true)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-          : <p.icon size={34} color="#fff" aria-hidden />}
+          : <p.icon size={34} strokeWidth={1.8} color="#FFFFFF" aria-hidden />}
         {on && <span style={{ position: 'absolute', top: 6, insetInlineEnd: 6, width: 22, height: 22, borderRadius: 999, background: 'var(--brand)', color: '#fff', display: 'grid', placeItems: 'center' }}><Check size={13} /></span>}
       </div>
       <div style={{ padding: '8px 10px 10px' }}>

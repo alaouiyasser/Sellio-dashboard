@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { createClient } from '@/lib/supabase'
-import Topbar from '@/components/layout/Topbar'
+import PageHeader from '@/components/layout/PageHeader'
 import { useLang } from '@/components/layout/LanguageProvider'
 import { fetchCoachReport } from '@/lib/coach-api'
 import { Bot, Calendar, CalendarDays, ThumbsUp, AlertTriangle, Search, Target, Package, MapPin, Sun, Globe } from 'lucide-react'
@@ -132,14 +132,14 @@ export default function AICoachPage() {
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={t('nav.aicoach')} />
+      <PageHeader title={t('nav.aicoach')} />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>{T.loading}</div>
     </div>
   )
 
   if (reports.length === 0) return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={t('nav.aicoach')} />
+      <PageHeader title={t('nav.aicoach')} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, textAlign: 'center' }}>
         <Bot size={48} color="var(--text-muted)" strokeWidth={1.6} />
         <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{t('aicoach.noReport')}</div>
@@ -155,7 +155,7 @@ export default function AICoachPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={t('nav.aicoach')} subtitle={translating ? T.translating : r.niche} />
+      <PageHeader title={t('nav.aicoach')} subtitle={translating ? T.translating : r.niche} />
       <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? 16 : 24 }}>
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '240px minmax(0,1fr)', gap: 20, alignItems: 'start' }}>
 

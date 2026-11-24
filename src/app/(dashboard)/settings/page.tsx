@@ -3,14 +3,15 @@
 import { authFetch } from '@/lib/api-fetch'
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
-import Topbar from '@/components/layout/Topbar'
+import PageHeader from '@/components/layout/PageHeader'
 import { useLang } from '@/components/layout/LanguageProvider'
+import { useTheme } from '@/components/layout/ThemeProvider'
 import { toast } from 'sonner'
 import WizardOnboarding from '@/components/onboarding/WizardOnboarding'
 import DevicesTab from '@/components/settings/DevicesTab'
 import {
   Building2, Plug, MessageCircle, RotateCcw, AlertTriangle,
-  Smartphone, Check, X, Plus, ShieldCheck,
+  Smartphone, Check, X, Plus, ShieldCheck, Sun, Moon,
 } from 'lucide-react'
 
 import { tx } from '@/lib/i18n'
@@ -381,7 +382,7 @@ export default function SettingsPage() {
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={t('settings.title')} />
+      <PageHeader title={t('settings.title')} />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
         {tx("Chargement...")}
       </div>
@@ -390,7 +391,7 @@ export default function SettingsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={t('settings.title')} />
+      <PageHeader title={t('settings.title')} />
       <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
@@ -418,6 +419,7 @@ export default function SettingsPage() {
                   placeholder={tx("Ex: Maroc Beauty Store")}
                   onChange={e => setSettings(s => ({ ...s, company_name: e.target.value }))} />
               </div>
+              <ThemeChoice />
             </div>
           )}
 
@@ -434,6 +436,37 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+/** Paramètres → Général: light (default) or dark theme. Applied at once, stored on this device. */
+function ThemeChoice() {
+  const { theme, setTheme } = useTheme()
+  const options = [
+    { key: 'light' as const, Icon: Sun, label: tx('Clair') },
+    { key: 'dark' as const, Icon: Moon, label: tx('Sombre') },
+  ]
+  return (
+    <div>
+      <label style={labelStyle}>{tx('Apparence')}</label>
+      <div role="radiogroup" aria-label={tx('Apparence')} style={{ display: 'flex', gap: 8 }}>
+        {options.map(({ key, Icon, label }) => {
+          const on = theme === key
+          return (
+            <button key={key} type="button" role="radio" aria-checked={on} onClick={() => setTheme(key)} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8, height: 34, padding: '0 14px',
+              borderRadius: 'var(--radius-control)', cursor: 'pointer', fontSize: 13, fontWeight: on ? 600 : 500,
+              border: `1px solid ${on ? 'var(--brand)' : 'var(--border)'}`,
+              background: on ? 'var(--brand-tint)' : 'var(--card)', color: on ? 'var(--brand)' : 'var(--text)',
+              transition: 'background var(--ease), border-color var(--ease)',
+            }}>
+              <Icon size={16} strokeWidth={1.8} /> {label}
+            </button>
+          )
+        })}
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 6 }}>{tx('Le thème clair est utilisé par défaut.')}</div>
     </div>
   )
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
-import Topbar from '@/components/layout/Topbar'
+import PageHeader from '@/components/layout/PageHeader'
 import { useLang } from '@/components/layout/LanguageProvider'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { offersApi, type Offer, type OfferForm } from '@/lib/offers-api'
@@ -49,7 +49,7 @@ export default function OffersPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={t('nav.offers')} subtitle={tx("Proposées au client juste après qu’il confirme sur WhatsApp")} />
+      <PageHeader title={t('nav.offers')} subtitle={tx("Proposées au client juste après qu’il confirme sur WhatsApp")} />
       <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? 16 : 24 }}>
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1fr) 360px', gap: 20, alignItems: 'start' }}>
 

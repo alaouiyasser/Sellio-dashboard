@@ -5,7 +5,7 @@
 // and stock per line, bulk fill), and for car parts only the compatible vehicles.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { ImagePlus, Loader2, Plus, Sparkles, Star, Trash2, X } from 'lucide-react'
+import { ImagePlus, Loader2, Star, Plus, Sparkles, Trash2, X } from 'lucide-react'
 import {
   combinations, comboKey, isColorOption, profileOf, storeApi, swatchOf, type Category, type OptionDef, type Product, type StoreProfile,
 } from '@/lib/store-api'
@@ -208,7 +208,7 @@ export default function ProductEditor({ productId, initialCategoryId = '', requi
               <button type="button" aria-label={tx('Retirer')} onClick={() => setImages((x) => x.filter((y) => y !== u))}
                 style={{ position: 'absolute', top: -6, insetInlineEnd: -6, width: 20, height: 20, borderRadius: 999, border: 'none', background: 'var(--destructive)', color: '#fff', display: 'grid', placeItems: 'center', cursor: 'pointer' }}><X size={12} /></button>
               {i > 0 && <button type="button" onClick={() => setImages((x) => [u, ...x.filter((y) => y !== u)])} title={tx('Photo principale')}
-                style={{ position: 'absolute', bottom: 2, insetInlineStart: 2, fontSize: 9, padding: '1px 4px', borderRadius: 4, border: 'none', background: 'rgba(0,0,0,.6)', color: '#fff', cursor: 'pointer', display: 'inline-flex' }}><Star size={10} /></button>}
+                style={{ position: 'absolute', bottom: 2, insetInlineStart: 2, fontSize: 9, padding: '1px 4px', borderRadius: 4, border: 'none', background: 'rgba(0,0,0,.6)', color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center' }}><Star size={10} strokeWidth={1.8} fill="currentColor" /></button>}
             </div>
           ))}
           {images.length < MAX_IMAGES && (

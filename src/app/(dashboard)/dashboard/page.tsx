@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { createClient } from '@/lib/supabase'
-import Topbar from '@/components/layout/Topbar'
+import PageHeader from '@/components/layout/PageHeader'
 import { useLang } from '@/components/layout/LanguageProvider'
 import OrdersChart from '@/components/charts/OrdersChart'
 import PeriodFilter from '@/components/common/PeriodFilter'
@@ -114,7 +114,7 @@ export default function OverviewPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={t('nav.dashboard')} subtitle={companyName || tx("Business overview")} />
+      <PageHeader title={t('nav.dashboard')} subtitle={companyName || tx("Business overview")} />
       <div style={{ flex: 1, overflow: 'auto', overflowX: 'hidden', padding: isMobile ? 12 : 24 }}>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 16 }}>

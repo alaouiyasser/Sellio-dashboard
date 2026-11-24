@@ -41,7 +41,7 @@ export default function IntegrationsPage() {
     <div style={{ padding: '28px 16px 64px' }}>
       <WizardOnboarding
         tenantId={tenantId}
-        onComplete={() => { toast.success(tx("Configuration terminée ✓")); setDone(true) }}
+        onComplete={() => { toast.success(tx("Configuration terminée")); setDone(true) }}
       />
     </div>
   )

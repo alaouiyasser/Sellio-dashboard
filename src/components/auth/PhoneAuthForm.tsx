@@ -94,7 +94,7 @@ export function PhoneAuthForm({
         phone, email: suEmail, storeName: suStore, rememberDevice: remember,
       })
       if (res.ok && data.status === 'authenticated') {
-        toast.success(tx("Compte créé 🎉"))
+        toast.success(tx("Compte créé"))
         await finishAuth(data, signupDest)
         return
       }
