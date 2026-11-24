@@ -1,6 +1,6 @@
 The merchant dashboard looks generic ("AI generated"). Give it Sellio's own professional look on **every page**, not only Orders. The founder approved a mockup on 24/11. The rules below are that mockup written out, so nothing has to be guessed.
 
-Work in the **Sellio-dashboard** repo, on the branch **`redesign`**. It already holds the carrier logos in `public/carriers/<id>.png`: sendit, ozon, ameex, coliix, aramex, forcelog, tawsilex, quicklivraison, olivraison, chronodiali, speedaf. Read `AGENTS.md` first (Next.js 16).
+Work in the **Sellio-dashboard** repo, on the branch **`redesign`**. It already holds the carrier logos in `public/carriers/<id>.png`: sendit, ozon, ameex, coliix, aramex, forcelog, tawsilex, quicklivraison, olivraison, chronodiali, speedaf. Store platform logos are in `public/platforms/<id>.png`: youcan, shopify, woocommerce (use them on Intégrations and wherever an order source is shown, instead of emojis). Read `AGENTS.md` first (Next.js 16).
 
 ## 1. Design system (tokens in one place, used everywhere)
 
