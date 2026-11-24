@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutGrid, Package, Boxes, Undo2, MessageSquare, BarChart3, Coins, Tag, Store, Bot,
-  Truck, Plug, Wallet, Settings, Search, Menu, X, LogOut, ShieldCheck, ChevronDown,
+  Truck, ShoppingBag, Wallet, Settings, Search, Menu, X, LogOut, ShieldCheck, ChevronDown,
   type LucideIcon,
 } from 'lucide-react'
 import { API_BASE } from '@/lib/auth-client'
@@ -25,8 +25,6 @@ type NavItem = { href: string; icon: LucideIcon; label: string; soon?: boolean; 
 
 const ICON = { size: 17, strokeWidth: 1.8 } as const
 
-// The URL hash (for the "Livraison" item, /integrations#livraison) read as an external store.
-const subscribeHash = (cb: () => void) => { window.addEventListener('hashchange', cb); return () => window.removeEventListener('hashchange', cb) }
 const noSubscribe = () => () => {}
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -35,7 +33,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const { t } = useLang()
   const [open, setOpen] = useState(false)
   const [, rerender] = useState(0)
-  const hash = useSyncExternalStore(subscribeHash, () => window.location.hash, () => '')
   // Close the drawer when the page changes.
   const [shownPath, setShownPath] = useState(pathname)
   if (shownPath !== pathname) { setShownPath(pathname); setOpen(false) }
@@ -59,8 +56,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     { href: '/ai-coach', icon: Bot, label: t('nav.aicoach') },
   ]
   const settings: NavItem[] = [
-    { href: '/integrations#livraison', icon: Truck, label: tx('Livraison') },
-    { href: '/integrations', icon: Plug, label: t('nav.integrations') },
+    { href: '/integrations', icon: ShoppingBag, label: tx('Boutiques') },
+    { href: '/livraison', icon: Truck, label: tx('Livraison') },
     { href: '/credits', icon: Wallet, label: t('nav.credits') },
     { href: '/settings', icon: Settings, label: t('nav.settings') },
   ]
@@ -120,10 +117,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname])
 
   function isActive(href: string) {
-    const [path, h] = href.split('#')
-    if (h) return pathname === path && hash === `#${h}`
-    if (path === '/integrations') return pathname === path && hash !== '#livraison'
-    return pathname === path || pathname.startsWith(path + '/')
+    return pathname === href || pathname.startsWith(href + '/')
   }
 
   async function logout() {

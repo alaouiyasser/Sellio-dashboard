@@ -13,8 +13,9 @@ import StoreOneClick from './StoreOneClick'
 import { toast } from 'sonner'
 import { fetchWaMode, type WaMode } from '@/lib/whatsapp-mode'
 import OfficialNumberCard from '@/components/OfficialNumberCard'
-import { Plus, Check, X, Settings2, Power, Loader2, MessageCircle, AlertTriangle } from 'lucide-react'
+import { Plus, Check, X, Settings2, Power, Loader2, MessageCircle, AlertTriangle, Store, Truck, type LucideIcon } from 'lucide-react'
 import BrandLogo from '@/components/common/BrandLogo'
+import PageHeader from '@/components/layout/PageHeader'
 
 import { tx } from '@/lib/i18n'
 const card: React.CSSProperties = {
@@ -32,7 +33,8 @@ const addBtn: React.CSSProperties = {
   background: 'var(--brand)', color: '#fff', whiteSpace: 'nowrap',
 }
 
-export default function IntegrationsManager() {
+/** 'stores' = Boutiques (/integrations: YouCan, Shopify, WooCommerce + WhatsApp); 'carriers' = Livraison (/livraison). */
+export default function IntegrationsManager({ scope = 'stores' }: { scope?: 'stores' | 'carriers' }) {
   const [tid, setTid] = useState<string | null>(null)
   const [items, setItems] = useState<IntegrationItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -49,15 +51,6 @@ export default function IntegrationsManager() {
   const waPoll = useRef<ReturnType<typeof setInterval> | null>(null)
   const [waMode, setWaMode] = useState<WaMode | null>(null)
   useEffect(() => { fetchWaMode().then(setWaMode) }, [])
-
-  // Menu "Livraison" (/integrations#livraison): scroll to the carriers once the list is shown.
-  useEffect(() => {
-    if (loading) return
-    const go = () => { if (window.location.hash === '#livraison') document.getElementById('livraison')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
-    go()
-    window.addEventListener('hashchange', go)
-    return () => window.removeEventListener('hashchange', go)
-  }, [loading])
 
   const load = useCallback(async (tenantId: string) => {
     try {
@@ -226,39 +219,42 @@ export default function IntegrationsManager() {
   if (loading) return <div style={{ minHeight: '50vh', display: 'grid', placeItems: 'center', color: 'var(--text-muted)' }}>{tx("Chargement...")}</div>
 
   return (
-    <div style={{ padding: '28px 24px 64px', maxWidth: 900, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>{tx("Mes intégrations")}</h1>
-      <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 6, marginBottom: 28 }}>{tx("Gérez vos plateformes, transporteurs et numéros WhatsApp.")}</p>
-
-      {/* ─── PLATEFORMES ─── */}
-      <ConnectedSection
-        title={tx("Plateforme e-commerce")}
-        connected={connected('ecommerce')}
-        available={available('ecommerce')}
-        onAdd={() => setAddCat(addCat === 'ecommerce' ? null : 'ecommerce')}
-        showAdd={addCat === 'ecommerce'}
-        onPick={openConnect}
-        onToggle={toggle}
-        onRemove={remove}
-        busy={busy}
+    <div>
+      <PageHeader
+        title={scope === 'carriers' ? tx("Livraison") : tx("Boutiques")}
+        subtitle={scope === 'carriers' ? tx("Connectez vos transporteurs pour expédier vos commandes.") : tx("Connectez votre boutique YouCan, Shopify ou WooCommerce.")}
       />
-
-      {/* ─── LIVRAISON ─── */}
-      <ConnectedSection
-        id="livraison"
-        title={tx("Société de livraison")}
-        connected={connected('carrier')}
-        available={available('carrier')}
-        onAdd={() => setAddCat(addCat === 'carrier' ? null : 'carrier')}
-        showAdd={addCat === 'carrier'}
-        onPick={openConnect}
-        onToggle={toggle}
-        onRemove={remove}
-        busy={busy}
-      />
+      <div style={{ padding: '20px 24px 64px', maxWidth: 900, margin: '0 auto' }}>
+      {scope === 'stores' ? (
+        <ConnectedSection
+          icon={Store}
+          title={tx("Plateforme e-commerce")}
+          connected={connected('ecommerce')}
+          available={available('ecommerce')}
+          onAdd={() => setAddCat(addCat === 'ecommerce' ? null : 'ecommerce')}
+          showAdd={addCat === 'ecommerce'}
+          onPick={openConnect}
+          onToggle={toggle}
+          onRemove={remove}
+          busy={busy}
+        />
+      ) : (
+        <ConnectedSection
+          icon={Truck}
+          title={tx("Société de livraison")}
+          connected={connected('carrier')}
+          available={available('carrier')}
+          onAdd={() => setAddCat(addCat === 'carrier' ? null : 'carrier')}
+          showAdd={addCat === 'carrier'}
+          onPick={openConnect}
+          onToggle={toggle}
+          onRemove={remove}
+          busy={busy}
+        />
+      )}
 
       {/* ─── WHATSAPP ─── */}
-      {waMode?.provider === 'cloud' ? (
+      {scope === 'stores' && (waMode?.provider === 'cloud' ? (
       <section style={{ marginBottom: 32 }}>
         <h2 style={{ ...sectionTitle, marginBottom: 12 }}>{tx("WhatsApp")}</h2>
         <OfficialNumberCard displayNumber={waMode.displayNumber} />
@@ -307,10 +303,10 @@ export default function IntegrationsManager() {
           </div>
         )}
       </section>
-      )}
+      ))}
 
       {/* WhatsApp add-number modal */}
-      {waModal && (
+      {scope === 'stores' && waModal && (
         <div onClick={() => !waBusy && !waQr && setWaModal(false)} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.5)', display: 'grid', placeItems: 'center', padding: 16 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 400, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 22, textAlign: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -370,11 +366,12 @@ export default function IntegrationsManager() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
 
-function ConnectedSection({ id, title, connected, available, single, onAdd, showAdd, onPick, onToggle, onRemove, busy }: {
+function ConnectedSection({ icon: Icon, title, connected, available, single, onAdd, showAdd, onPick, onToggle, onRemove, busy }: {
   title: string
   connected: IntegrationItem[]
   available: IntegrationItem[]
@@ -385,13 +382,13 @@ function ConnectedSection({ id, title, connected, available, single, onAdd, show
   onToggle: (i: IntegrationItem) => void
   onRemove: (i: IntegrationItem) => void
   busy: string | null
-  id?: string
+  icon: LucideIcon
 }) {
   const canAdd = !single || connected.length === 0
   return (
-    <section id={id} style={{ marginBottom: 32, scrollMarginTop: 72 }}>
+    <section style={{ marginBottom: 32 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <h2 style={sectionTitle}>{title}</h2>
+        <h2 style={{ ...sectionTitle, display: 'flex', alignItems: 'center', gap: 8 }}><Icon size={17} strokeWidth={1.8} color="var(--text-muted)" />{title}</h2>
         {canAdd && available.length > 0 && (
           <button onClick={onAdd} style={addBtn}><Plus size={15} /> {tx("Ajouter")}</button>
         )}
@@ -446,7 +443,9 @@ function ConnectedSection({ id, title, connected, available, single, onAdd, show
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10 }}>{tx("Choisir :")}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {available.map((item) => (
-              <button key={item.slug} onClick={() => onPick(item)} style={smallBtn}>{item.name}</button>
+              <button key={item.slug} onClick={() => onPick(item)} style={{ ...smallBtn, padding: '6px 12px 6px 7px' }}>
+                <BrandLogo id={item.slug} name={item.name} kind={item.category === 'carrier' ? 'carrier' : 'ecommerce'} size={24} fallbackSrc={item.logo} />{item.name}
+              </button>
             ))}
           </div>
         </div>

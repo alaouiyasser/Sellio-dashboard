@@ -1081,5 +1081,8 @@
  "Hors ligne": "غير متصل",
  "Clair": "فاتح",
  "Sombre": "داكن",
- "Le thème clair est utilisé par défaut.": "يُستخدم المظهر الفاتح افتراضياً."
+ "Le thème clair est utilisé par défaut.": "يُستخدم المظهر الفاتح افتراضياً.",
+ "Boutiques": "المتاجر",
+ "Connectez vos transporteurs pour expédier vos commandes.": "اربط شركات التوصيل لشحن طلباتك.",
+ "Connectez votre boutique YouCan, Shopify ou WooCommerce.": "اربط متجرك على YouCan أو Shopify أو WooCommerce."
 }
