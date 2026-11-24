@@ -1,7 +1,7 @@
 // Store builder V1 (issue #69), PR 3a — merchant side of the Sellio store ("Ma boutique").
 // Endpoints: /api/store/* (sellio/apps/api/src/routes/store-builder.routes.ts). Field names
 // and allowed values mirror sellio/apps/api/src/modules/store-builder/store-builder.ts.
-import { Car, Flower2, Headphones, House, Leaf, Shirt, ShoppingBag, SprayCan, Target, ToyBrick, Watch, type LucideIcon } from 'lucide-react'
+import { Baby, Car, Droplets, Headphones, House, Leaf, Package, ShoppingBag, Shirt, SprayCan, Target, Watch, type LucideIcon } from 'lucide-react'
 import { tx } from './i18n'
 import { authFetch } from './api-fetch'
 import { API_BASE } from './auth-client'
@@ -84,7 +84,8 @@ export const storeApi = {
   categories: () => call<{ categories: Category[] }>('/store/categories').then((d) => d.categories),
   createCategory: (name: string, parentId: string | null = null) =>
     call<{ category: Category }>('/store/categories', json('POST', { name, parentId })).then((d) => d.category),
-  updateCategory: (id: string, b: { name?: string; parentId?: string | null }) =>
+  /** name, parent, or photo (imageUrl: an image uploaded with uploadImage, or null to remove it). */
+  updateCategory: (id: string, b: { name?: string; parentId?: string | null; imageUrl?: string | null }) =>
     call<{ category: Category }>(`/store/categories/${id}`, json('PATCH', b)).then((d) => d.category),
   deleteCategory: (id: string) => call(`/store/categories/${id}`, { method: 'DELETE' }),
   reorderCategories: (order: Array<{ id: string; parentId: string | null; position: number }>) =>
@@ -194,7 +195,7 @@ export const PROFILES: ProfilePreset[] = [
     fields: { colorSwatches: true, vehicles: false }, categories: ['Hoodies', 'T-shirts', 'Pantalons', 'Sneakers', 'Accessoires'],
   },
   {
-    id: 'mode', label: 'Mode', hint: 'Vêtements et chaussures, homme et femme', icon: Shirt, siteType: 'boutique', photo: photo('mode'), tint: '#9d174d',
+    id: 'mode', label: 'Mode', hint: 'Vêtements et chaussures, homme et femme', icon: ShoppingBag, siteType: 'boutique', photo: photo('mode'), tint: '#9d174d',
     options: [{ name: 'Taille', values: SIZES }, { name: 'Pointure', values: ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'] }, { name: 'Couleur', values: COLORS_CLOTHES }],
     sections: STORE('new_arrivals', 'size_guide'), filters: ['filter_size', 'filter_color', 'filter_gender', 'filter_price'],
     fields: { colorSwatches: true, vehicles: false }, categories: ['Femme', 'Homme', 'Chaussures', 'Sacs', 'Accessoires'],
@@ -206,7 +207,7 @@ export const PROFILES: ProfilePreset[] = [
     fields: { colorSwatches: true, vehicles: false }, categories: ['Abayas', 'Djellabas', 'Kaftans', 'Hijabs', 'Ensembles'],
   },
   {
-    id: 'parfums', label: 'Parfums', hint: 'Contenances, homme / femme, décants', icon: Flower2, siteType: 'boutique', photo: photo('parfums'), tint: '#7c3aed',
+    id: 'parfums', label: 'Parfums', hint: 'Contenances, homme / femme, décants', icon: SprayCan, siteType: 'boutique', photo: photo('parfums'), tint: '#7c3aed',
     options: [
       { name: 'Contenance', values: ['5 ml', '10 ml', '30 ml', '50 ml', '100 ml'] },
       { name: 'Type', values: ['Eau de parfum', 'Eau de toilette', 'Huile parfumée', 'Musc'] },
@@ -215,7 +216,7 @@ export const PROFILES: ProfilePreset[] = [
     fields: { colorSwatches: false, vehicles: false }, categories: ['Homme', 'Femme', 'Décants', 'Coffrets'],
   },
   {
-    id: 'beaute', label: 'Beauté et skincare', hint: 'Soins visage, corps, cheveux', icon: SprayCan, siteType: 'boutique', photo: photo('beaute'), tint: '#db2777',
+    id: 'beaute', label: 'Beauté et skincare', hint: 'Soins visage, corps, cheveux', icon: Droplets, siteType: 'boutique', photo: photo('beaute'), tint: '#db2777',
     options: [
       { name: 'Contenance', values: ['30 ml', '50 ml', '100 ml', '200 ml', '500 ml'] },
       { name: 'Type de peau', values: ['Tous types', 'Normale', 'Sèche', 'Grasse', 'Mixte', 'Sensible'] },
@@ -233,7 +234,7 @@ export const PROFILES: ProfilePreset[] = [
     id: 'bijoux', label: 'Montres et bijoux', hint: 'Montres, bagues, colliers, bracelets', icon: Watch, siteType: 'boutique', photo: photo('bijoux'), tint: '#a16207',
     options: [{ name: 'Taille de bague', values: ['50', '52', '54', '56', '58', '60', '62'] }, { name: 'Finition', values: ['Doré', 'Argenté', 'Rosé', 'Noir'] }],
     sections: STORE('new_arrivals'), filters: ['filter_gender', 'filter_price'],
-    fields: { colorSwatches: false, vehicles: false }, categories: ['Montres', 'Bagues', 'Colliers', 'Bracelets', 'Boucles d’oreilles'],
+    fields: { colorSwatches: false, vehicles: false }, categories: ['Montres', 'Bracelets', 'Colliers', 'Bagues', 'Boucles d’oreilles'],
   },
   {
     id: 'maison', label: 'Maison et cuisine', hint: 'Cuisine, déco, rangement', icon: House, siteType: 'boutique', photo: photo('maison'), tint: '#0f766e',
@@ -242,7 +243,7 @@ export const PROFILES: ProfilePreset[] = [
     fields: { colorSwatches: true, vehicles: false }, categories: ['Cuisine', 'Décoration', 'Rangement', 'Linge de maison'],
   },
   {
-    id: 'enfants', label: 'Bébé et enfants', hint: 'Vêtements par âge, jouets, puériculture', icon: ToyBrick, siteType: 'boutique', photo: photo('enfants'), tint: '#0284c7',
+    id: 'enfants', label: 'Bébé et enfants', hint: 'Vêtements par âge, jouets, puériculture', icon: Baby, siteType: 'boutique', photo: photo('enfants'), tint: '#0284c7',
     options: [
       { name: 'Âge', values: ['0-3 mois', '3-6 mois', '6-12 mois', '1-2 ans', '2-3 ans', '3-4 ans', '4-6 ans', '6-8 ans'] },
       { name: 'Couleur', values: ['Blanc', 'Rose', 'Bleu', 'Jaune', 'Vert', 'Gris'] },
@@ -269,7 +270,7 @@ export const PROFILES: ProfilePreset[] = [
     fields: { colorSwatches: true, vehicles: false }, categories: [],
   },
   {
-    id: 'autre', label: 'Autre', hint: 'Sections et champs généraux, à vous de compléter', icon: ShoppingBag, siteType: 'boutique', photo: photo('autre'), tint: '#475569',
+    id: 'autre', label: 'Autre', hint: 'Sections et champs généraux, à vous de compléter', icon: Package, siteType: 'boutique', photo: photo('autre'), tint: '#475569',
     options: [], sections: GENERAL_SECTIONS, filters: ['filter_price'],
     fields: { colorSwatches: false, vehicles: false }, categories: [],
   },
@@ -341,6 +342,11 @@ export function sectionsFor(profile: StoreProfile, siteType: SiteType) {
   return SECTIONS.filter((s) => allowed.has(s.id) && (siteType !== 'landing' || !catalogue.includes(s.id)))
 }
 export const filtersFor = (profile: StoreProfile) => FILTERS.filter((f) => profileOf(profile).filters.includes(f.id))
+
+/** store.sections key set when the merchant finished the wizard once: "Ma boutique" then opens as a
+ *  management space (on every device). The API accepts any lowercase key in sections; the storefront
+ *  only reads the section and filter ids it knows. */
+export const SETUP_DONE_KEY = 'setup_done'
 
 /** Sections + filters a niche turns on (every known key is written, so the store keeps the merchant's "off"). */
 export function presetSections(profile: StoreProfile): Record<string, boolean> {
