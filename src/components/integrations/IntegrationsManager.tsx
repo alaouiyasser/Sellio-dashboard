@@ -16,6 +16,7 @@ import OfficialNumberCard from '@/components/OfficialNumberCard'
 import { Plus, Check, X, Settings2, Power, Loader2, MessageCircle, AlertTriangle, Store, Truck, type LucideIcon } from 'lucide-react'
 import BrandLogo from '@/components/common/BrandLogo'
 import PageHeader from '@/components/layout/PageHeader'
+import ShipModeCard from '@/components/integrations/ShipModeCard'
 
 import { tx } from '@/lib/i18n'
 const card: React.CSSProperties = {
@@ -225,6 +226,7 @@ export default function IntegrationsManager({ scope = 'stores' }: { scope?: 'sto
         subtitle={scope === 'carriers' ? tx("Connectez vos transporteurs pour expédier vos commandes.") : tx("Connectez votre boutique YouCan, Shopify ou WooCommerce.")}
       />
       <div style={{ padding: '20px 24px 64px', maxWidth: 900, margin: '0 auto' }}>
+      {scope === 'carriers' && tid && <ShipModeCard tenantId={tid} />}
       {scope === 'stores' ? (
         <ConnectedSection
           icon={Store}
