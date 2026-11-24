@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase'
 import PageHeader from '@/components/layout/PageHeader'
 import { useLang } from '@/components/layout/LanguageProvider'
 import CarrierExportImport from '@/components/orders/CarrierExportImport'
+import ShipAllBar from '@/components/orders/ShipAllBar'
 import PeriodFilter from '@/components/common/PeriodFilter'
 import { usePagePeriod } from '@/hooks/usePagePeriod'
 import { orderCity, statusLabel, groupOf, customerName, productsLine, STATUS_GROUPS } from '@/lib/order-view'
@@ -35,6 +36,9 @@ export default function OrdersPage() {
   const [group, setGroup] = useState('all')
   const [period, setPeriod, periodReady] = usePagePeriod('orders')
   const [page, setPage] = useState(1)
+  const [tenantId, setTenantId] = useState<string | null>(null)
+  const [loadTick, setLoadTick] = useState(0)
+  const [shipErrorOnly, setShipErrorOnly] = useState(false)
 
   // Global search in the top bar (AppShell) lands here as ?q=: it fills the search box.
   const urlQuery = useSearchParams().get('q') ?? ''
@@ -58,6 +62,7 @@ export default function OrdersPage() {
     if (!silent) setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
+    setTenantId(user.id)
     // Orders to act on are shown whatever the period.
     const [rows, { data: todo }] = await Promise.all([
       ordersInPeriod(supabase, user.id, p).catch(() => []),
@@ -66,6 +71,7 @@ export default function OrdersPage() {
     ])
     setOrders(rows)
     setAlerts(todo ?? [])
+    setLoadTick((n) => n + 1)
     setLoading(false)
   }
 
@@ -79,7 +85,8 @@ export default function OrdersPage() {
     const q = search.trim().toLowerCase()
     const digits = q.replace(/\D/g, '')
     return orders.filter((o) => {
-      if (group !== 'all' && !(STATUS_GROUPS[group] ?? []).includes(o.status)) return false
+      if (shipErrorOnly) { if (!shipFailed(o)) return false }
+      else if (group !== 'all' && !(STATUS_GROUPS[group] ?? []).includes(o.status)) return false
       if (!q) return true
       return customerName(o).toLowerCase().includes(q)
         || (digits.length >= 3 && String(o.customer_phone ?? '').replace(/\D/g, '').includes(digits))
@@ -87,7 +94,7 @@ export default function OrdersPage() {
         || orderCity(o).toLowerCase().includes(q)
         || String(o.external_id ?? o.id).toLowerCase().includes(q)
     })
-  }, [orders, group, search])
+  }, [orders, group, search, shipErrorOnly])
 
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
@@ -119,6 +126,11 @@ export default function OrdersPage() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <PageHeader title={t('orders.title')} subtitle={tx('{0} commandes sur la période', [orders.length])} />
       <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
+
+        {tenantId && (
+          <ShipAllBar tenantId={tenantId} refreshKey={loadTick} errorFilterOn={shipErrorOnly}
+            onToggleErrorFilter={() => { setShipErrorOnly((v) => !v); setPage(1) }} onSent={() => fetchOrders(period, true)} />
+        )}
 
         {notShipped.length > 0 && banner('var(--destructive)',
           notShipped.length === 1 ? tx("1 commande confirmée non envoyée au transporteur") : tx("{0} commandes confirmées non envoyées au transporteur", [notShipped.length]),
