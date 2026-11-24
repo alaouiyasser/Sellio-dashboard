@@ -84,7 +84,8 @@ export const storeApi = {
   categories: () => call<{ categories: Category[] }>('/store/categories').then((d) => d.categories),
   createCategory: (name: string, parentId: string | null = null) =>
     call<{ category: Category }>('/store/categories', json('POST', { name, parentId })).then((d) => d.category),
-  updateCategory: (id: string, b: { name?: string; parentId?: string | null }) =>
+  /** name, parent, or photo (imageUrl: an image uploaded with uploadImage, or null to remove it). */
+  updateCategory: (id: string, b: { name?: string; parentId?: string | null; imageUrl?: string | null }) =>
     call<{ category: Category }>(`/store/categories/${id}`, json('PATCH', b)).then((d) => d.category),
   deleteCategory: (id: string) => call(`/store/categories/${id}`, { method: 'DELETE' }),
   reorderCategories: (order: Array<{ id: string; parentId: string | null; position: number }>) =>
@@ -340,6 +341,11 @@ export function sectionsFor(profile: StoreProfile, siteType: SiteType) {
   return SECTIONS.filter((s) => allowed.has(s.id) && (siteType !== 'landing' || !catalogue.includes(s.id)))
 }
 export const filtersFor = (profile: StoreProfile) => FILTERS.filter((f) => profileOf(profile).filters.includes(f.id))
+
+/** store.sections key set when the merchant finished the wizard once: "Ma boutique" then opens as a
+ *  management space (on every device). The API accepts any lowercase key in sections; the storefront
+ *  only reads the section and filter ids it knows. */
+export const SETUP_DONE_KEY = 'setup_done'
 
 /** Sections + filters a niche turns on (every known key is written, so the store keeps the merchant's "off"). */
 export function presetSections(profile: StoreProfile): Record<string, boolean> {

@@ -1,7 +1,7 @@
 'use client'
 // Live phone preview of the store while the merchant fills the wizard. It only shows what the
 // merchant entered (no invented products, reviews or counters): empty parts show a placeholder.
-import { Banknote, CheckCircle2, ImageIcon, MapPin, MessageCircle, Search, ShoppingBag, Truck } from 'lucide-react'
+import { Banknote, CheckCircle2, ImageIcon, Loader2, MapPin, MessageCircle, Plus, Search, ShoppingBag, Truck } from 'lucide-react'
 import { fontCss, type Category, type Colors, type Product, type SiteType, type ThemeId } from '@/lib/store-api'
 import { tx } from '@/lib/i18n'
 
@@ -10,16 +10,25 @@ export interface PreviewData {
   city: string; deliveryText: string; returnText: string; sections: Record<string, boolean>; whatsapp: string
 }
 
+/** Edit mode of the « Vos catégories » row (categories step): tiles are buttons, a + tile adds one,
+ *  and the niche examples show (faded) with « Utiliser ces catégories » while there are none. */
+export interface CategoryEdit {
+  selectedId: string | null; adding: boolean; busy: boolean
+  /** Names of the niche examples (already in the dashboard language), or [] when the niche has none. */
+  examples: string[]
+  onSelect: (id: string) => void; onAdd: () => void; onUseExamples: () => void
+}
+
 const fmt = (n: number) => `${Math.round(Number(n) || 0)} DH`
 
-export default function PhonePreview({ d, products, categories }: { d: PreviewData; products: Product[]; categories: Category[] }) {
+export default function PhonePreview({ d, products, categories, edit }: { d: PreviewData; products: Product[]; categories: Category[]; edit?: CategoryEdit }) {
   const c = d.colors
   const on = (k: string) => !!d.sections[k]
   const font = fontCss(d.font)
   const t = THEME[d.theme]
   const first = products[0]
   const landing = d.siteType === 'landing'
-  const tops = categories.filter((x) => !x.parent_id)
+  const tops = categories.filter((x) => !x.parent_id).sort((a, b) => a.position - b.position)
 
   const btnEl = (children: React.ReactNode) => (
     <div style={{
@@ -92,15 +101,56 @@ export default function PhonePreview({ d, products, categories }: { d: PreviewDa
             </div>
           )}
 
-          {on('categories') && !landing && tops.length > 0 && (
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '12px 12px 4px' }}>
-              {tops.map((cat) => (
-                <div key={cat.id} style={{
-                  flexShrink: 0, fontSize: 11, padding: '6px 12px', borderRadius: d.theme === 'essentiel' ? 999 : t.radius,
-                  background: d.theme === 'impact' ? c.primary : c.secondary, color: d.theme === 'impact' ? readable(c.primary) : c.text,
-                  fontWeight: 600,
-                }}>{cat.name}</div>
-              ))}
+          {!landing && (edit || (on('categories') && tops.length > 0)) && (
+            <div style={{ padding: '12px 0 4px', outline: edit ? `2px dashed ${c.primary}` : 'none', outlineOffset: -4, borderRadius: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, padding: '0 12px 8px' }}>{edit ? tx('Vos catégories') : tx('Catégories')}</div>
+              <div style={{ display: 'flex', gap: 10, overflowX: 'auto', padding: '0 12px 6px' }}>
+                {tops.map((cat) => {
+                  const tile = (
+                    <>
+                      <div style={{
+                        width: 58, height: 58, borderRadius: d.theme === 'essentiel' ? 999 : t.imgRadius, overflow: 'hidden', margin: '0 auto',
+                        background: d.theme === 'impact' ? c.primary : c.secondary, color: d.theme === 'impact' ? readable(c.primary) : c.text,
+                        display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 18,
+                        boxShadow: edit?.selectedId === cat.id ? `0 0 0 2px ${c.background}, 0 0 0 4px ${c.button}` : 'none',
+                      }}>
+                        {cat.image_url ? <img src={cat.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : cat.name.trim().charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ fontSize: 10.5, fontWeight: 600, marginTop: 5, textAlign: 'center', width: 66, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</div>
+                    </>
+                  )
+                  return edit
+                    ? <button key={cat.id} type="button" onClick={() => edit.onSelect(cat.id)} aria-pressed={edit.selectedId === cat.id} aria-label={tx('Modifier « {0} »', [cat.name])}
+                        style={{ flexShrink: 0, background: 'none', border: 'none', padding: 0, color: 'inherit', font: 'inherit', cursor: 'pointer' }}>{tile}</button>
+                    : <div key={cat.id} style={{ flexShrink: 0 }}>{tile}</div>
+                })}
+                {edit && tops.length === 0 && edit.examples.map((name) => (
+                  <div key={name} aria-hidden style={{ flexShrink: 0, opacity: 0.45 }}>
+                    <div style={{ width: 58, height: 58, borderRadius: d.theme === 'essentiel' ? 999 : t.imgRadius, margin: '0 auto', border: `1.5px dashed ${c.text}`, display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 18 }}>
+                      {name.charAt(0).toUpperCase()}
+                    </div>
+                    <div style={{ fontSize: 10.5, fontWeight: 600, marginTop: 5, textAlign: 'center', width: 66, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+                  </div>
+                ))}
+                {edit && (
+                  <button type="button" onClick={edit.onAdd} disabled={edit.busy} aria-label={tx('Ajouter une catégorie')} aria-pressed={edit.adding}
+                    style={{ flexShrink: 0, background: 'none', border: 'none', padding: 0, color: 'inherit', font: 'inherit', cursor: 'pointer' }}>
+                    <div style={{
+                      width: 58, height: 58, borderRadius: d.theme === 'essentiel' ? 999 : t.imgRadius, margin: '0 auto', border: `1.5px dashed ${c.primary}`, color: c.primary,
+                      display: 'grid', placeItems: 'center', boxShadow: edit.adding ? `0 0 0 2px ${c.background}, 0 0 0 4px ${c.button}` : 'none',
+                    }}><Plus size={22} /></div>
+                    <div style={{ fontSize: 10.5, fontWeight: 600, marginTop: 5, textAlign: 'center', width: 66 }}>{tx('Ajouter')}</div>
+                  </button>
+                )}
+              </div>
+              {edit && tops.length === 0 && edit.examples.length > 0 && (
+                <div style={{ padding: '6px 12px 4px' }}>
+                  <button type="button" onClick={edit.onUseExamples} disabled={edit.busy} style={{ width: '100%', border: 'none', padding: 0, background: 'none', cursor: 'pointer', font: 'inherit' }}>
+                    {btnEl(<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>{edit.busy && <Loader2 size={13} className="animate-spin" />}{tx('Utiliser ces catégories')}</span>)}
+                  </button>
+                  <div style={{ fontSize: 10, opacity: 0.6, textAlign: 'center', marginTop: 6 }}>{tx('Exemples pour votre niche : vous pourrez tout changer.')}</div>
+                </div>
+              )}
             </div>
           )}
 

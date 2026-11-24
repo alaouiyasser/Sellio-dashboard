@@ -1,6 +1,6 @@
 'use client'
 // "Messages automatiques": a welcome message in darija with the store link, where to paste it
-// (WhatsApp Business greeting + away message, Meta Business Suite instant reply) and one link
+// (WhatsApp Business greeting, Meta Business Suite instant reply) and one link
 // per product for quick replies. Nothing is sent by Sellio here: the merchant copies and pastes.
 // One video per platform (NEXT_PUBLIC_GUIDE_VIDEO_WHATSAPP / NEXT_PUBLIC_GUIDE_VIDEO_META:
 // YouTube link or .mp4/.webm file). No video configured → no video slot, the written steps show.
@@ -10,16 +10,22 @@ import { productUrl, storeUrl, type Product } from '@/lib/store-api'
 import { tx } from '@/lib/i18n'
 import { CopyButton, card, chip, h2, input, muted } from './ui'
 
-/** Welcome message: darija in Latin letters (as most customers write) or in Arabic letters. */
-function welcome(script: 'latin' | 'arabic', name: string, link: string) {
+/** Welcome message: darija in Latin letters (as most customers write) or in Arabic letters.
+ *  The emojis belong to the message the customer receives on WhatsApp, not to the dashboard UI.
+ *  Last line: any other question (not about an order) goes straight to the merchant's WhatsApp. */
+function welcome(script: 'latin' | 'arabic', name: string, link: string, phone: string) {
+  const num = phone || (script === 'latin' ? '[numéro WhatsApp]' : '[رقم الواتساب]')
   return script === 'latin'
-    ? `Salam, merhba bik f ${name}!\nChouf ga3 les produits w les prix dyalna w commandi direct men hna :\n${link}\nL-khlass 3and l-livraison. W ila 3andek chi so2al, ana hna.`
-    : `السلام عليكم، مرحبا بيك ف ${name}!\nشوف جميع المنتوجات والأثمنة ديالنا وكوموندي نيشان من هنا :\n${link}\nالخلاص عند التوصيل. وإلا عندك شي سؤال، أنا هنا.`
+    ? `Salam 👋 merhba bik f ${name}!\n🛍️ Chouf ga3 les produits w les prix dyalna w commandi direct men hna :\n👉 ${link}\n🚚 L-khlass 3and l-livraison.\n📞 Ila 3andek ay so2al akhor machi 3la commande, tssel direct b had r-raqm WhatsApp : ${num}`
+    : `السلام عليكم 👋 مرحبا بيك ف ${name}!\n🛍️ شوف جميع المنتوجات والأثمنة ديالنا وكوموندي نيشان من هنا :\n👉 ${link}\n🚚 الخلاص عند التوصيل.\n📞 إلا عندك أي سؤال آخر ماشي على الكوموند، تواصل نيشان مع هاد الرقم ديال واتساب : ${num}`
 }
-function away(script: 'latin' | 'arabic', link: string) {
-  return script === 'latin'
-    ? `Salam, chokran 3la l-message dyalek! Daba ma nqderch njaweb, ghadi nrj3 lik f a9rab wa9t.\nT9der tcommandi direct men hna: ${link}`
-    : `السلام عليكم، شكرا على الميساج ديالك! دابا ما نقدرش نجاوب، غادي نرجع ليك ف أقرب وقت.\nتقدر تكوموندي نيشان من هنا: ${link}`
+
+/** "212612345678" (as the API stores it) → "+212 6 12 34 56 78"; other numbers get a "+". */
+export function displayPhone(digits: string | null | undefined): string {
+  const d = String(digits ?? '').replace(/\D/g, '')
+  if (!d) return ''
+  const m = /^212(\d)(\d{2})(\d{2})(\d{2})(\d{2})$/.exec(d)
+  return m ? `+212 ${m.slice(1).join(' ')}` : `+${d}`
 }
 
 /** Guide videos, set at build time (Vercel env). Empty = not recorded yet. */
@@ -53,12 +59,16 @@ function Guide({ video, title, steps }: { video: string; title: string; steps: R
   )
 }
 
-export default function MessagesStep({ storeName, slug, products }: { storeName: string; slug: string; products: Product[] }) {
+export default function MessagesStep({ storeName, slug, whatsapp, products, onEditWhatsapp }: {
+  storeName: string; slug: string; whatsapp: string | null; products: Product[]
+  /** Opens the screen where the store's WhatsApp number is set (shown when it is missing). */
+  onEditWhatsapp?: () => void
+}) {
   const [script, setScript] = useState<'latin' | 'arabic'>('latin')
   const link = storeUrl(slug)
+  const phone = displayPhone(whatsapp)
   const [msg, setMsg] = useState<string | null>(null)
-  const welcomeText = msg ?? welcome(script, storeName, link)
-  const awayText = away(script, link)
+  const welcomeText = msg ?? welcome(script, storeName, link, phone)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -81,10 +91,6 @@ export default function MessagesStep({ storeName, slug, products }: { storeName:
               <td style={td}>{tx('Envoyé automatiquement par VOTRE WhatsApp Business (pas par Sellio), quand un client vous écrit pour la 1re fois ou après 14 jours sans message. Il accueille le client et donne le lien de la boutique.')}</td>
             </tr>
             <tr>
-              <td style={tdName}>{tx('Message d’absence')}</td>
-              <td style={td}>{tx('Envoyé automatiquement par VOTRE WhatsApp Business (pas par Sellio) quand un client écrit en dehors des heures que vous choisissez (par exemple la nuit), ou tout le temps si vous choisissez « Toujours ». Il dit que vous répondez plus tard et donne le lien pour commander tout de suite.')}</td>
-            </tr>
-            <tr>
               <td style={tdName}>{tx('Réponse instantanée (Instagram et Messenger)')}</td>
               <td style={td}>{tx('Envoyée automatiquement par Instagram et Messenger (pas par Sellio), une seule fois, à une personne qui vous écrit pour la 1re fois.')}</td>
             </tr>
@@ -97,7 +103,7 @@ export default function MessagesStep({ storeName, slug, products }: { storeName:
         <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6 }}>
           <strong>{tx('Réglage conseillé')}</strong>
           <div>{tx('Message de bienvenue : toujours activé.')}</div>
-          <div>{tx('Message d’absence : facultatif, seulement la nuit.')}</div>
+          <div>{tx('Les questions qui ne concernent pas une commande arrivent directement sur votre numéro WhatsApp (dernière ligne du message).')}</div>
         </div>
       </div>
 
@@ -109,7 +115,13 @@ export default function MessagesStep({ storeName, slug, products }: { storeName:
             <button type="button" style={chip(script === 'arabic')} onClick={() => { setScript('arabic'); setMsg(null) }}>{tx('Lettres arabes')}</button>
           </div>
         </div>
-        <textarea value={welcomeText} onChange={(e) => setMsg(e.target.value)} rows={5} dir={script === 'arabic' ? 'rtl' : 'ltr'}
+        {!phone && (
+          <div role="alert" style={{ fontSize: 12.5, color: 'var(--warning)', marginBottom: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            {tx('Ajoutez le numéro WhatsApp de la boutique : il s’affiche à la fin du message, à la place du texte entre crochets.')}
+            {onEditWhatsapp && <button type="button" onClick={onEditWhatsapp} style={{ ...chip(false), padding: '4px 10px' }}>{tx('Ajouter le numéro')}</button>}
+          </div>
+        )}
+        <textarea value={welcomeText} onChange={(e) => setMsg(e.target.value)} rows={7} dir={script === 'arabic' ? 'rtl' : 'ltr'}
           style={{ ...input, resize: 'vertical', fontSize: 14, lineHeight: 1.5 }} />
         <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
           <CopyButton text={welcomeText} label={tx('Copier le message de bienvenue')} />
@@ -123,15 +135,9 @@ export default function MessagesStep({ storeName, slug, products }: { storeName:
           <ol style={ol}>
             <li>{tx('Ouvrez WhatsApp Business → Paramètres → Outils professionnels.')}</li>
             <li>{tx('Message de bienvenue : activez-le, collez le message ci-dessus, enregistrez.')}</li>
-            <li>{tx('Message d’absence : activez-le, choisissez « Toujours envoyer » ou « En dehors des heures d’ouverture », collez le message ci-dessous.')}</li>
             <li>{tx('Réponses rapides : créez un raccourci par produit (ex : /parfum1) avec son lien, plus bas.')}</li>
           </ol>
         } />
-        <div style={{ marginTop: 10 }}>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>{tx('Message d’absence')}</span>
-          <textarea readOnly value={awayText} rows={3} dir={script === 'arabic' ? 'rtl' : 'ltr'} style={{ ...input, marginTop: 6, resize: 'vertical' }} />
-          <div style={{ marginTop: 8 }}><CopyButton text={awayText} label={tx('Copier le message d’absence')} /></div>
-        </div>
       </div>
 
       <div style={card}>
@@ -145,7 +151,7 @@ export default function MessagesStep({ storeName, slug, products }: { storeName:
         } />
         <div style={{ marginTop: 10 }}>
           <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>{tx('Réponse instantanée')}</span>
-          <textarea readOnly value={welcomeText} rows={4} dir={script === 'arabic' ? 'rtl' : 'ltr'} style={{ ...input, marginTop: 6, resize: 'vertical' }} />
+          <textarea readOnly value={welcomeText} rows={6} dir={script === 'arabic' ? 'rtl' : 'ltr'} style={{ ...input, marginTop: 6, resize: 'vertical' }} />
           <div style={{ marginTop: 8 }}><CopyButton text={welcomeText} label={tx('Copier la réponse instantanée')} /></div>
         </div>
       </div>
