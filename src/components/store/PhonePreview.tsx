@@ -160,6 +160,30 @@ export default function PhonePreview({ d, products, categories }: { d: PreviewDa
               {d.city && <div style={{ opacity: 0.7, marginTop: 4 }}>📍 {d.city}</div>}
             </div>
           )}
+          {on('banners') && !landing && <div style={{ padding: '4px 12px' }}>{img(null, 70)}</div>}
+
+          {on('trust') && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap', padding: '10px 12px', fontSize: 10, fontWeight: 600 }}>
+              <span>💵 {tx('Paiement à la livraison')}</span>
+              <span>✅ {tx('Confirmation sur WhatsApp')}</span>
+            </div>
+          )}
+
+          {on('faq') && (
+            <div style={{ padding: '8px 12px', fontSize: 11 }}>
+              <div style={{ fontWeight: 700, marginBottom: 6 }}>{tx('Questions fréquentes')}</div>
+              {[tx('Livraison'), tx('Paiement'), tx('Retours')].map((q) => (
+                <div key={q} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${c.secondary}`, opacity: 0.85 }}>{q} <span>+</span></div>
+              ))}
+            </div>
+          )}
+
+          {on('footer') && (
+            <div style={{ marginTop: 12, padding: '14px 12px', background: c.secondary, fontSize: 10, textAlign: 'center', lineHeight: 1.5 }}>
+              <div style={{ fontWeight: 700 }}>{d.name || tx('Votre boutique')}</div>
+              {d.city && <div style={{ opacity: 0.75 }}>{d.city}</div>}
+            </div>
+          )}
           <div style={{ height: 50 }} />
         </div>
 

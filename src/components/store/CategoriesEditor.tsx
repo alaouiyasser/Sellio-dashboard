@@ -114,7 +114,7 @@ export default function CategoriesEditor({ categories, onChange }: { categories:
         <button type="button" onClick={add} disabled={busy || !name.trim()} style={btn('primary', busy || !name.trim())}><Plus size={14} /> {tx('Ajouter')}</button>
       </div>
       {t.tops.length === 0 ? (
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>{tx('Aucune catégorie. Les catégories sont facultatives.')}</p>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>{tx('Aucune catégorie pour l’instant.')}</p>
       ) : (
         <div>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 6px' }}>{tx('Glissez une catégorie sur une autre pour en faire une sous-catégorie, ou entre deux pour changer l’ordre.')}</p>

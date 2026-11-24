@@ -7,7 +7,10 @@ import { API_BASE } from './auth-client'
 
 // ─── Types (API rows) ────────────────────────────────────────────────────────
 
-export type StoreProfile = 'mono' | 'parfums' | 'mode' | 'auto' | 'autre'
+/** The 13 niches of step 1 (same list as STORE_PROFILES in sellio/apps/api/src/modules/store-builder/store-builder.ts). */
+export type StoreProfile =
+  | 'streetwear' | 'mode' | 'modeste' | 'parfums' | 'beaute' | 'beldi' | 'bijoux'
+  | 'maison' | 'enfants' | 'gadgets' | 'auto' | 'mono' | 'autre'
 export type SiteType = 'landing' | 'boutique' | 'both'
 export type ThemeId = 'impact' | 'essentiel' | 'elegance'
 export type StoreStatus = 'draft' | 'pending' | 'online' | 'suspended'
@@ -57,8 +60,10 @@ async function call<T = Record<string, unknown>>(path: string, init?: RequestIni
     credentials: 'include', ...init,
     headers: init?.body instanceof FormData ? init.headers : { 'Content-Type': 'application/json', ...init?.headers },
   })
-  const data = await res.json().catch(() => ({})) as { success?: boolean; error?: string }
-  if (!res.ok || data?.success === false) throw new StoreApiError(res.status, data?.error || tx('Erreur ({0})', [res.status]))
+  const data = await res.json().catch(() => ({})) as { success?: boolean; error?: string | { message?: string } }
+  if (res.status === 429) throw new StoreApiError(429, tx('Trop de demandes : réessayez dans une minute'))
+  const err = typeof data?.error === 'string' ? data.error : data?.error?.message
+  if (!res.ok || data?.success === false) throw new StoreApiError(res.status, err || tx('Erreur ({0})', [res.status]))
   return data as unknown as T
 }
 const json = (method: string, body: unknown): RequestInit => ({ method, body: JSON.stringify(body) })
@@ -94,6 +99,10 @@ export const storeApi = {
   setFitments: (id: string, fitments: Array<{ make: string; model: string; yearFrom: number | null; yearTo: number | null }>) =>
     call<{ fitments: Fitment[] }>(`/store/products/${id}/fitments`, json('PUT', { fitments })).then((d) => d.fitments),
 
+  /** Draft description by AI (gpt-4o-mini) from the first photo, name, niche and options. Nothing is saved. */
+  describeProduct: (b: { imageUrl: string; name: string; niche: StoreProfile; options: OptionDef[]; lang: string }) =>
+    call<{ description: string }>('/store/products/describe', json('POST', b)).then((d) => d.description),
+
   activation: () => call<{ activation: Activation }>('/store/activation').then((d) => d.activation),
   requestActivation: () => call<{ activation: Activation }>('/store/activation', { method: 'POST' }).then((d) => d.activation),
 }
@@ -124,63 +133,146 @@ export async function compressImage(file: File): Promise<Blob> {
   } finally { URL.revokeObjectURL(url) }
 }
 
-// ─── Public links (store at /s/<slug>, served by the Sellio storefront) ──────
+// ─── Public links ────────────────────────────────────────────────────────────
+// NEXT_PUBLIC_STORE_BASE_URL is the short public address of the stores, never the dashboard's
+// or Vercel's host: "https://{slug}.sellio.ma" (sub-domain) or "https://sellio.ma" (→ /<slug>).
+// Not set yet → the current origin and /s/<slug> (served by the Sellio storefront).
 
+const STORE_BASE = (process.env.NEXT_PUBLIC_STORE_BASE_URL ?? '').trim().replace(/\/+$/, '')
 const origin = () => (typeof window !== 'undefined' ? window.location.origin : '')
-export const storeUrl = (slug: string) => `${origin()}/s/${slug}`
-/** One link per product, for WhatsApp quick replies and ads. */
-export const productUrl = (storeSlug: string, productSlug: string) => `${origin()}/s/${storeSlug}/products/${productSlug}`
 
-// ─── Presets ─────────────────────────────────────────────────────────────────
-// A profile only pre-fills choices (site type, option chips, filters, sections): the merchant
-// can change everything. Filters are stored as `filter_*` keys of store.sections.
+/** Store link for a base: {slug} template, plain base (→ /<slug>), or origin + /s/<slug>. */
+export function storeUrlFor(base: string, slug: string, fallbackOrigin: string): string {
+  if (!base) return `${fallbackOrigin}/s/${slug}`
+  return base.includes('{slug}') ? base.replace('{slug}', slug) : `${base}/${slug}`
+}
+export const storeUrl = (slug: string) => storeUrlFor(STORE_BASE, slug, origin())
+/** One link per product, for WhatsApp quick replies and ads. */
+export const productUrl = (storeSlug: string, productSlug: string) => `${storeUrl(storeSlug)}/products/${productSlug}`
+/** What is around the slug in the address, for the "Adresse de la boutique" field (no https://). */
+export function storeUrlParts(): { before: string; after: string } {
+  const marker = 'SLUGMARK'
+  const [before = '', after = ''] = storeUrl(marker).replace(/^https?:\/\//, '').split(marker)
+  return { before, after }
+}
+
+// ─── Presets (one per niche) ─────────────────────────────────────────────────
+// A niche decides which sections, filters and product fields the merchant sees (and which are
+// on at first); the merchant still turns each one on or off. Filters are stored as `filter_*`
+// keys of store.sections.
 
 export interface OptionPreset { name: string; values: string[] }
 export interface ProfilePreset {
   id: StoreProfile; label: string; hint: string; emoji: string; siteType: SiteType
-  options: OptionPreset[]; sections: string[]; filters: string[]
+  /** Card photo of step 1 (public/store-niches/<id>.webp); a coloured card if the file is missing. */
+  photo: string; tint: string
+  options: OptionPreset[]
+  /** Sections this niche can show, and the ones on at first. */
+  sections: string[]; defaultOff?: string[]
+  filters: string[]
+  /** Product fields: colour swatches on the colour chips, compatible vehicles. */
+  fields: { colorSwatches: boolean; vehicles: boolean }
+  /** Categories suggested at the categories step (ticked, renamable). */
+  categories: string[]
 }
+
+/** The general sections every store can have (and the only ones of « Autre »). */
+export const GENERAL_SECTIONS = ['hero', 'categories', 'featured', 'banners', 'trust', 'faq', 'footer']
+const STORE = (...extra: string[]) => [...GENERAL_SECTIONS.slice(0, 3), ...extra, ...GENERAL_SECTIONS.slice(3), 'delivery', 'whatsapp_button']
+
+const COLORS_CLOTHES = ['Noir', 'Blanc', 'Gris', 'Beige', 'Marron', 'Bleu', 'Rouge', 'Vert', 'Rose']
+const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+const photo = (id: string) => `/store-niches/${id}.webp`
 
 export const PROFILES: ProfilePreset[] = [
   {
-    id: 'mono', label: 'Un seul produit', hint: 'Un produit gagnant, une page qui vend', emoji: '🎯', siteType: 'landing',
-    options: [{ name: 'Couleur', values: ['Noir', 'Blanc', 'Gris', 'Bleu', 'Rose'] }],
-    sections: ['hero', 'benefits', 'gallery', 'how_it_works', 'faq', 'delivery', 'whatsapp_button'], filters: [],
+    id: 'streetwear', label: 'Streetwear', hint: 'Hoodies, t-shirts, sneakers', emoji: '🧢', siteType: 'boutique', photo: photo('streetwear'), tint: '#1f2937',
+    options: [{ name: 'Taille', values: SIZES }, { name: 'Pointure', values: ['38', '39', '40', '41', '42', '43', '44', '45'] }, { name: 'Couleur', values: COLORS_CLOTHES }],
+    sections: STORE('new_arrivals', 'size_guide'), filters: ['filter_size', 'filter_color', 'filter_price'],
+    fields: { colorSwatches: true, vehicles: false }, categories: ['Hoodies', 'T-shirts', 'Pantalons', 'Sneakers', 'Accessoires'],
   },
   {
-    id: 'parfums', label: 'Parfums', hint: 'Contenances, familles olfactives, homme / femme', emoji: '🌸', siteType: 'boutique',
+    id: 'mode', label: 'Mode', hint: 'Vêtements et chaussures, homme et femme', emoji: '👗', siteType: 'boutique', photo: photo('mode'), tint: '#9d174d',
+    options: [{ name: 'Taille', values: SIZES }, { name: 'Pointure', values: ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'] }, { name: 'Couleur', values: COLORS_CLOTHES }],
+    sections: STORE('new_arrivals', 'size_guide'), filters: ['filter_size', 'filter_color', 'filter_gender', 'filter_price'],
+    fields: { colorSwatches: true, vehicles: false }, categories: ['Femme', 'Homme', 'Chaussures', 'Sacs', 'Accessoires'],
+  },
+  {
+    id: 'modeste', label: 'Mode modeste', hint: 'Abayas, djellabas, kaftans', emoji: '🧕', siteType: 'boutique', photo: photo('modeste'), tint: '#6b4f3a',
+    options: [{ name: 'Taille', values: ['S', 'M', 'L', 'XL', 'XXL', 'Taille unique'] }, { name: 'Longueur', values: ['52', '54', '56', '58', '60'] }, { name: 'Couleur', values: COLORS_CLOTHES }],
+    sections: STORE('new_arrivals', 'size_guide'), filters: ['filter_size', 'filter_color', 'filter_price'],
+    fields: { colorSwatches: true, vehicles: false }, categories: ['Abayas', 'Djellabas', 'Kaftans', 'Hijabs', 'Ensembles'],
+  },
+  {
+    id: 'parfums', label: 'Parfums', hint: 'Contenances, homme / femme, décants', emoji: '🌸', siteType: 'boutique', photo: photo('parfums'), tint: '#7c3aed',
     options: [
-      { name: 'Contenance', values: ['10 ml', '30 ml', '50 ml', '100 ml'] },
+      { name: 'Contenance', values: ['5 ml', '10 ml', '30 ml', '50 ml', '100 ml'] },
       { name: 'Type', values: ['Eau de parfum', 'Eau de toilette', 'Huile parfumée', 'Musc'] },
     ],
-    sections: ['hero', 'categories', 'featured', 'new_arrivals', 'delivery', 'faq', 'whatsapp_button'],
-    filters: ['filter_gender', 'filter_family', 'filter_price'],
+    sections: STORE('new_arrivals'), filters: ['filter_gender', 'filter_family', 'filter_price'],
+    fields: { colorSwatches: false, vehicles: false }, categories: ['Homme', 'Femme', 'Décants', 'Coffrets'],
   },
   {
-    id: 'mode', label: 'Mode et chaussures', hint: 'Tailles, pointures, couleurs', emoji: '👟', siteType: 'boutique',
+    id: 'beaute', label: 'Beauté et skincare', hint: 'Soins visage, corps, cheveux', emoji: '🧴', siteType: 'boutique', photo: photo('beaute'), tint: '#db2777',
     options: [
-      { name: 'Taille', values: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
-      { name: 'Pointure', values: ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'] },
-      { name: 'Couleur', values: ['Noir', 'Blanc', 'Beige', 'Marron', 'Bleu', 'Rouge', 'Vert'] },
+      { name: 'Contenance', values: ['30 ml', '50 ml', '100 ml', '200 ml', '500 ml'] },
+      { name: 'Type de peau', values: ['Tous types', 'Normale', 'Sèche', 'Grasse', 'Mixte', 'Sensible'] },
     ],
-    sections: ['hero', 'categories', 'featured', 'new_arrivals', 'size_guide', 'delivery', 'whatsapp_button'],
-    filters: ['filter_size', 'filter_color', 'filter_price'],
+    sections: STORE('benefits', 'how_to_use'), filters: ['filter_price'],
+    fields: { colorSwatches: false, vehicles: false }, categories: ['Visage', 'Corps', 'Cheveux', 'Maquillage', 'Coffrets'],
   },
   {
-    id: 'auto', label: 'Pièces auto', hint: 'Recherche par marque, modèle et année', emoji: '🚗', siteType: 'boutique',
+    id: 'beldi', label: 'Naturel et beldi', hint: 'Huiles, savon beldi, miel, amlou', emoji: '🌿', siteType: 'boutique', photo: photo('beldi'), tint: '#4d7c0f',
+    options: [{ name: 'Format', values: ['100 g', '250 g', '500 g', '1 kg', '100 ml', '250 ml', '500 ml', '1 L'] }],
+    sections: STORE('benefits', 'how_to_use'), filters: ['filter_price'],
+    fields: { colorSwatches: false, vehicles: false }, categories: ['Huiles', 'Savon et ghassoul', 'Miel et amlou', 'Épices', 'Plantes'],
+  },
+  {
+    id: 'bijoux', label: 'Montres et bijoux', hint: 'Montres, bagues, colliers, bracelets', emoji: '⌚', siteType: 'boutique', photo: photo('bijoux'), tint: '#a16207',
+    options: [{ name: 'Taille de bague', values: ['50', '52', '54', '56', '58', '60', '62'] }, { name: 'Finition', values: ['Doré', 'Argenté', 'Rosé', 'Noir'] }],
+    sections: STORE('new_arrivals'), filters: ['filter_gender', 'filter_price'],
+    fields: { colorSwatches: false, vehicles: false }, categories: ['Montres', 'Bagues', 'Colliers', 'Bracelets', 'Boucles d’oreilles'],
+  },
+  {
+    id: 'maison', label: 'Maison et cuisine', hint: 'Cuisine, déco, rangement', emoji: '🏠', siteType: 'boutique', photo: photo('maison'), tint: '#0f766e',
+    options: [{ name: 'Taille', values: ['Petit', 'Moyen', 'Grand'] }, { name: 'Couleur', values: ['Noir', 'Blanc', 'Gris', 'Beige', 'Bois', 'Doré'] }],
+    sections: STORE('new_arrivals', 'benefits'), filters: ['filter_color', 'filter_price'],
+    fields: { colorSwatches: true, vehicles: false }, categories: ['Cuisine', 'Décoration', 'Rangement', 'Linge de maison'],
+  },
+  {
+    id: 'enfants', label: 'Bébé et enfants', hint: 'Vêtements par âge, jouets, puériculture', emoji: '🧸', siteType: 'boutique', photo: photo('enfants'), tint: '#0284c7',
     options: [
-      { name: 'Position', values: ['Avant', 'Arrière', 'Gauche', 'Droite'] },
-      { name: 'État', values: ['Neuf', 'Occasion'] },
+      { name: 'Âge', values: ['0-3 mois', '3-6 mois', '6-12 mois', '1-2 ans', '2-3 ans', '3-4 ans', '4-6 ans', '6-8 ans'] },
+      { name: 'Couleur', values: ['Blanc', 'Rose', 'Bleu', 'Jaune', 'Vert', 'Gris'] },
     ],
-    sections: ['hero', 'vehicle_search', 'categories', 'featured', 'delivery', 'whatsapp_button'],
-    filters: ['filter_vehicle', 'filter_brand', 'filter_price'],
+    sections: STORE('new_arrivals', 'size_guide'), filters: ['filter_size', 'filter_color', 'filter_price'],
+    fields: { colorSwatches: true, vehicles: false }, categories: ['Bébé', 'Fille', 'Garçon', 'Jouets', 'Puériculture'],
   },
   {
-    id: 'autre', label: 'Autre chose', hint: 'Vous choisissez tout vous-même', emoji: '🛍️', siteType: 'both',
-    options: [], sections: ['hero', 'categories', 'featured', 'delivery', 'whatsapp_button'], filters: ['filter_price'],
+    id: 'gadgets', label: 'Gadgets et électronique', hint: 'Accessoires téléphone, audio, maison connectée', emoji: '🎧', siteType: 'boutique', photo: photo('gadgets'), tint: '#1652f0',
+    options: [{ name: 'Couleur', values: ['Noir', 'Blanc', 'Gris', 'Bleu', 'Rose'] }, { name: 'Modèle', values: ['iPhone', 'Samsung', 'Xiaomi', 'Universel'] }],
+    sections: STORE('benefits', 'how_it_works'), filters: ['filter_color', 'filter_brand', 'filter_price'],
+    fields: { colorSwatches: true, vehicles: false }, categories: ['Téléphone et accessoires', 'Audio', 'Montres connectées', 'Maison connectée'],
+  },
+  {
+    id: 'auto', label: 'Pièces auto', hint: 'Recherche par marque, modèle et année', emoji: '🚗', siteType: 'boutique', photo: photo('auto'), tint: '#b91c1c',
+    options: [{ name: 'Position', values: ['Avant', 'Arrière', 'Gauche', 'Droite'] }, { name: 'État', values: ['Neuf', 'Occasion'] }],
+    sections: STORE('vehicle_search'), filters: ['filter_vehicle', 'filter_brand', 'filter_price'],
+    fields: { colorSwatches: false, vehicles: true }, categories: ['Freinage', 'Moteur', 'Éclairage', 'Carrosserie', 'Accessoires'],
+  },
+  {
+    id: 'mono', label: 'Mono-produit (landing)', hint: 'Un produit gagnant, une page qui vend', emoji: '🎯', siteType: 'landing', photo: photo('mono'), tint: '#ea580c',
+    options: [{ name: 'Couleur', values: ['Noir', 'Blanc', 'Gris', 'Bleu', 'Rose'] }],
+    sections: ['hero', 'benefits', 'gallery', 'how_it_works', 'trust', 'faq', 'delivery', 'whatsapp_button', 'footer'], filters: [],
+    fields: { colorSwatches: true, vehicles: false }, categories: [],
+  },
+  {
+    id: 'autre', label: 'Autre', hint: 'Sections et champs généraux, à vous de compléter', emoji: '🛍️', siteType: 'boutique', photo: photo('autre'), tint: '#475569',
+    options: [], sections: GENERAL_SECTIONS, filters: ['filter_price'],
+    fields: { colorSwatches: false, vehicles: false }, categories: [],
   },
 ]
-export const profileOf = (id: StoreProfile | null | undefined) => PROFILES.find((p) => p.id === id) ?? PROFILES[4]
+export const profileOf = (id: StoreProfile | null | undefined) => PROFILES.find((p) => p.id === id) ?? PROFILES[PROFILES.length - 1]
 
 export const SITE_TYPES: Array<{ id: SiteType; label: string; hint: string }> = [
   { id: 'landing', label: 'Landing page', hint: 'Une page pour un produit, idéale pour la pub' },
@@ -220,12 +312,16 @@ export const SECTIONS: Array<{ id: string; label: string; hint: string }> = [
   { id: 'how_it_works', label: 'Comment ça marche', hint: 'Commande, confirmation WhatsApp, livraison' },
   { id: 'vehicle_search', label: 'Recherche par véhicule', hint: 'Marque, modèle, année' },
   { id: 'categories', label: 'Catégories', hint: 'Vos catégories en vignettes' },
-  { id: 'featured', label: 'Produits vedettes', hint: 'Une sélection en haut de page' },
+  { id: 'featured', label: 'Meilleures ventes', hint: 'Vos produits les plus vendus en haut de page' },
   { id: 'new_arrivals', label: 'Nouveautés', hint: 'Les derniers produits ajoutés' },
   { id: 'size_guide', label: 'Guide des tailles', hint: 'Aide le client à choisir sa taille' },
+  { id: 'how_to_use', label: 'Conseils d’utilisation', hint: 'Comment utiliser le produit' },
+  { id: 'banners', label: 'Bannières', hint: 'Images promo entre les sections' },
+  { id: 'trust', label: 'Confiance', hint: 'Paiement à la livraison, confirmation WhatsApp' },
   { id: 'faq', label: 'Questions fréquentes', hint: 'Livraison, paiement, retours' },
   { id: 'delivery', label: 'Livraison et retours', hint: 'Vos textes de livraison et de retour' },
   { id: 'whatsapp_button', label: 'Bouton WhatsApp', hint: 'Le client vous écrit en un clic' },
+  { id: 'footer', label: 'Pied de page', hint: 'Nom, ville, contact et liens' },
 ]
 export const FILTERS: Array<{ id: string; label: string }> = [
   { id: 'filter_price', label: 'Prix' },
@@ -236,13 +332,29 @@ export const FILTERS: Array<{ id: string; label: string }> = [
   { id: 'filter_vehicle', label: 'Véhicule compatible' },
   { id: 'filter_brand', label: 'Marque' },
 ]
+/** Sections the Sections step shows for this niche (landing pages have no catalogue sections). */
+export function sectionsFor(profile: StoreProfile, siteType: SiteType) {
+  const allowed = new Set(profileOf(profile).sections)
+  const catalogue = ['categories', 'featured', 'new_arrivals', 'vehicle_search', 'banners']
+  return SECTIONS.filter((s) => allowed.has(s.id) && (siteType !== 'landing' || !catalogue.includes(s.id)))
+}
+export const filtersFor = (profile: StoreProfile) => FILTERS.filter((f) => profileOf(profile).filters.includes(f.id))
 
-/** Sections + filters a profile turns on (every known key is written, so the store keeps the merchant's "off"). */
+/** Sections + filters a niche turns on (every known key is written, so the store keeps the merchant's "off"). */
 export function presetSections(profile: StoreProfile): Record<string, boolean> {
   const p = profileOf(profile)
-  const on = new Set([...p.sections, ...p.filters])
+  const on = new Set([...p.sections.filter((k) => !p.defaultOff?.includes(k)), ...p.filters])
   return Object.fromEntries([...SECTIONS.map((s) => s.id), ...FILTERS.map((f) => f.id)].map((k) => [k, on.has(k)]))
 }
+
+/** Swatch colour of a colour option value ("Noir" → #111). Unknown names: no swatch. */
+export const SWATCHES: Record<string, string> = {
+  noir: '#111111', blanc: '#ffffff', gris: '#9ca3af', beige: '#e8d9bd', marron: '#7c4a2d', bleu: '#2563eb', rouge: '#dc2626',
+  vert: '#16a34a', rose: '#f472b6', jaune: '#facc15', orange: '#f97316', violet: '#7c3aed', bois: '#a47148', 'doré': '#d4a017',
+  'argenté': '#c0c0c0', bordeaux: '#7f1d1d', kaki: '#6b7041', marine: '#1e3a8a', camel: '#c19a6b', ecru: '#f3efe0', 'écru': '#f3efe0',
+}
+export const isColorOption = (name: string) => /^(couleur|coloris|color|colour|اللون|لون)$/i.test(name.trim())
+export const swatchOf = (value: string) => SWATCHES[value.trim().toLowerCase()] ?? null
 
 /** Every combination of the chosen option values (same order as the API's combinations()). */
 export function combinations(defs: OptionDef[]): Array<Record<string, string>> {

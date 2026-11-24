@@ -1,33 +1,34 @@
 'use client'
 // "Ma boutique": the store builder wizard with a live phone preview.
-//   1 Que vendez-vous ? → 2 Type de site → 3 Thème → 4 Couleurs → 5 Marque et infos → 6 Produits
-//   → 7 Sections → 8 Messages automatiques → Activer
+//   1 Que vendez-vous ? → 2 Type de site → 3 Thème → 4 Couleurs → 5 Marque et infos → 6 Catégories
+//   → 7 Produits (each one in a category) → 8 Sections → 9 Messages automatiques → Activer
 // Each "Suivant" saves the step to the API (the store is created at the end of step 1).
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import {
-  ArrowLeft, ArrowRight, Check, ExternalLink, Eye, ImagePlus, Loader2, Package, Pencil, Rocket, Trash2, X,
+  ArrowLeft, ArrowRight, Check, ExternalLink, Eye, ImagePlus, Loader2, Package, Pencil, Plus, Rocket, Trash2, X,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import {
-  COLOR_LABELS, FILTERS, FONTS, FONTS_HREF, PALETTES, PROFILES, SECTIONS, SITE_TYPES, STATUS_LABEL, THEMES,
-  presetSections, profileOf, storeApi, storeUrl,
+  COLOR_LABELS, FONTS, FONTS_HREF, PALETTES, PROFILES, SITE_TYPES, STATUS_LABEL, THEMES,
+  filtersFor, presetSections, profileOf, sectionsFor, storeApi, storeUrl, storeUrlParts, type ProfilePreset,
   type Category, type ColorKey, type Colors, type Product, type SiteType, type Store, type StoreProfile, type StoreStatus, type ThemeId,
 } from '@/lib/store-api'
 import { tx } from '@/lib/i18n'
 import PhonePreview, { type PreviewData } from './PhonePreview'
 import ProductEditor from './ProductEditor'
-import CategoriesEditor from './CategoriesEditor'
+import CategoriesStep from './CategoriesStep'
 import MessagesStep from './MessagesStep'
 import ActivateStep from './ActivateStep'
 import { btn, card, choice, h2, input, label, muted } from './ui'
 
 const STEPS = [
-  'Que vendez-vous ?', 'Type de site', 'Thème', 'Couleurs', 'Marque et infos', 'Produits', 'Sections', 'Messages automatiques',
+  'Que vendez-vous ?', 'Type de site', 'Thème', 'Couleurs', 'Marque et infos', 'Catégories', 'Produits', 'Sections', 'Messages automatiques',
 ] as const
-const ACTIVATE = STEPS.length // the last screen, after the 8 steps
-const STEP_KEY = 'sellio-store-step'
+const CATEGORIES = 5, PRODUCTS = 6, SECTIONS_STEP = 7, MESSAGES = 8
+const ACTIVATE = STEPS.length // the last screen, after the 9 steps
+const STEP_KEY = 'sellio-store-step-v2' // v2: Catégories became its own step (before Produits)
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/
 
 interface Draft extends PreviewData { profile: StoreProfile; slug: string }
@@ -55,7 +56,8 @@ export default function StoreWizard() {
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
-  const [editing, setEditing] = useState<string | 'new' | null>(null)
+  /** Product being edited: an id, or a new product in a category ('' = landing page, no category). */
+  const [editing, setEditing] = useState<{ id: string | null; categoryId: string } | null>(null)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const logoRef = useRef<HTMLInputElement>(null)
 
@@ -76,7 +78,7 @@ export default function StoreWizard() {
           setProducts(p); setCategories(c)
           let saved = NaN
           try { saved = Number(localStorage.getItem(STEP_KEY)) } catch {}
-          setStep(Number.isInteger(saved) && saved >= 0 && saved <= ACTIVATE ? saved : 5)
+          setStep(Number.isInteger(saved) && saved >= 0 && saved <= ACTIVATE ? saved : c.length || s.site_type === 'landing' ? PRODUCTS : CATEGORIES)
         }
       } catch (e) { toast.error((e as Error).message) }
       finally { setLoading(false) }
@@ -94,8 +96,16 @@ export default function StoreWizard() {
     set({ profile: p, siteType: pre.siteType, sections: presetSections(p) })
   }
 
+  const needsCategories = d.siteType !== 'landing'
+
   /** Save what the current step changed, then go to `to`. */
   async function saveAndGo(to: number) {
+    // Products always go in a category: categories first (except a landing page).
+    // The current step is still saved, then the merchant lands on Catégories.
+    if (to >= PRODUCTS && step <= CATEGORIES && store && needsCategories && categories.length === 0) {
+      toast.error(tx('Créez d’abord au moins une catégorie'))
+      to = CATEGORIES
+    }
     setSaving(true)
     try {
       let s = store
@@ -116,13 +126,18 @@ export default function StoreWizard() {
           city: d.city.trim() || null, deliveryText: d.deliveryText.trim() || null, returnText: d.returnText.trim() || null,
         })
         setD((x) => ({ ...x, whatsapp: s!.whatsapp ?? '', slug: s!.slug }))
-      } else if (step === 6) s = await storeApi.update({ sections: d.sections })
+      } else if (step === SECTIONS_STEP) s = await storeApi.update({ sections: d.sections })
       setStore(s)
       setEditing(null)
       setStep(to)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (e) { toast.error((e as Error).message) }
     finally { setSaving(false) }
+  }
+
+  async function removeProduct(p: Product) {
+    if (!confirm(tx('Retirer « {0} » de la boutique ?', [p.name]))) return
+    try { await storeApi.archiveProduct(p.id); setProducts((x) => x.filter((y) => y.id !== p.id)) } catch (e) { toast.error((e as Error).message) }
   }
 
   async function uploadLogo(f: File | undefined) {
@@ -135,22 +150,21 @@ export default function StoreWizard() {
 
   const preview = useMemo(() => <PhonePreview d={d} products={products.filter((p) => p.status === 'active')} categories={categories} />, [d, products, categories])
 
+  const urlParts = storeUrlParts()
+  const tops = categories.filter((c) => !c.parent_id).sort((a, b) => a.position - b.position)
+  const childrenOf = (id: string) => categories.filter((c) => c.parent_id === id).sort((a, b) => a.position - b.position)
+  const known = new Set(categories.map((c) => c.id))
+
   if (loading) return <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)' }}>{tx('Chargement...')}</div>
 
   const stepBody = (() => {
     switch (step) {
       case 0: return (
-        <Section title={tx('Que vendez-vous ?')} hint={tx('Nous préparons les options, les filtres et les sections qui vont avec. Vous pourrez tout changer.')}>
-          <div style={grid}>
-            {PROFILES.map((p) => (
-              <button key={p.id} type="button" onClick={() => pickProfile(p.id)} style={choice(d.profile === p.id)} aria-pressed={d.profile === p.id}>
-                <div style={{ fontSize: 22 }}>{p.emoji}</div>
-                <div style={{ fontWeight: 700, fontSize: 14, marginTop: 4 }}>{tx(p.label)}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{tx(p.hint)}</div>
-              </button>
-            ))}
+        <Section title={tx('Que vendez-vous ?')} hint={tx('Nous préparons les sections, les filtres et les champs produit de votre niche. Vous pourrez tout changer.')}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(auto-fill, minmax(170px, 1fr))', gap: 10 }}>
+            {PROFILES.map((p) => <NicheCard key={p.id} p={p} on={d.profile === p.id} onPick={() => pickProfile(p.id)} />)}
           </div>
-          {store && store.profile !== d.profile && <p style={{ ...muted, fontSize: 12, marginTop: 10, color: 'var(--warning)' }}>{tx('Changer de profil remet le type de site et les sections proposés pour ce profil.')}</p>}
+          {store && store.profile !== d.profile && <p style={{ ...muted, fontSize: 12, marginTop: 10, color: 'var(--warning)' }}>{tx('Changer de niche remet le type de site et les sections proposés pour cette niche.')}</p>}
         </Section>
       )
       case 1: return (
@@ -227,8 +241,9 @@ export default function StoreWizard() {
             <div>
               <span style={label}>{tx('Adresse de la boutique')}</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} dir="ltr">
-                <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>/s/</span>
+                {urlParts.before && <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>{urlParts.before}</span>}
                 <input value={d.slug} disabled={status === 'online'} onChange={(e) => set({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40) })} style={input} />
+                {urlParts.after && <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{urlParts.after}</span>}
               </div>
               {status === 'online' && <p style={{ ...muted, fontSize: 11, marginTop: 4 }}>{tx('L’adresse d’une boutique en ligne ne peut plus changer')}</p>}
             </div>
@@ -266,64 +281,74 @@ export default function StoreWizard() {
           </div>
         </Section>
       )
-      case 5: return (
-        <Section title={tx('Produits')} hint={tx('Ajoutez vos produits avec leurs options, prix et stock.')}>
+      case CATEGORIES: return <CategoriesStep profile={d.profile} siteType={d.siteType} categories={categories} onChange={setCategories} />
+      case PRODUCTS: return (
+        <Section title={tx('Produits')} hint={needsCategories ? tx('Ajoutez vos produits dans leurs catégories, avec leurs options, prix et stock.') : tx('Ajoutez votre produit avec ses options, prix et stock.')}>
           {editing ? (
-            <ProductEditor key={editing} productId={editing === 'new' ? null : editing} profile={d.profile} categories={categories}
+            <ProductEditor key={editing.id ?? `new:${editing.categoryId}`} productId={editing.id} initialCategoryId={editing.categoryId}
+              profile={d.profile} categories={categories} requireCategory={needsCategories}
               onClose={() => setEditing(null)}
               onSaved={async () => { setEditing(null); try { setProducts(await storeApi.products()) } catch {} }} />
-          ) : (
+          ) : !needsCategories ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {products.map((p) => {
-                const vs = p.store_variants ?? []
-                const stock = vs.reduce((n, v) => n + (Number(v.stock) || 0), 0)
+              {products.map((p) => <ProductRow key={p.id} p={p} onEdit={() => setEditing({ id: p.id, categoryId: p.category_id ?? '' })} onRemove={() => removeProduct(p)} />)}
+              {products.length === 0 && <p style={muted}>{tx('Aucun produit pour l’instant.')}</p>}
+              <div><button type="button" onClick={() => setEditing({ id: null, categoryId: '' })} style={btn('primary')}>+ {tx('Ajouter un produit')}</button></div>
+            </div>
+          ) : categories.length === 0 ? (
+            <div>
+              <p style={muted}>{tx('Créez d’abord au moins une catégorie : chaque produit est rangé dans une catégorie.')}</p>
+              <button type="button" onClick={() => setStep(CATEGORIES)} style={{ ...btn('primary'), marginTop: 10 }}>{tx('Créer mes catégories')}</button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {tops.flatMap((t) => [t, ...childrenOf(t.id)]).map((cat) => {
+                const list = products.filter((p) => p.category_id === cat.id)
                 return (
-                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg)' }}>
-                    {p.images?.[0] ? <img src={p.images[0]} alt="" style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'cover' }} />
-                      : <div style={{ width: 48, height: 48, borderRadius: 10, background: 'var(--border)', display: 'grid', placeItems: 'center', color: 'var(--text-muted)' }}><Package size={18} /></div>}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{p.name}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                        {tx('{0} DH · {1} variantes · stock {2}', [Math.round(p.price), vs.length, stock])}
-                        {vs.length === 0 && <span style={{ color: 'var(--warning)' }}> · {tx('aucune variante : pas encore commandable')}</span>}
-                      </div>
+                  <div key={cat.id} style={{ marginInlineStart: cat.parent_id ? 18 : 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                      <strong style={{ fontSize: cat.parent_id ? 13 : 14, color: 'var(--text)' }}>{cat.name} <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>({list.length})</span></strong>
+                      <button type="button" onClick={() => setEditing({ id: null, categoryId: cat.id })} style={{ ...btn('ghost'), padding: '6px 10px' }}>
+                        <Plus size={13} /> {tx('Ajouter un produit')}
+                      </button>
                     </div>
-                    <button type="button" onClick={() => setEditing(p.id)} style={btn('ghost')} aria-label={tx('Modifier')}><Pencil size={14} /></button>
-                    <button type="button" style={btn('danger')} aria-label={tx('Retirer')} onClick={async () => {
-                      if (!confirm(tx('Retirer « {0} » de la boutique ?', [p.name]))) return
-                      try { await storeApi.archiveProduct(p.id); setProducts((x) => x.filter((y) => y.id !== p.id)) } catch (e) { toast.error((e as Error).message) }
-                    }}><Trash2 size={14} /></button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {list.map((p) => <ProductRow key={p.id} p={p} onEdit={() => setEditing({ id: p.id, categoryId: cat.id })} onRemove={() => removeProduct(p)} />)}
+                      {list.length === 0 && <p style={{ ...muted, fontSize: 12 }}>{tx('Aucun produit dans cette catégorie.')}</p>}
+                    </div>
                   </div>
                 )
               })}
-              {products.length === 0 && <p style={muted}>{tx('Aucun produit pour l’instant.')}</p>}
-              <div><button type="button" onClick={() => setEditing('new')} style={btn('primary')}>+ {tx('Ajouter un produit')}</button></div>
-              {d.siteType !== 'landing' && (
-                <div style={{ marginTop: 18 }}>
-                  <strong style={{ fontSize: 14, color: 'var(--text)' }}>{tx('Catégories')}</strong>
-                  <div style={{ marginTop: 8 }}><CategoriesEditor categories={categories} onChange={setCategories} /></div>
+              {products.some((p) => !p.category_id || !known.has(p.category_id)) && (
+                <div>
+                  <strong style={{ fontSize: 14, color: 'var(--warning)' }}>{tx('À ranger dans une catégorie')}</strong>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+                    {products.filter((p) => !p.category_id || !known.has(p.category_id)).map((p) => (
+                      <ProductRow key={p.id} p={p} onEdit={() => setEditing({ id: p.id, categoryId: '' })} onRemove={() => removeProduct(p)} />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
           )}
         </Section>
       )
-      case 6: return (
-        <Section title={tx('Sections')} hint={tx('Choisissez ce qui s’affiche sur la boutique. Le profil a déjà coché l’essentiel.')}>
+      case SECTIONS_STEP: return (
+        <Section title={tx('Sections')} hint={tx('Les sections de votre niche. Choisissez ce qui s’affiche sur la boutique : l’essentiel est déjà coché.')}>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 8 }}>
-            {SECTIONS.filter((s) => d.siteType !== 'landing' || !['categories', 'featured', 'new_arrivals', 'vehicle_search'].includes(s.id)).map((s) => (
+            {sectionsFor(d.profile, d.siteType).map((s) => (
               <Toggle key={s.id} on={!!d.sections[s.id]} title={tx(s.label)} hint={tx(s.hint)} onChange={(v) => set({ sections: { ...d.sections, [s.id]: v } })} />
             ))}
           </div>
-          {d.siteType !== 'landing' && (<>
+          {d.siteType !== 'landing' && filtersFor(d.profile).length > 0 && (<>
             <span style={{ ...label, marginTop: 16 }}>{tx('Filtres du catalogue')}</span>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 8 }}>
-              {FILTERS.map((f) => <Toggle key={f.id} on={!!d.sections[f.id]} title={tx(f.label)} onChange={(v) => set({ sections: { ...d.sections, [f.id]: v } })} />)}
+              {filtersFor(d.profile).map((f) => <Toggle key={f.id} on={!!d.sections[f.id]} title={tx(f.label)} onChange={(v) => set({ sections: { ...d.sections, [f.id]: v } })} />)}
             </div>
           </>)}
         </Section>
       )
-      case 7: return <MessagesStep storeName={d.name} slug={d.slug} products={products.filter((p) => p.status === 'active')} />
+      case MESSAGES: return <MessagesStep storeName={d.name} slug={d.slug} products={products.filter((p) => p.status === 'active')} />
       default: return <ActivateStep slug={d.slug} activeProducts={activeProducts} onStatus={(st) => setStore((s) => (s && s.status !== st ? { ...s, status: st } : s))} />
     }
   })()
@@ -395,6 +420,45 @@ export default function StoreWizard() {
 }
 
 const grid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }
+
+/** Step 1 card: the niche photo (public/store-niches/<id>.webp), or its colour + emoji until the photo is there. */
+function NicheCard({ p, on, onPick }: { p: ProfilePreset; on: boolean; onPick: () => void }) {
+  const [broken, setBroken] = useState(false)
+  return (
+    <button type="button" onClick={onPick} aria-pressed={on} style={{ ...choice(on), padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'relative', height: 96, width: '100%', background: `linear-gradient(135deg, ${p.tint}, color-mix(in srgb, ${p.tint} 55%, #ffffff))`, display: 'grid', placeItems: 'center' }}>
+        {!broken
+          ? <img src={p.photo} alt="" onError={() => setBroken(true)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <span style={{ fontSize: 34 }} aria-hidden>{p.emoji}</span>}
+        {on && <span style={{ position: 'absolute', top: 6, insetInlineEnd: 6, width: 22, height: 22, borderRadius: 999, background: 'var(--brand)', color: '#fff', display: 'grid', placeItems: 'center' }}><Check size={13} /></span>}
+      </div>
+      <div style={{ padding: '8px 10px 10px' }}>
+        <div style={{ fontWeight: 700, fontSize: 13.5 }}>{tx(p.label)}</div>
+        <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.35 }}>{tx(p.hint)}</div>
+      </div>
+    </button>
+  )
+}
+
+function ProductRow({ p, onEdit, onRemove }: { p: Product; onEdit: () => void; onRemove: () => void }) {
+  const vs = p.store_variants ?? []
+  const stock = vs.reduce((n, v) => n + (Number(v.stock) || 0), 0)
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg)' }}>
+      {p.images?.[0] ? <img src={p.images[0]} alt="" style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'cover' }} />
+        : <div style={{ width: 48, height: 48, borderRadius: 10, background: 'var(--border)', display: 'grid', placeItems: 'center', color: 'var(--text-muted)' }}><Package size={18} /></div>}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{p.name}</div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+          {tx('{0} DH · {1} variantes · stock {2}', [Math.round(p.price), vs.length, stock])}
+          {vs.length === 0 && <span style={{ color: 'var(--warning)' }}> · {tx('aucune variante : pas encore commandable')}</span>}
+        </div>
+      </div>
+      <button type="button" onClick={onEdit} style={btn('ghost')} aria-label={tx('Modifier')}><Pencil size={14} /></button>
+      <button type="button" style={btn('danger')} aria-label={tx('Retirer')} onClick={onRemove}><Trash2 size={14} /></button>
+    </div>
+  )
+}
 
 function Section({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
   return (

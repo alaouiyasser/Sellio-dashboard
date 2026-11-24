@@ -2,6 +2,8 @@
 // "Messages automatiques": a welcome message in darija with the store link, where to paste it
 // (WhatsApp Business greeting + away message, Meta Business Suite instant reply) and one link
 // per product for quick replies. Nothing is sent by Sellio here: the merchant copies and pastes.
+// One video per platform (NEXT_PUBLIC_GUIDE_VIDEO_WHATSAPP / NEXT_PUBLIC_GUIDE_VIDEO_META:
+// YouTube link or .mp4/.webm file). No video configured → no video slot, the written steps show.
 import { useState } from 'react'
 import { productUrl, storeUrl, type Product } from '@/lib/store-api'
 import { tx } from '@/lib/i18n'
@@ -17,6 +19,37 @@ function away(script: 'latin' | 'arabic', link: string) {
   return script === 'latin'
     ? `Salam 👋 Chokran 3la l-message dyalek! Daba ma nqderch njaweb, ghadi nrj3 lik f a9rab wa9t.\nT9der tcommandi direct men hna: ${link}`
     : `السلام عليكم 👋 شكرا على الميساج ديالك! دابا ما نقدرش نجاوب، غادي نرجع ليك ف أقرب وقت.\nتقدر تكوموندي نيشان من هنا: ${link}`
+}
+
+/** Guide videos, set at build time (Vercel env). Empty = not recorded yet. */
+const GUIDE_VIDEOS = {
+  whatsapp: (process.env.NEXT_PUBLIC_GUIDE_VIDEO_WHATSAPP ?? '').trim(),
+  meta: (process.env.NEXT_PUBLIC_GUIDE_VIDEO_META ?? '').trim(),
+}
+
+/** YouTube (watch, youtu.be, shorts) → embed URL; a video file → null (played with <video>). */
+export function youtubeEmbed(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/)
+  return m ? `https://www.youtube-nocookie.com/embed/${m[1]}` : null
+}
+
+/** The platform's video when there is one (written steps folded below it), else the steps. */
+function Guide({ video, title, steps }: { video: string; title: string; steps: React.ReactNode }) {
+  if (!/^https:\/\//.test(video)) return <>{steps}</>
+  const embed = youtubeEmbed(video)
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div style={{ position: 'relative', width: '100%', maxWidth: 360, aspectRatio: embed ? '9 / 16' : undefined, borderRadius: 12, overflow: 'hidden', background: '#000' }}>
+        {embed
+          ? <iframe src={embed} title={title} allow="encrypted-media; picture-in-picture" allowFullScreen loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }} />
+          : <video src={video} controls playsInline preload="metadata" style={{ width: '100%', display: 'block' }} />}
+      </div>
+      <details style={{ marginTop: 8 }}>
+        <summary style={{ fontSize: 12.5, color: 'var(--text-muted)', cursor: 'pointer' }}>{tx('Voir les étapes écrites')}</summary>
+        {steps}
+      </details>
+    </div>
+  )
 }
 
 export default function MessagesStep({ storeName, slug, products }: { storeName: string; slug: string; products: Product[] }) {
@@ -44,19 +77,21 @@ export default function MessagesStep({ storeName, slug, products }: { storeName:
         <textarea value={welcomeText} onChange={(e) => setMsg(e.target.value)} rows={5} dir={script === 'arabic' ? 'rtl' : 'ltr'}
           style={{ ...input, resize: 'vertical', fontSize: 14, lineHeight: 1.5 }} />
         <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-          <CopyButton text={welcomeText} />
+          <CopyButton text={welcomeText} label={tx('Copier le message')} />
           <CopyButton text={link} label={tx('Copier le lien de la boutique')} />
         </div>
       </div>
 
       <div style={card}>
         <strong style={{ fontSize: 14, color: 'var(--text)' }}>{tx('WhatsApp Business')}</strong>
-        <ol style={ol}>
-          <li>{tx('Ouvrez WhatsApp Business → Paramètres → Outils professionnels.')}</li>
-          <li>{tx('Message de bienvenue : activez-le, collez le message ci-dessus, enregistrez.')}</li>
-          <li>{tx('Message d’absence : activez-le, choisissez « Toujours envoyer » ou « En dehors des heures d’ouverture », collez le message ci-dessous.')}</li>
-          <li>{tx('Réponses rapides : créez un raccourci par produit (ex : /parfum1) avec son lien, plus bas.')}</li>
-        </ol>
+        <Guide video={GUIDE_VIDEOS.whatsapp} title={tx('WhatsApp Business')} steps={
+          <ol style={ol}>
+            <li>{tx('Ouvrez WhatsApp Business → Paramètres → Outils professionnels.')}</li>
+            <li>{tx('Message de bienvenue : activez-le, collez le message ci-dessus, enregistrez.')}</li>
+            <li>{tx('Message d’absence : activez-le, choisissez « Toujours envoyer » ou « En dehors des heures d’ouverture », collez le message ci-dessous.')}</li>
+            <li>{tx('Réponses rapides : créez un raccourci par produit (ex : /parfum1) avec son lien, plus bas.')}</li>
+          </ol>
+        } />
         <div style={{ marginTop: 10 }}>
           <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>{tx('Message d’absence')}</span>
           <textarea readOnly value={awayText} rows={3} dir={script === 'arabic' ? 'rtl' : 'ltr'} style={{ ...input, marginTop: 6, resize: 'vertical' }} />
@@ -66,11 +101,14 @@ export default function MessagesStep({ storeName, slug, products }: { storeName:
 
       <div style={card}>
         <strong style={{ fontSize: 14, color: 'var(--text)' }}>{tx('Instagram et Messenger (Meta Business Suite)')}</strong>
-        <ol style={ol}>
-          <li>{tx('Ouvrez Meta Business Suite → Boîte de réception → Automatisations.')}</li>
-          <li>{tx('Choisissez « Réponse instantanée » et activez-la pour Instagram et Messenger.')}</li>
-          <li>{tx('Collez le message de bienvenue, puis enregistrez.')}</li>
-        </ol>
+        <Guide video={GUIDE_VIDEOS.meta} title={tx('Instagram et Messenger (Meta Business Suite)')} steps={
+          <ol style={ol}>
+            <li>{tx('Ouvrez Meta Business Suite → Boîte de réception → Automatisations.')}</li>
+            <li>{tx('Choisissez « Réponse instantanée » et activez-la pour Instagram et Messenger.')}</li>
+            <li>{tx('Collez le message de bienvenue, puis enregistrez.')}</li>
+          </ol>
+        } />
+        <div style={{ marginTop: 10 }}><CopyButton text={welcomeText} label={tx('Copier le message')} /></div>
       </div>
 
       <div style={card}>

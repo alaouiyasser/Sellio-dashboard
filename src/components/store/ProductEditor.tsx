@@ -1,14 +1,15 @@
 'use client'
-// One product: photos, price, options as chips (pre-filled by the store's profile), the table of
-// every combination (tick what you sell, price and stock per line, bulk fill), and for car parts
-// the compatible vehicles.
+// One product, always in a category (except on a landing page): photos, price, an AI draft of the
+// description from the first photo, options as chips pre-filled by the niche (colour swatches
+// for the niches that have colours), the table of every combination (tick what you sell, price
+// and stock per line, bulk fill), and for car parts only the compatible vehicles.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { ImagePlus, Loader2, Plus, Trash2, X } from 'lucide-react'
+import { ImagePlus, Loader2, Plus, Sparkles, Trash2, X } from 'lucide-react'
 import {
-  combinations, comboKey, profileOf, storeApi, type Category, type OptionDef, type Product, type StoreProfile,
+  combinations, comboKey, isColorOption, profileOf, storeApi, swatchOf, type Category, type OptionDef, type Product, type StoreProfile,
 } from '@/lib/store-api'
-import { tx } from '@/lib/i18n'
+import { tx, txLocale } from '@/lib/i18n'
 import { btn, card, chip, input, label, muted } from './ui'
 
 const MAX_OPTIONS = 3, MAX_VALUES = 30, MAX_VARIANTS = 200, MAX_IMAGES = 10, MAX_FITMENTS = 300
@@ -18,11 +19,12 @@ interface FitRow { make: string; model: string; yearFrom: string; yearTo: string
 
 const num = (s: string) => Number(String(s).replace(',', '.').trim())
 
-export default function ProductEditor({ productId, profile, categories, onSaved, onClose }: {
-  productId: string | null; profile: StoreProfile; categories: Category[]
+export default function ProductEditor({ productId, initialCategoryId = '', requireCategory = true, profile, categories, onSaved, onClose }: {
+  productId: string | null; initialCategoryId?: string; requireCategory?: boolean; profile: StoreProfile; categories: Category[]
   onSaved: (p: Product) => void; onClose: () => void
 }) {
   const preset = profileOf(profile)
+  const [describing, setDescribing] = useState(false)
   const [loading, setLoading] = useState(!!productId)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -33,7 +35,7 @@ export default function ProductEditor({ productId, profile, categories, onSaved,
   const [price, setPrice] = useState('')
   const [compareAt, setCompareAt] = useState('')
   const [images, setImages] = useState<string[]>([])
-  const [categoryId, setCategoryId] = useState<string>('')
+  const [categoryId, setCategoryId] = useState<string>(initialCategoryId)
   const [options, setOptions] = useState<OptionDef[]>([])
   const [rows, setRows] = useState<Record<string, Row>>({})
   const [bulkPrice, setBulkPrice] = useState('')
@@ -46,7 +48,7 @@ export default function ProductEditor({ productId, profile, categories, onSaved,
     if (!productId) return
     storeApi.product(productId).then((p) => {
       setName(p.name); setDescription(p.description ?? ''); setPrice(String(p.price ?? ''))
-      setCompareAt(p.compare_at_price ? String(p.compare_at_price) : ''); setImages(p.images ?? []); setCategoryId(p.category_id ?? '')
+      setCompareAt(p.compare_at_price ? String(p.compare_at_price) : ''); setImages(p.images ?? []); setCategoryId(p.category_id ?? initialCategoryId)
       const defs = p.option_defs ?? []
       setOptions(defs)
       const r: Record<string, Row> = {}
@@ -136,8 +138,22 @@ export default function ProductEditor({ productId, profile, categories, onSaved,
     } finally { setUploading(false); if (fileRef.current) fileRef.current.value = '' }
   }
 
+  /** AI draft (gpt-4o-mini) from the first photo + name + niche + options: the merchant edits it, then saves. */
+  async function generateDescription() {
+    if (!images[0]) { toast.error(tx('Ajoutez d’abord une photo du produit')); return }
+    if (name.trim().length < 2) { toast.error(tx('Donnez d’abord un nom au produit')); return }
+    if (description.trim() && !confirm(tx('Remplacer la description actuelle ?'))) return
+    setDescribing(true)
+    try {
+      setDescription(await storeApi.describeProduct({ imageUrl: images[0], name: name.trim(), niche: profile, options, lang: txLocale() }))
+      toast.success(tx('Description prête : relisez-la et modifiez-la avant d’enregistrer'))
+    } catch (e) { toast.error((e as Error).message) }
+    finally { setDescribing(false) }
+  }
+
   async function save() {
     if (name.trim().length < 2) { toast.error(tx('Donnez un nom au produit')); return }
+    if (requireCategory && !categories.some((c) => c.id === categoryId)) { toast.error(tx('Choisissez la catégorie du produit')); return }
     if (!(num(price) > 0)) { toast.error(tx('Indiquez le prix')); return }
     if (compareAt.trim() && !(num(compareAt) > num(price))) { toast.error(tx('L’ancien prix doit être plus élevé que le prix')); return }
     const empty = options.find((o) => !o.values.length)
@@ -160,7 +176,7 @@ export default function ProductEditor({ productId, profile, categories, onSaved,
       }
       const p = productId ? await storeApi.updateProduct(productId, body) : await storeApi.createProduct(body)
       const saved = await storeApi.setVariants(p.id, variants.map(({ c, r }) => ({ options: c, price: num(r.price), stock: Math.round(num(r.stock || '0')), sku: r.sku.trim() || null })))
-      if (profile === 'auto' || fitments.length) {
+      if (preset.fields.vehicles) {
         await storeApi.setFitments(p.id, fits.map((f) => ({
           make: f.make.trim(), model: f.model.trim(), yearFrom: f.yearFrom ? Number(f.yearFrom) : null, yearTo: f.yearTo ? Number(f.yearTo) : null,
         })))
@@ -218,11 +234,11 @@ export default function ProductEditor({ productId, profile, categories, onSaved,
           <span style={label}>{tx('Ancien prix barré (DH, facultatif)')}</span>
           <input inputMode="decimal" value={compareAt} onChange={(e) => setCompareAt(e.target.value)} style={input} />
         </div>
-        {tops.length > 0 && (
+        {(requireCategory || tops.length > 0) && (
           <div>
-            <span style={label}>{tx('Catégorie')}</span>
-            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} style={input}>
-              <option value="">{tx('Sans catégorie')}</option>
+            <span style={label}>{tx('Catégorie')}{requireCategory && ' *'}</span>
+            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} style={input} required={requireCategory}>
+              {requireCategory ? <option value="" disabled>{tx('Choisissez une catégorie')}</option> : <option value="">{tx('Sans catégorie')}</option>}
               {tops.map((t) => [
                 <option key={t.id} value={t.id}>{t.name}</option>,
                 ...categories.filter((c) => c.parent_id === t.id).sort((a, b) => a.position - b.position)
@@ -232,7 +248,15 @@ export default function ProductEditor({ productId, profile, categories, onSaved,
           </div>
         )}
         <div style={{ gridColumn: '1 / -1' }}>
-          <span style={label}>{tx('Description')}</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+            <span style={{ ...label, marginBottom: 0 }}>{tx('Description')}</span>
+            <button type="button" onClick={generateDescription} disabled={describing || uploading}
+              title={!images[0] ? tx('Ajoutez d’abord une photo du produit') : undefined}
+              style={{ ...btn('ghost', describing || uploading), padding: '6px 12px' }}>
+              {describing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} {tx('Générer la description')}
+            </button>
+          </div>
+          <p style={{ ...muted, fontSize: 11.5, marginBottom: 6 }}>{tx('Écrite depuis la 1re photo, le nom et les options. Rien n’est inventé (matière, origine, garantie) : relisez et complétez avant d’enregistrer.')}</p>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} maxLength={5000} style={{ ...input, resize: 'vertical' }} />
         </div>
       </div>
@@ -255,7 +279,13 @@ export default function ProductEditor({ productId, profile, categories, onSaved,
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {b.values.map((v) => {
                     const on = !!sel?.values.includes(v)
-                    return <button key={v} type="button" aria-pressed={on} onClick={() => toggleValue(b.name, v)} style={chip(on)}>{v}</button>
+                    const sw = preset.fields.colorSwatches && isColorOption(b.name) ? swatchOf(v) : null
+                    return (
+                      <button key={v} type="button" aria-pressed={on} onClick={() => toggleValue(b.name, v)} style={chip(on)}>
+                        {sw && <span aria-hidden style={{ width: 12, height: 12, borderRadius: 999, background: sw, border: '1px solid rgba(0,0,0,.2)', flexShrink: 0 }} />}
+                        {v}
+                      </button>
+                    )
                   })}
                   <span style={{ display: 'inline-flex', gap: 4 }}>
                     <input value={custom[b.name] ?? ''} onChange={(e) => setCustom((c) => ({ ...c, [b.name]: e.target.value }))}
@@ -327,7 +357,7 @@ export default function ProductEditor({ productId, profile, categories, onSaved,
       </div>
 
       {/* Compatible vehicles (car parts) */}
-      {(profile === 'auto' || fitments.length > 0) && (
+      {preset.fields.vehicles && (
         <div>
           <span style={label}>{tx('Véhicules compatibles ({0})', [fitments.length])}</span>
           <p style={{ ...muted, fontSize: 12, marginBottom: 8 }}>{tx('Le client retrouve la pièce en cherchant sa voiture. Laissez les années vides si toutes conviennent.')}</p>
