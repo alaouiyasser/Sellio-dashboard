@@ -856,5 +856,9 @@
  "⚠ Non envoyée au transporteur": "⚠ No enviado al transportista",
  "📦 Statut de livraison": "📦 Estado de entrega",
  "🚚 Chez le courrier depuis": "🚚 Con el repartidor desde hace",
- "🚩 Conflit détecté": "🚩 Conflicto detectado"
+ "🚩 Conflit détecté": "🚩 Conflicto detectado",
+ "Email ou téléphone": "Email o teléfono",
+ "Remplissez email ou téléphone et mot de passe": "Introduce email o teléfono y contraseña",
+ "Email ou numéro de téléphone invalide": "Email o número de teléfono no válido",
+ "Identifiant ou mot de passe incorrect": "Identificador o contraseña incorrectos"
 }

@@ -853,5 +853,9 @@
  "⚠ Non envoyée au transporteur": "⚠ Not sent to the carrier",
  "📦 Statut de livraison": "📦 Delivery status",
  "🚚 Chez le courrier depuis": "🚚 With the courier for",
- "🚩 Conflit détecté": "🚩 Conflict detected"
+ "🚩 Conflit détecté": "🚩 Conflict detected",
+ "Email ou téléphone": "Email or phone",
+ "Remplissez email ou téléphone et mot de passe": "Enter your email or phone and your password",
+ "Email ou numéro de téléphone invalide": "Invalid email or phone number",
+ "Identifiant ou mot de passe incorrect": "Wrong email/phone or password"
 }

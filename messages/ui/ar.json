@@ -858,5 +858,9 @@
  "⚠ Non envoyée au transporteur": "⚠ لم يُرسَل لشركة التوصيل",
  "📦 Statut de livraison": "📦 حالة التوصيل",
  "🚚 Chez le courrier depuis": "🚚 لدى المندوب منذ",
- "🚩 Conflit détecté": "🚩 تم رصد تعارض"
+ "🚩 Conflit détecté": "🚩 تم رصد تعارض",
+ "Email ou téléphone": "البريد الإلكتروني أو الهاتف",
+ "Remplissez email ou téléphone et mot de passe": "أدخل البريد الإلكتروني أو الهاتف وكلمة المرور",
+ "Email ou numéro de téléphone invalide": "البريد الإلكتروني أو رقم الهاتف غير صالح",
+ "Identifiant ou mot de passe incorrect": "المعرّف أو كلمة المرور غير صحيحة"
 }
