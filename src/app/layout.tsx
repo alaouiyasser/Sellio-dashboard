@@ -1,12 +1,14 @@
 import type { Metadata } from 'next'
-import { Geist } from 'next/font/google'
+import { Inter, Poppins } from 'next/font/google'
 import { ThemeProvider } from '@/components/layout/ThemeProvider'
 import { LanguageProvider } from '@/components/layout/LanguageProvider'
 import { Toaster } from '@/components/ui/sonner'
 import PwaRegister from '@/components/pwa/PwaRegister'
 import './globals.css'
 
-const geist = Geist({ subsets: ['latin'] })
+// Inter everywhere; Poppins 800 only for the SELLIO wordmark (components/layout/Wordmark.tsx).
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' })
+const poppins = Poppins({ subsets: ['latin'], weight: '800', variable: '--font-poppins', display: 'swap' })
 
 export const viewport = {
   width: 'device-width',
@@ -24,8 +26,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" data-theme="dark" suppressHydrationWarning>
-      <body className={geist.className}>
+    <html lang="fr" data-theme="light" className={`${inter.variable} ${poppins.variable}`} suppressHydrationWarning>
+      <body className={inter.className}>
         <ThemeProvider>
           <LanguageProvider>
             {children}

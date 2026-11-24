@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
-import Topbar from '@/components/layout/Topbar'
+import PageHeader from '@/components/layout/PageHeader'
 import { useLang } from '@/components/layout/LanguageProvider'
 
 import { tx, intlLocale } from '@/lib/i18n'
@@ -38,7 +38,7 @@ export default function CreditsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={t('credits.title')} subtitle={t('credits.balance')} />
+      <PageHeader title={t('credits.title')} subtitle={t('credits.balance')} />
       <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>

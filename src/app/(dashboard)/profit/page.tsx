@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Loader2, Trash2, Info, Pencil } from 'lucide-react'
-import Topbar from '@/components/layout/Topbar'
+import PageHeader from '@/components/layout/PageHeader'
 import { useLang } from '@/components/layout/LanguageProvider'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { profitApi, type ProfitData, type ProductProfit, type AdEntry } from '@/lib/profit-api'
@@ -184,7 +184,7 @@ export default function ProfitPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={t('nav.profit')} subtitle={tx('Ce que chaque produit vous rapporte vraiment')} />
+      <PageHeader title={t('nav.profit')} subtitle={tx('Ce que chaque produit vous rapporte vraiment')} />
       <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? 16 : 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
         <PeriodFilter value={period} onChange={setPeriod} />
 

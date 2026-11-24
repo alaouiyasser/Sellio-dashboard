@@ -2,10 +2,10 @@
 
 // Inbox: the merchant's WhatsApp conversations with HIS customers only (the API filters by tenant).
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Topbar from '@/components/layout/Topbar'
+import PageHeader from '@/components/layout/PageHeader'
 import { useLang } from '@/components/layout/LanguageProvider'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { ArrowLeft, Loader2, MessageCircle, RefreshCw, Search, Package } from 'lucide-react'
+import { ArrowLeft, Check, Loader2, MessageCircle, RefreshCw, Search, Package } from 'lucide-react'
 import { tx } from '@/lib/i18n'
 import { inboxApi, type Conversation, type InboxMessage, type InboxOrder } from '@/lib/inbox-api'
 import { statusLabel, productsLine } from '@/lib/order-view'
@@ -106,7 +106,7 @@ export default function InboxPage() {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 2 }}>
                   <span style={{ fontSize: 12.5, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {c.lastDirection === 'outbound' ? '✓ ' : ''}{c.lastMessage || typeLabel(c.lastType)}
+                    {c.lastDirection === 'outbound' && <Check size={13} strokeWidth={1.8} style={{ verticalAlign: -2, marginInlineEnd: 4 }} aria-label={tx('Envoyé')} />}{c.lastMessage || typeLabel(c.lastType)}
                   </span>
                   {c.waitingReply && <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--brand)', flexShrink: 0, marginTop: 4 }} aria-label={tx('Le client a écrit en dernier')} />}
                 </div>
@@ -194,7 +194,7 @@ export default function InboxPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: isMobile ? 'calc(100dvh - 57px)' : '100dvh', overflow: 'hidden' }}>
-      <Topbar title={t('nav.messages')} subtitle={tx('Conversations WhatsApp avec vos clients')} />
+      <PageHeader title={t('nav.messages')} subtitle={tx('Conversations WhatsApp avec vos clients')} />
       <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateRows: 'minmax(0, 1fr)', gridTemplateColumns: isMobile ? '1fr' : 'minmax(280px, 360px) 1fr', margin: isMobile ? 0 : 16, border: isMobile ? 'none' : '1px solid var(--border)', borderRadius: isMobile ? 0 : 16, overflow: 'hidden' }}>
         {isMobile ? (active ? threadPane : listPane) : <>{listPane}{threadPane}</>}
       </div>

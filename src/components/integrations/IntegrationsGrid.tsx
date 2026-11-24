@@ -104,7 +104,7 @@ export default function IntegrationsGrid() {
     setBusy(modal.slug)
     try {
       await connectIntegration(tid, modal.slug, form)
-      toast.success(`${modal.name} ✓`)
+      toast.success(tx('{0} connecté', [modal.name]))
       setModal(null)
       await load(tid)
     } catch (e: any) { toast.error(e?.message ?? 'Error') }
@@ -175,10 +175,10 @@ export default function IntegrationsGrid() {
                   </div>
 
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minHeight: 22 }}>
-                    {c?.status === 'connected' && <Badge color="#0a7d32" bg="color-mix(in srgb, #0a7d32 14%, transparent)">● {L.connected}</Badge>}
+                    {c?.status === 'connected' && <Badge color="#0a7d32" bg="color-mix(in srgb, #0a7d32 14%, transparent)"><span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', marginInlineEnd: 5, verticalAlign: 1 }} />{L.connected}</Badge>}
                     {c?.status === 'disabled' && <Badge color="var(--text-muted)" bg="var(--border)">{L.disabled}</Badge>}
                     {c?.status === 'error' && <Badge color="var(--destructive)" bg="color-mix(in srgb, var(--destructive) 14%, transparent)">{L.error}</Badge>}
-                    {c?.isDefault && <Badge color="var(--brand)" bg="color-mix(in srgb, var(--brand) 14%, transparent)">★ {L.isDefault}</Badge>}
+                    {c?.isDefault && <Badge color="var(--brand)" bg="color-mix(in srgb, var(--brand) 14%, transparent)"><Star size={11} strokeWidth={1.8} fill="currentColor" style={{ verticalAlign: -1, marginInlineEnd: 4 }} />{L.isDefault}</Badge>}
                     {!c && item.status === 'beta' && <Badge color="#9a6b00" bg="color-mix(in srgb, #FFDE59 35%, transparent)">{L.beta}</Badge>}
                     {!c && item.status === 'coming_soon' && <Badge color="var(--text-muted)" bg="var(--border)">{L.comingSoon}</Badge>}
                   </div>
@@ -192,11 +192,11 @@ export default function IntegrationsGrid() {
 
                     {c && (
                       <>
-                        <button disabled={isBusy} onClick={() => act(item.slug, () => testIntegration(tid!, item.slug), L.test + ' ✓')} style={ghostBtn}>
+                        <button disabled={isBusy} onClick={() => act(item.slug, () => testIntegration(tid!, item.slug), L.test)} style={ghostBtn}>
                           {isBusy ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />} {L.test}
                         </button>
                         {item.category === 'carrier' && !c.isDefault && c.status === 'connected' && (
-                          <button disabled={isBusy} onClick={() => act(item.slug, () => updateIntegration(tid!, item.slug, { isDefault: true }), L.isDefault + ' ✓')} style={ghostBtn}>
+                          <button disabled={isBusy} onClick={() => act(item.slug, () => updateIntegration(tid!, item.slug, { isDefault: true }), L.isDefault)} style={ghostBtn}>
                             <Star size={13} /> {L.makeDefault}
                           </button>
                         )}

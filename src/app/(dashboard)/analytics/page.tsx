@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Loader2, Wallet, MapPin, Package, Truck, XCircle, Tag, Info, Star, MessageSquareQuote, Sparkles } from 'lucide-react'
-import Topbar from '@/components/layout/Topbar'
+import { ArrowDown, ArrowUp, Loader2, Wallet, MapPin, Package, Truck, XCircle, Tag, Info, Star, MessageSquareQuote, Sparkles } from 'lucide-react'
+import PageHeader from '@/components/layout/PageHeader'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { carrierName } from '@/lib/shipping-api'
 import { fetchAnalytics, fetchFeedbackSummary, type AnalyticsData, type GroupRow, type FeedbackStats, type FeedbackSummary } from '@/lib/analytics-api'
@@ -31,7 +31,7 @@ function Delta({ value, unit, invert }: { value: number | null; unit: string; in
   const good = invert ? value < 0 : value > 0
   return (
     <span style={{ fontSize: 11, fontWeight: 600, color: good ? 'var(--success)' : 'var(--destructive)' }}>
-      {value > 0 ? '↑' : '↓'} {Math.abs(value).toLocaleString('fr-MA')}{unit}
+      {value > 0 ? <ArrowUp size={12} strokeWidth={1.8} style={{ verticalAlign: -1 }} /> : <ArrowDown size={12} strokeWidth={1.8} style={{ verticalAlign: -1 }} />} {Math.abs(value).toLocaleString('fr-MA')}{unit}
     </span>
   )
 }
@@ -139,7 +139,7 @@ export default function AnalyticsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={tx("Analytiques")} subtitle={tx("Où vous gagnez, où vous perdez, et quoi changer")} />
+      <PageHeader title={tx("Analytiques")} subtitle={tx("Où vous gagnez, où vous perdez, et quoi changer")} />
       <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? 16 : 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <PeriodFilter value={period} onChange={setPeriod} />
@@ -270,7 +270,12 @@ export default function AnalyticsPage() {
 }
 
 const KIND_LABEL: Record<string, string> = { review: 'Avis', complaint: 'Réclamation', cancel: 'Annulation' }
-const stars = (n: number) => '★★★★★'.slice(0, Math.round(n)) + '☆☆☆☆☆'.slice(0, 5 - Math.round(n))
+/** Rating as five lucide stars (filled up to the rounded note). */
+const stars = (n: number) => (
+  <span style={{ display: 'inline-flex', gap: 1, verticalAlign: -2 }} aria-label={`${n}/5`}>
+    {[0, 1, 2, 3, 4].map((i) => <Star key={i} size={12} strokeWidth={1.8} fill={i < Math.round(n) ? 'currentColor' : 'none'} />)}
+  </span>
+)
 
 /** Reviews, complaints and cancel reasons customers leave on their tracking link, read by the AI. */
 function CustomerVoice({ fb, summary, isMobile }: { fb: FeedbackStats | null; summary: FeedbackSummary | null | undefined; isMobile: boolean }) {
@@ -350,7 +355,7 @@ function CustomerVoice({ fb, summary, isMobile }: { fb: FeedbackStats | null; su
                   <div key={i} style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg)' }}>
                     <div dir="auto" style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>« {q.text} »</div>
                     <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 4 }}>
-                      {tx(KIND_LABEL[q.kind] ?? 'Avis')}{q.rating ? ` · ${stars(q.rating)}` : ''}{q.product ? ` · ${q.product}` : ''}
+                      {tx(KIND_LABEL[q.kind] ?? 'Avis')}{q.rating ? <> · {stars(q.rating)}</> : ''}{q.product ? ` · ${q.product}` : ''}
                     </div>
                   </div>
                 ))}

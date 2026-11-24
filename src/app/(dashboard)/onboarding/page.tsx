@@ -37,7 +37,7 @@ export default function OnboardingPage() {
           {tx("Sell")}<span style={{ color: 'var(--brand)' }}>{tx("io")}</span>
         </div>
         <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 8 }}>
-          {tx("Configurez votre compte en quelques étapes 🚀")}
+          {tx("Configurez votre compte en quelques étapes")}
         </p>
       </div>
       <WizardOnboarding tenantId={tenantId} onComplete={() => router.push('/orders')} />

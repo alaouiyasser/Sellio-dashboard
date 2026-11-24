@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Search } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
+import { Search, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { shipFailed } from '@/lib/shipping-api'
 import { createClient } from '@/lib/supabase'
-import Topbar from '@/components/layout/Topbar'
+import PageHeader from '@/components/layout/PageHeader'
 import { useLang } from '@/components/layout/LanguageProvider'
 import CarrierExportImport from '@/components/orders/CarrierExportImport'
 import PeriodFilter from '@/components/common/PeriodFilter'
@@ -34,6 +35,11 @@ export default function OrdersPage() {
   const [group, setGroup] = useState('all')
   const [period, setPeriod, periodReady] = usePagePeriod('orders')
   const [page, setPage] = useState(1)
+
+  // Global search in the top bar (AppShell) lands here as ?q=: it fills the search box.
+  const urlQuery = useSearchParams().get('q') ?? ''
+  const [appliedQuery, setAppliedQuery] = useState('')
+  if (urlQuery !== appliedQuery) { setAppliedQuery(urlQuery); setSearch(urlQuery); setPage(1) }
 
   useEffect(() => {
     if (!periodReady) return
@@ -92,7 +98,7 @@ export default function OrdersPage() {
 
   const banner = (tone: string, title: string, sub: string, list: any[], cta: string, extra: (o: any) => string) => (
     <div style={{ marginBottom: 16, background: `color-mix(in srgb, ${tone} 8%, transparent)`, border: `1px solid color-mix(in srgb, ${tone} 30%, transparent)`, borderRadius: 14, padding: 16 }}>
-      <div style={{ fontSize: 14, fontWeight: 700, color: tone, marginBottom: 4 }}>⚠️ {title}</div>
+      <div style={{ fontSize: 14, fontWeight: 700, color: tone, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}><AlertTriangle size={16} strokeWidth={1.8} />{title}</div>
       <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>{sub}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {list.slice(0, 8).map((o) => (
@@ -111,7 +117,7 @@ export default function OrdersPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={t('orders.title')} subtitle={tx('{0} commandes sur la période', [orders.length])} />
+      <PageHeader title={t('orders.title')} subtitle={tx('{0} commandes sur la période', [orders.length])} />
       <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
 
         {notShipped.length > 0 && banner('var(--destructive)',
@@ -190,8 +196,8 @@ export default function OrdersPage() {
             <div style={{ padding: '14px 20px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{tx("Page")} {page} / {totalPages} · {tx('{0} commandes', [filtered.length])}</span>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', cursor: 'pointer', opacity: page === 1 ? 0.4 : 1 }}>←</button>
-                <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', cursor: 'pointer', opacity: page === totalPages ? 0.4 : 1 }}>→</button>
+                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', cursor: 'pointer', opacity: page === 1 ? 0.4 : 1, display: 'grid', placeItems: 'center' }} aria-label={tx('Page précédente')}><ChevronLeft size={16} strokeWidth={1.8} /></button>
+                <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', cursor: 'pointer', opacity: page === totalPages ? 0.4 : 1, display: 'grid', placeItems: 'center' }} aria-label={tx('Page suivante')}><ChevronRight size={16} strokeWidth={1.8} /></button>
               </div>
             </div>
           )}

@@ -3,7 +3,7 @@
 import { authFetch } from '@/lib/api-fetch'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
-import Topbar from '@/components/layout/Topbar'
+import PageHeader from '@/components/layout/PageHeader'
 import { useParams, useRouter } from 'next/navigation'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { API_BASE } from '@/lib/auth-client'
@@ -12,7 +12,7 @@ import { shipFailed, SHIPPABLE_STATUSES, carrierName, carrierTracked } from '@/l
 import {
   ArrowLeft, User, Phone, Package, PackageCheck, Truck, Store, ShoppingBag,
   ExternalLink, Route, Inbox, MessageCircle, CheckCircle2, Bike, Warehouse,
-  Home, XCircle, RotateCcw, Clock,
+  Home, XCircle, RotateCcw, Clock, AlertTriangle, Flag,
 } from 'lucide-react'
 
 import { tx } from '@/lib/i18n'
@@ -140,14 +140,14 @@ export default function OrderDetailPage() {
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={tx("Détail commande")} />
+      <PageHeader title={tx("Détail commande")} />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>{tx("Chargement...")}</div>
     </div>
   )
 
   if (!order) return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={tx("Introuvable")} />
+      <PageHeader title={tx("Introuvable")} />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <button onClick={() => router.push('/orders')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 10, background: OLIVE, color: '#fff', border: 'none', cursor: 'pointer' }}><ArrowLeft size={15} /> {tx("Retour")}</button>
       </div>
@@ -161,7 +161,7 @@ export default function OrderDetailPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Topbar title={tx("Commande #{0}", [order.id?.slice(0, 8)])} />
+      <PageHeader title={tx("Commande #{0}", [order.id?.slice(0, 8)])} />
       <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
 
         <button onClick={() => router.push('/orders')} style={{
@@ -208,7 +208,7 @@ export default function OrderDetailPage() {
                 )}
                 {shipFailed(order) && (
                   <span style={{ padding: '3px 10px', borderRadius: 5, fontSize: 11, fontWeight: 700, background: 'color-mix(in srgb, var(--destructive) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--destructive) 30%, transparent)', color: 'var(--destructive)' }}>
-                    {tx("⚠ Non envoyée au transporteur")}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><AlertTriangle size={13} strokeWidth={1.8} />{tx("Non envoyée au transporteur")}</span>
                   </span>
                 )}
               </div>
@@ -278,7 +278,7 @@ export default function OrderDetailPage() {
 
             {order.delivery_conflict && (
               <div style={{ marginBottom: 20, padding: 14, borderRadius: 12, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--destructive)', marginBottom: 4 }}>{tx("🚩 Conflit détecté")}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--destructive)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}><Flag size={15} strokeWidth={1.8} />{tx("Conflit détecté")}</div>
                 <div style={{ fontSize: 12, color: 'var(--destructive)' }}>
                   {tx("Le client a confirmé la réception, mais un statut \"retourné/refusé\" avait été déclaré. Vérifiez cette commande.")}
                 </div>
@@ -287,7 +287,7 @@ export default function OrderDetailPage() {
 
             {['confirmed','awaiting_delivery_check','delivery_issue','pending','sent','in_delivery','needs_merchant_confirm'].includes(order.status) && (
               <div style={{ marginBottom: 24, paddingBottom: 24, borderBottom: '1px solid var(--border)' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>{tx("📦 Statut de livraison")}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Package size={15} strokeWidth={1.8} />{tx("Statut de livraison")}</div>
                 {order.out_for_delivery_at && order.status === 'in_delivery' && (() => {
                   const days = Math.floor((Date.now() - new Date(order.out_for_delivery_at).getTime()) / 86400000)
                   const late = days >= 5
@@ -295,7 +295,7 @@ export default function OrderDetailPage() {
                     <div style={{ marginBottom: 10, padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
                       background: late ? 'rgba(239,68,68,0.12)' : 'rgba(59,130,246,0.1)',
                       color: late ? 'var(--destructive)' : '#3B82F6' }}>
-                      {tx("🚚 Chez le courrier depuis")} {days === 0 ? tx("aujourd'hui") : tx("{0} jour{1}", [days, days > 1 ? 's' : ''])}{late ? tx(" ⚠️ en retard") : ''}
+                      <Truck size={14} strokeWidth={1.8} style={{ verticalAlign: -2, marginInlineEnd: 6 }} />{tx("Chez le courrier depuis")} {days === 0 ? tx("aujourd'hui") : tx("{0} jour{1}", [days, days > 1 ? 's' : ''])}{late ? <><AlertTriangle size={13} strokeWidth={1.8} style={{ verticalAlign: -2, marginInlineStart: 6 }} />{tx(" en retard")}</> : ''}
                     </div>
                   )
                 })()}
@@ -309,7 +309,7 @@ export default function OrderDetailPage() {
                   {order.status !== 'in_delivery' && (
                     <button onClick={() => deliveryAction('in_delivery')} disabled={actionLoading !== null}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', cursor: actionLoading ? 'wait' : 'pointer', background: 'var(--card)', color: '#3B82F6', fontSize: 13, fontWeight: 700, opacity: actionLoading && actionLoading !== 'in_delivery' ? 0.5 : 1 }}>
-                      🚚 {actionLoading === 'in_delivery' ? '...' : tx("Pris par le courrier")}
+                      <Truck size={16} strokeWidth={1.8} /> {actionLoading === 'in_delivery' ? '...' : tx("Pris par le courrier")}
                     </button>
                   )}
                   <button onClick={() => deliveryAction('delivered')} disabled={actionLoading !== null}

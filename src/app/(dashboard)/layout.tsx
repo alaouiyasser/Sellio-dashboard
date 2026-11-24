@@ -1,28 +1,5 @@
-'use client'
+import AppShell from '@/components/layout/AppShell'
 
-import { useState } from 'react'
-import Sidebar from '@/components/layout/Sidebar'
-
-import { tx } from '@/lib/i18n'
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  return (
-    <div style={{ display:'flex', minHeight:'100vh', background:'var(--bg)' }}>
-      <Sidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-      <div className="main-wrapper">
-        {/* Mobile header — hidden on desktop via CSS */}
-        <div className="mobile-topbar">
-          <button className="hamburger-btn" onClick={() => setSidebarOpen(true)}>☰</button>
-          <span style={{ fontWeight:800, fontSize:15, color:'var(--brand)' }}>{tx("⚡ Sellio")}</span>
-          <div style={{ width:40 }} />
-        </div>
-
-        <div style={{ flex:1, overflow:'auto' }}>
-          {children}
-        </div>
-      </div>
-    </div>
-  )
+  return <AppShell>{children}</AppShell>
 }
