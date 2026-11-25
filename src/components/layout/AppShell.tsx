@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutGrid, Package, Boxes, Undo2, MessageSquare, BarChart3, Coins, Tag, Store, Bot,
-  Truck, ShoppingBag, Wallet, Settings, Search, Menu, X, LogOut, ShieldCheck, ChevronDown,
+  Truck, UserX, ShoppingBag, Wallet, Settings, Search, Menu, X, LogOut, ShieldCheck, ChevronDown,
   type LucideIcon,
 } from 'lucide-react'
 import { API_BASE } from '@/lib/auth-client'
@@ -58,6 +58,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const settings: NavItem[] = [
     { href: '/integrations', icon: ShoppingBag, label: tx('Intégrations') },
     { href: '/livraison', icon: Truck, label: tx('Livraison') },
+    { href: '/blacklist', icon: UserX, label: tx('Clients bloqués') },
     { href: '/credits', icon: Wallet, label: t('nav.credits') },
     { href: '/settings', icon: Settings, label: t('nav.settings') },
   ]
