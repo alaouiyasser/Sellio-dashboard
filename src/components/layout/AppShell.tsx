@@ -56,7 +56,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     { href: '/ai-coach', icon: Bot, label: t('nav.aicoach') },
   ]
   const settings: NavItem[] = [
-    { href: '/integrations', icon: ShoppingBag, label: tx('Boutiques') },
+    { href: '/integrations', icon: ShoppingBag, label: tx('Intégrations') },
     { href: '/livraison', icon: Truck, label: tx('Livraison') },
     { href: '/credits', icon: Wallet, label: t('nav.credits') },
     { href: '/settings', icon: Settings, label: t('nav.settings') },
