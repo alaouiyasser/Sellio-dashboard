@@ -113,16 +113,16 @@ export const showWhatsappButton = (store: PublicStore) => enabledSections(store)
 // ─── Products: featured, new arrivals, categories, size options ──────────────
 
 /** The merchant's own order (position), then as the API sent them. */
-export const byMerchantOrder = (ps: PublicProduct[]) => ps.map((p, i) => ({ p, i })).sort((a, b) => (a.p.position - b.p.position) || (a.i - b.i)).map((x) => x.p)
+export const byMerchantOrder = <T extends { position: number }>(ps: T[]): T[] => ps.map((p, i) => ({ p, i })).sort((a, b) => (a.p.position - b.p.position) || (a.i - b.i)).map((x) => x.p)
 
 /**
  * « Notre sélection » (section featured). The public API has no sales figures, so this is never
  * called « best sellers »: it is the first products in the order the merchant chose.
  */
-export const featuredProducts = (ps: PublicProduct[], n = 4) => (ps.length > n ? byMerchantOrder(ps).slice(0, n) : [])
+export const featuredProducts = <T extends { position: number }>(ps: T[], n = 4): T[] => (ps.length > n ? byMerchantOrder(ps).slice(0, n) : [])
 
 /** « Nouveautés »: newest first, only when the products carry their creation date (else []: nothing made up). */
-export function newArrivals(ps: PublicProduct[], n = 4): PublicProduct[] {
+export function newArrivals<T extends { created_at?: string | null }>(ps: T[], n = 4): T[] {
   const dated = ps.filter((p) => p.created_at && !Number.isNaN(Date.parse(p.created_at)))
   if (dated.length < 2) return []
   return [...dated].sort((a, b) => Date.parse(b.created_at!) - Date.parse(a.created_at!)).slice(0, n)

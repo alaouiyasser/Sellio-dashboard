@@ -13,6 +13,7 @@ import {
   SizeGuide, Trust, ghostBtnStyle, lookOf, type Look,
 } from './kit'
 import ProductView from './ProductView'
+import { BLOCK_TITLES } from '@/lib/store-blocks'
 
 export default function StoreHome({ data, base }: { data: StorePageData; base: string }) {
   const { store, products, preview } = data
@@ -53,8 +54,8 @@ function BoutiqueHome({ data, l }: { data: StorePageData; l: Look }) {
       case 'hero': return <Hero key={b} l={l} image={heroImage} />
       case 'vehicle_search': return vehicleFacets ? <VehicleSearch key={b} l={l} facets={vehicleFacets} f={f} setF={setF} /> : null
       case 'categories': return <CategoryTiles key={b} l={l} categories={tops} selected={f.categoryId ?? null} onSelect={pickCategory} />
-      case 'featured': return <ProductRow key={b} l={l} id="selection" title="Notre sélection" products={featured} />
-      case 'new_arrivals': return <ProductRow key={b} l={l} id="nouveautes" title="Nouveautés" products={fresh} />
+      case 'featured': return <ProductRow key={b} l={l} id="selection" title={BLOCK_TITLES.featured} products={featured} />
+      case 'new_arrivals': return <ProductRow key={b} l={l} id="nouveautes" title={BLOCK_TITLES.new_arrivals} products={fresh} />
       case 'catalog': return <Catalog key={b} l={l} data={data} f={f} setF={setF} facets={facets} shown={shown} tops={tops} />
       case 'banners': return <Banners key={b} l={l} categories={tops} onSelect={pickCategory} />
       case 'benefits': return <Benefits key={b} l={l} />

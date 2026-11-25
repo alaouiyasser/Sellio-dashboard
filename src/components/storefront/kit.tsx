@@ -8,6 +8,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { Banknote, CircleCheck, House, ImageIcon, MapPin, MessageCircle, PackageCheck, Ruler, Sparkles, Truck } from 'lucide-react'
 import { fontCss, type Colors, type ThemeId } from '@/lib/store-api'
 import { WEB_THEME, readable, type ThemeTokens } from '@/lib/store-theme'
+import { BLOCK_TITLES, benefitItems, howToUseTips, sizeGuideHelp, sizeGuideIntro } from '@/lib/store-blocks'
 import {
   colorsOf, fmtDh, profileIdOf, themeOf, waLink,
   type PublicCategory, type PublicProduct, type PublicStore,
@@ -239,13 +240,10 @@ function Cards({ l, items }: { l: Look; items: Array<{ icon: ReactNode; title: s
 }
 
 /** « Avantages »: what the buyer gets with this store (cash on delivery, WhatsApp check, delivery). */
+const BENEFIT_ICON = { cod: <Banknote size={24} />, whatsapp: <CircleCheck size={24} />, delivery: <House size={24} /> }
 export function Benefits({ l }: { l: Look }) {
-  const items = [
-    { icon: <Banknote size={24} />, title: 'Paiement à la livraison', text: 'Vous payez en espèces à la réception de votre colis. Rien à payer en ligne.' },
-    { icon: <CircleCheck size={24} />, title: 'Commande confirmée sur WhatsApp', text: 'Nous vous écrivons sur WhatsApp pour confirmer votre commande avant l’envoi.' },
-    { icon: <House size={24} />, title: 'Livraison à votre adresse', text: l.store.delivery_text?.trim() || 'Votre colis est livré à l’adresse indiquée dans le formulaire.' },
-  ]
-  return <Block l={l} id="avantages" title="Pourquoi commander chez nous" tinted><Cards l={l} items={items} /></Block>
+  const items = benefitItems(l.store.delivery_text).map((b) => ({ icon: BENEFIT_ICON[b.key], title: b.title, text: b.text }))
+  return <Block l={l} id="avantages" title={BLOCK_TITLES.benefits} tinted><Cards l={l} items={items} /></Block>
 }
 
 export function HowItWorks({ l }: { l: Look }) {
@@ -268,14 +266,14 @@ export function HowItWorks({ l }: { l: Look }) {
   )
 }
 
-/** « Guide des tailles »: how to choose, plus the sizes this product really comes in (product page). */
+/** « Guide des tailles »: how to choose (by niche), plus the sizes this product really comes in (product page). */
 export function SizeGuide({ l, sizes }: { l: Look; sizes?: Array<{ name: string; values: Array<{ value: string; available: boolean }> }> }) {
   const wa = waLink(l.store.whatsapp, 'Bonjour, j’ai une question sur les tailles : ')
   return (
-    <Block l={l} id="guide-des-tailles" title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><Ruler size={20} />Guide des tailles</span>} narrow>
+    <Block l={l} id="guide-des-tailles" title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><Ruler size={20} />{BLOCK_TITLES.size_guide}</span>} narrow>
       <p style={{ margin: '0 0 12px', lineHeight: 1.6 }}>
-        Choisissez la taille que vous portez d’habitude. Les tailles proposées sont celles indiquées sur chaque produit.
-        {wa ? <> Un doute entre deux tailles ? <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: l.c.primary, fontWeight: 700 }}>Demandez-nous sur WhatsApp</a> avant de commander.</> : ' Un doute ? Indiquez-le lors de la confirmation de votre commande.'}
+        {sizeGuideIntro(profileIdOf(l.store))}{' '}
+        {wa ? <a href={wa} target="_blank" rel="noopener noreferrer" style={{ color: l.c.primary, fontWeight: 700 }}>{sizeGuideHelp(true)}</a> : sizeGuideHelp(false)}
       </p>
       {sizes?.map((o) => (
         <div key={o.name} style={{ marginTop: 10 }}>
@@ -293,17 +291,9 @@ export function SizeGuide({ l, sizes }: { l: Look; sizes?: Array<{ name: string;
 
 /** « Conseils d’utilisation »: general care advice by niche (the product's own advice is in its description). */
 export function HowToUse({ l }: { l: Look }) {
-  const niche = profileIdOf(l.store)
-  const tips = [
-    'Lisez la description du produit : les conseils du vendeur y sont indiqués.',
-    niche === 'beaute' ? 'Pour un soin de la peau ou des cheveux, faites un essai sur une petite zone avant la première utilisation.'
-      : niche === 'beldi' ? 'Conservez les produits naturels au sec, à l’abri de la chaleur et de la lumière.'
-        : niche === 'parfums' ? 'Conservez votre parfum à l’abri de la lumière et de la chaleur, flacon bien fermé.'
-          : 'Gardez l’emballage le temps de vérifier que tout vous convient.',
-    waLink(l.store.whatsapp) ? 'Une question avant ou après la commande ? Écrivez-nous sur WhatsApp.' : 'Une question ? Posez-la lors de la confirmation de votre commande.',
-  ]
+  const tips = howToUseTips(profileIdOf(l.store), !!waLink(l.store.whatsapp))
   return (
-    <Block l={l} id="conseils" title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><Sparkles size={20} />Conseils d’utilisation</span>} narrow>
+    <Block l={l} id="conseils" title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><Sparkles size={20} />{BLOCK_TITLES.how_to_use}</span>} narrow>
       <ul style={{ margin: 0, paddingInlineStart: 20, lineHeight: 1.8 }}>{tips.map((x) => <li key={x}>{x}</li>)}</ul>
     </Block>
   )

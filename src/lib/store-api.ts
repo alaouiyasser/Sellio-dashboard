@@ -38,7 +38,7 @@ export interface Fitment { id?: string; make: string; model: string; year_from: 
 export interface Product {
   id: string; category_id: string | null; name: string; slug: string; description: string | null; images: string[]
   option_defs: OptionDef[]; price: number; compare_at_price: number | null; reference: string | null
-  status: 'draft' | 'active' | 'archived'; position: number
+  status: 'draft' | 'active' | 'archived'; position: number; created_at?: string
   store_variants?: Variant[]; variants?: Variant[]; fitments?: Fitment[]
 }
 export interface ProductInput {
