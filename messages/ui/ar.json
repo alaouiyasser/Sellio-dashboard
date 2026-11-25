@@ -1084,5 +1084,7 @@
  "Le thème clair est utilisé par défaut.": "يُستخدم المظهر الفاتح افتراضياً.",
  "Boutiques": "المتاجر",
  "Connectez vos transporteurs pour expédier vos commandes.": "اربط شركات التوصيل لشحن طلباتك.",
- "Connectez votre boutique YouCan, Shopify ou WooCommerce.": "اربط متجرك على YouCan أو Shopify أو WooCommerce."
+ "Connectez votre boutique YouCan, Shopify ou WooCommerce.": "اربط متجرك على YouCan أو Shopify أو WooCommerce.",
+ "Statut mis à jour automatiquement : 4 jours après la confirmation (ou la remise au transporteur en envoi programmé/manuel), Sellio demande au client sur WhatsApp s'il a reçu sa commande. Sans réponse après 7 jours, la commande passe « À valider ».": "يتم تحديث الحالة تلقائيًا: بعد 4 أيام من التأكيد (أو من تسليم الطرد لشركة التوصيل في الإرسال المبرمج/اليدوي)، يسأل Sellio الزبون على واتساب واش توصل بطلبيته. إلا ما جاوبش بعد 7 أيام، كتولي الطلبية « خاص تأكيد ».",
+ "Le client n'a pas répondu. Confirmez le statut de livraison.": "الزبون ما جاوبش. أكد حالة التوصيل."
 }
