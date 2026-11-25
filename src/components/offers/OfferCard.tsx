@@ -6,8 +6,9 @@ import { Loader2, Trash2, Bot } from 'lucide-react'
 import { offersApi, offerDeal, STATUS_LABEL, type Offer, type OfferStatus, STORE_LABEL } from '@/lib/offers-api'
 
 import { tx, intlLocale } from '@/lib/i18n'
+import { fmtDate } from '@/lib/tz'
 const small: React.CSSProperties = { padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }
-const dateFr = (d: string | null) => (d ? new Date(d).toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' }) : null)
+const dateFr = (d: string | null) => (d ? fmtDate(d, { day: 'numeric', month: 'short' }) : null)
 
 /** One offer: what the customer gets, results, and the merchant's controls. */
 export function OfferCard({ offer, onChange, compact = false }: { offer: Offer; onChange: (o: Offer | null) => void; compact?: boolean }) {

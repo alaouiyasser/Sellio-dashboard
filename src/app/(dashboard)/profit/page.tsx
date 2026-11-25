@@ -16,6 +16,7 @@ import PeriodFilter from '@/components/common/PeriodFilter'
 import { usePagePeriod } from '@/hooks/usePagePeriod'
 import { presetPeriod, periodQuery, type Period } from '@/lib/period'
 import { tx, intlLocale } from '@/lib/i18n'
+import { fmtDate, dayOnly, maDay } from '@/lib/tz'
 
 const card: React.CSSProperties = { background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 20 }
 const input: React.CSSProperties = {
@@ -33,9 +34,9 @@ const th: React.CSSProperties = { padding: '6px 8px', fontWeight: 500, textAlign
 const td: React.CSSProperties = { padding: '9px 8px', textAlign: 'right', whiteSpace: 'nowrap', fontSize: 13 }
 const dh = (n: number | null | undefined) => (n === null || n === undefined || !Number.isFinite(n) ? '—' : `${Math.round(n).toLocaleString('fr-MA')} DH`)
 const signColor = (n: number | null) => (n === null ? 'var(--text-muted)' : n < 0 ? 'var(--destructive)' : 'var(--success)')
-const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
+const today = () => maDay(new Date())
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000) + 1
-const shortDay = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(intlLocale(), { day: '2-digit', month: '2-digit' })
+const shortDay = (d: string) => fmtDate(dayOnly(d), { day: '2-digit', month: '2-digit' })
 const parse = (s: string): number | null => { const n = Number(String(s).replace(',', '.').trim()); return s.trim() === '' || !Number.isFinite(n) || n < 0 ? null : n }
 const same = (a?: string | null, b?: string | null) => (a ?? '').trim().toLowerCase() === (b ?? '').trim().toLowerCase()
 const CHANNELS = [['facebook', 'Facebook / Instagram'], ['tiktok', 'TikTok'], ['google', 'Google'], ['snapchat', 'Snapchat'], ['autre', 'Autre']]
@@ -489,7 +490,7 @@ interface AdFields { spentOn: string; spentTo: string; amount: string; channel: 
 
 /** New spend defaults to the period on screen (never after today). */
 function adDefaults(p: Period): Pick<AdFields, 'spentOn' | 'spentTo'> {
-  const day = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const day = maDay
   const t = today()
   const from = day(p.from), to = day(new Date(p.to.getTime() - 1))
   const end = to > t ? t : to
