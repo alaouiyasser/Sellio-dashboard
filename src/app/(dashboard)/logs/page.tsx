@@ -9,6 +9,7 @@ import { ArrowLeft, Check, Loader2, MessageCircle, RefreshCw, Search, Package } 
 import { tx } from '@/lib/i18n'
 import { inboxApi, type Conversation, type InboxMessage, type InboxOrder } from '@/lib/inbox-api'
 import { statusLabel, productsLine } from '@/lib/order-view'
+import { fmtDate, fmtTime, maDay } from '@/lib/tz'
 
 // Messages logged before the inbox existed have no text: show what kind of message it was.
 const TYPE_LABEL: Record<string, string> = {
@@ -24,13 +25,12 @@ const prettyPhone = (p: string) => {
   return d.length === 9 ? `0${d.slice(0, 1)} ${d.slice(1, 3)} ${d.slice(3, 5)} ${d.slice(5, 7)} ${d.slice(7)}` : p
 }
 function when(iso: string, locale: string) {
-  const d = new Date(iso), now = new Date()
-  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
-  const y = new Date(now); y.setDate(now.getDate() - 1)
-  if (d.toDateString() === y.toDateString()) return tx('Hier')
-  return d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })
+  const day = maDay(iso), now = new Date()
+  if (day === maDay(now)) return fmtTime(iso, undefined, locale)
+  if (day === maDay(now.getTime() - 86_400_000)) return tx('Hier')
+  return fmtDate(iso, { day: '2-digit', month: '2-digit' }, locale)
 }
-const dayLabel = (iso: string, locale: string) => new Date(iso).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })
+const dayLabel = (iso: string, locale: string) => fmtDate(iso, { weekday: 'long', day: 'numeric', month: 'long' }, locale)
 
 export default function InboxPage() {
   const { t, locale: lang } = useLang()
@@ -158,9 +158,9 @@ export default function InboxPage() {
       <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '14px 14px 20px', background: 'color-mix(in srgb, var(--brand) 4%, var(--bg))', display: 'flex', flexDirection: 'column', gap: 6 }}>
         {threadLoading && <div style={{ textAlign: 'center', padding: 30 }}><Loader2 className="h-5 w-5 animate-spin" style={{ display: 'inline', color: 'var(--text-muted)' }} /></div>}
         {thread?.messages.map((m) => {
-          const day = new Date(m.created_at).toDateString()
+          const day = maDay(m.created_at)
           const sep = day !== lastDay ? (lastDay = day, <div key={'d' + m.id} style={{ alignSelf: 'center', margin: '10px 0 4px', fontSize: 11.5, color: 'var(--text-muted)', background: 'var(--card)', padding: '3px 10px', borderRadius: 8 }}>{dayLabel(m.created_at, locale)}</div>) : null
-          const time = new Date(m.created_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+          const time = fmtTime(m.created_at, undefined, locale)
           if (m.direction === 'event') return (
             <div key={m.id} style={{ display: 'contents' }}>{sep}
               <div style={{ alignSelf: 'center', fontSize: 12, color: 'var(--text-muted)', background: 'color-mix(in srgb, var(--warning) 12%, var(--card))', padding: '4px 12px', borderRadius: 8 }}>

@@ -7,6 +7,7 @@ import { Smartphone, LogOut, Trash2, ShieldCheck, Loader2 } from 'lucide-react'
 import { API_BASE } from '@/lib/auth-client'
 
 import { tx } from '@/lib/i18n'
+import { fmtDateTime } from '@/lib/tz'
 type Device = {
   id: string
   label: string | null
@@ -86,7 +87,7 @@ export default function DevicesTab() {
   }
 
   function fmt(iso: string) {
-    try { return new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) }
+    try { return fmtDateTime(iso, { dateStyle: 'short', timeStyle: 'short' }, 'fr-FR') }
     catch { return iso }
   }
 

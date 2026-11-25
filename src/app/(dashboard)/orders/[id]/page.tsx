@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 
 import { tx } from '@/lib/i18n'
+import { fmtDateTime } from '@/lib/tz'
 const OLIVE = 'var(--brand)'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -87,7 +88,7 @@ function parseItems(items: any): any[] {
 
 function fmtDate(d: string | null) {
   if (!d) return null
-  return new Date(d).toLocaleString('fr-MA', {
+  return fmtDateTime(d, {
     day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   })
 }

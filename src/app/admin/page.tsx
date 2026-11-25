@@ -10,6 +10,7 @@ import {
   BellRing, AlertTriangle, ChevronRight, PiggyBank, Activity,
 } from 'lucide-react'
 import { adminApi, type Overview, type MerchantLine } from '@/lib/admin-api'
+import { fmtDate } from '@/lib/tz'
 import {
   Card, Kpi, Bar, Badge, PeriodPicker, PageHead, btn, Skeleton, ErrorBox, mad, int, pct,
   PURPOSE_LABEL, FLAG_META, EXPENSE_LABEL,
@@ -41,7 +42,7 @@ export default function AdminOverviewPage() {
     <div className="admin-page" style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 1400 }}>
       <PageHead
         title="Vue d'ensemble"
-        subtitle={data ? `Du ${new Date(data.period.from).toLocaleDateString('fr-FR')} au ${new Date(data.period.to).toLocaleDateString('fr-FR')} · WhatsApp : ${data.waProvider === 'cloud' ? 'Cloud API (payant)' : 'Evolution (gratuit)'}` : 'Santé financière et opérationnelle de Sellio'}
+        subtitle={data ? `Du ${fmtDate(data.period.from, undefined, 'fr-FR')} au ${fmtDate(data.period.to, undefined, 'fr-FR')} · WhatsApp : ${data.waProvider === 'cloud' ? 'Cloud API (payant)' : 'Evolution (gratuit)'}` : 'Santé financière et opérationnelle de Sellio'}
         right={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <Link href="/admin/ops" style={{ ...btn('primary'), textDecoration: 'none' }}><Bot size={15} /> Agents</Link>

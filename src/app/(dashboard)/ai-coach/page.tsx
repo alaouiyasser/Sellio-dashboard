@@ -7,6 +7,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import { useLang } from '@/components/layout/LanguageProvider'
 import { fetchCoachReport } from '@/lib/coach-api'
 import { Bot, Calendar, CalendarDays, ThumbsUp, AlertTriangle, Search, Target, Package, MapPin, Sun, Globe } from 'lucide-react'
+import { fmtDate } from '@/lib/tz'
 
 type Priority = 'HIGH' | 'MEDIUM' | 'LOW'
 type Decision = 'scale' | 'keep' | 'fix' | 'stop'
@@ -171,7 +172,7 @@ export default function AICoachPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
                     {rep.period_type === 'weekly' ? <><Calendar size={13} strokeWidth={2.2} /> {T.week}</> : <><CalendarDays size={13} strokeWidth={2.2} /> {T.month}</>}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(rep.created_at).toLocaleDateString(dateLocale)}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtDate(rep.created_at, undefined, dateLocale)}</div>
                   <div style={{ marginTop: 6, fontSize: 11, fontWeight: 700, color: scoreColor(s) }}>{s}/100</div>
                 </button>
               )

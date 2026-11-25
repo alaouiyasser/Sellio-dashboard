@@ -6,6 +6,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import { useLang } from '@/components/layout/LanguageProvider'
 
 import { tx, intlLocale } from '@/lib/i18n'
+import { fmtDate } from '@/lib/tz'
 const SELLIO_WHATSAPP = 'https://wa.me/212600000000?text=Bonjour%2C%20je%20veux%20recharger%20mes%20cr%C3%A9dits%20Sellio'
 
 export default function CreditsPage() {
@@ -93,7 +94,7 @@ export default function CreditsPage() {
                 <tr><td colSpan={5} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>{ t('credits.noTx') ?? tx("Aucune transaction") }</td></tr>
               ) : transactions.map((tx, i) => (
                 <tr key={i} style={{ borderTop: '1px solid var(--border)' }}>
-                  <td style={{ padding: '13px 20px', fontSize: 12, color: 'var(--text-muted)' }}>{new Date(tx.created_at).toLocaleDateString(intlLocale())}</td>
+                  <td style={{ padding: '13px 20px', fontSize: 12, color: 'var(--text-muted)' }}>{fmtDate(tx.created_at)}</td>
                   <td style={{ padding: '13px 20px' }}>
                     <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: tx.type === 'recharge' ? 'color-mix(in srgb, var(--success) 15%, transparent)' : 'color-mix(in srgb, var(--destructive) 15%, transparent)', color: tx.type === 'recharge' ? 'var(--success)' : 'var(--destructive)' }}>
                       {tx.type === 'recharge' ? t('credits.rechargeType') : t('credits.deduct')}

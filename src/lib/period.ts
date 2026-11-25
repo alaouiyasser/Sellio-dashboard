@@ -1,19 +1,20 @@
-// Period of a merchant page, in the merchant's own time (the browser): today, this week…
+// Period of a merchant page, in Casablanca time (not the browser's): today, this week…
 import { tx } from './i18n'
+import { maParts, maMidnight, maDay, maDayStart } from './tz'
 
 export type PresetKey = 'today' | 'yesterday' | 'week' | '7d' | 'month' | '30d' | '90d' | 'custom'
 export interface Period { key: PresetKey; from: Date; to: Date }
 
-const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
-const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
+const startOfDay = (d: Date) => { const p = maParts(d); return maMidnight(p.y, p.m, p.d) }
+const addDays = (d: Date, n: number) => { const p = maParts(d); return maMidnight(p.y, p.m, p.d + n) }
 
 export function presetPeriod(key: PresetKey, now = new Date()): Period {
   const today = startOfDay(now), tomorrow = addDays(today, 1)
   switch (key) {
     case 'today': return { key, from: today, to: tomorrow }
     case 'yesterday': return { key, from: addDays(today, -1), to: today }
-    case 'week': { const dow = (today.getDay() + 6) % 7; return { key, from: addDays(today, -dow), to: tomorrow } } // Monday
-    case 'month': return { key, from: new Date(today.getFullYear(), today.getMonth(), 1), to: tomorrow }
+    case 'week': { const dow = (maParts(today).dow + 6) % 7; return { key, from: addDays(today, -dow), to: tomorrow } } // Monday
+    case 'month': { const p = maParts(today); return { key, from: maMidnight(p.y, p.m, 1), to: tomorrow } }
     case '7d': return { key, from: addDays(today, -6), to: tomorrow }
     case '90d': return { key, from: addDays(today, -89), to: tomorrow }
     case '30d': default: return { key: key === 'custom' ? '30d' : key, from: addDays(today, -29), to: tomorrow }
@@ -22,12 +23,13 @@ export function presetPeriod(key: PresetKey, now = new Date()): Period {
 
 /** A custom range from two YYYY-MM-DD dates (end day included). */
 export function customPeriod(fromDay: string, toDay: string): Period | null {
-  const f = new Date(`${fromDay}T00:00:00`), t = new Date(`${toDay}T00:00:00`)
-  if (Number.isNaN(f.getTime()) || Number.isNaN(t.getTime()) || t < f) return null
+  const f = maDayStart(fromDay), t = maDayStart(toDay)
+  if (!f || !t || t < f) return null
   return { key: 'custom', from: f, to: addDays(t, 1) }
 }
 
-export const dayInput = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+/** "YYYY-MM-DD" of an instant, in Casablanca (value of an <input type="date">). */
+export const dayInput = (d: Date) => maDay(d)
 export const periodQuery = (p: Period) => `from=${encodeURIComponent(p.from.toISOString())}&to=${encodeURIComponent(p.to.toISOString())}`
 export const spanDays = (p: Period) => Math.max(1, Math.round((p.to.getTime() - p.from.getTime()) / 86_400_000))
 

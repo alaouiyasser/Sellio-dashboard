@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { CalendarRange } from 'lucide-react'
 import { PRESETS, presetPeriod, customPeriod, dayInput, type Period, type PresetKey } from '@/lib/period'
 import { tx, intlLocale } from '@/lib/i18n'
+import { fmtDate } from '@/lib/tz'
 
 export default function PeriodFilter({ value, onChange, presets }: {
   value: Period; onChange: (p: Period) => void; presets?: PresetKey[]
@@ -17,7 +18,7 @@ export default function PeriodFilter({ value, onChange, presets }: {
     if (k === 'custom') { const c = customPeriod(from, to); onChange(c ?? { ...value, key: 'custom' }); return }
     onChange(presetPeriod(k))
   }
-  const fmt = (d: Date) => d.toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' })
+  const fmt = (d: Date) => fmtDate(d, { day: 'numeric', month: 'short' })
   const chip = (on: boolean): React.CSSProperties => ({
     padding: '7px 12px', borderRadius: 999, fontSize: 12.5, cursor: 'pointer', whiteSpace: 'nowrap',
     border: `1px solid ${on ? 'var(--brand)' : 'var(--border)'}`,

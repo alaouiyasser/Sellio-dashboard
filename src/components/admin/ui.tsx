@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { Info } from 'lucide-react'
+import { fmtDateTime } from '@/lib/tz'
 
 const nf0 = new Intl.NumberFormat('fr-MA', { maximumFractionDigits: 0 })
 const nf2 = new Intl.NumberFormat('fr-MA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -12,9 +13,9 @@ export const mad = (n: number | null | undefined, decimals = false) =>
 export const int = (n: number | null | undefined) => (n === null || n === undefined ? '—' : nf0.format(n))
 export const pct = (n: number | null | undefined) => (n === null || n === undefined ? '—' : `${n.toLocaleString('fr-MA', { maximumFractionDigits: 1 })} %`)
 export const dateFr = (iso: string | null | undefined, withTime = false) =>
-  !iso ? '—' : new Date(iso).toLocaleString('fr-FR', withTime
+  !iso ? '—' : fmtDateTime(iso, withTime
     ? { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }
-    : { day: '2-digit', month: 'short', year: 'numeric' })
+    : { day: '2-digit', month: 'short', year: 'numeric' }, 'fr-FR')
 export const ago = (iso: string | null | undefined) => {
   if (!iso) return 'jamais'
   const d = Math.floor((Date.now() - Date.parse(iso)) / 86400_000)

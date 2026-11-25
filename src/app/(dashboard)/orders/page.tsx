@@ -13,6 +13,7 @@ import { usePagePeriod } from '@/hooks/usePagePeriod'
 import { orderCity, statusLabel, groupOf, customerName, productsLine, STATUS_GROUPS } from '@/lib/order-view'
 import { presetPeriod, ordersInPeriod, type Period } from '@/lib/period'
 import { tx, intlLocale } from '@/lib/i18n'
+import { fmtDate, fmtTime } from '@/lib/tz'
 
 const PER_PAGE = 20
 const GROUPS: { key: string; label: () => string }[] = [
@@ -185,7 +186,7 @@ export default function OrdersPage() {
                       </span>
                     </td>
                     <td className="hide-on-mobile" style={{ ...td, fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                      {new Date(o.created_at).toLocaleDateString(intlLocale(), { day: '2-digit', month: '2-digit' })} {new Date(o.created_at).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' })}
+                      {fmtDate(o.created_at, { day: '2-digit', month: '2-digit' })} {fmtTime(o.created_at)}
                     </td>
                   </tr>
                 )

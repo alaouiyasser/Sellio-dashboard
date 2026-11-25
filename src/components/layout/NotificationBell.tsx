@@ -7,6 +7,7 @@ import { authFetch } from '@/lib/api-fetch'
 import { API_BASE } from '@/lib/auth-client'
 
 import { tx, intlLocale } from '@/lib/i18n'
+import { fmtDate } from '@/lib/tz'
 interface Notification { id: number; kind: string; title: string; body: string | null; link: string | null; urgent: boolean; read_at: string | null; created_at: string }
 
 async function api(path: string, init?: RequestInit) {
@@ -22,7 +23,7 @@ function ago(iso: string) {
   if (m < 60) return `il y a ${m} min`
   const h = Math.round(m / 60)
   if (h < 24) return `il y a ${h} h`
-  return new Date(iso).toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' })
+  return fmtDate(iso, { day: 'numeric', month: 'short' })
 }
 
 /** Merchant alerts (delivery problems, returns, reports, offers, credits) — in the app, not on WhatsApp. */

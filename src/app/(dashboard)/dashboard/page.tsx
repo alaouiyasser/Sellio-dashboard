@@ -17,6 +17,7 @@ import { orderCity, orderItems, itemName, statusLabel, isConfirmed, groupOf, cus
 import { presetPeriod, ordersInPeriod, spanDays, type Period } from '@/lib/period'
 import { tx, intlLocale } from '@/lib/i18n'
 import { PLAN_LABEL, PLAN_PRICE_DH, parsePlan, type Plan } from '@/lib/store-api'
+import { fmtDate, maParts, maMidnight } from '@/lib/tz'
 
 const OLIVE = 'var(--brand)'
 const COLORS = ['var(--success)', 'var(--destructive)', 'var(--warning)', 'var(--brand)']
@@ -100,11 +101,12 @@ export default function OverviewPage() {
   const chart = useMemo(() => {
     const days = spanDays(period)
     const mode: 'hour' | 'day' | 'month' = days <= 1 ? 'hour' : days <= 92 ? 'day' : 'month'
-    const keyOf = (d: Date) => mode === 'hour' ? `${String(d.getHours()).padStart(2, '0')}h`
-      : mode === 'day' ? d.toLocaleDateString(intlLocale(), { day: '2-digit', month: '2-digit' })
-      : d.toLocaleDateString(intlLocale(), { month: 'short', year: '2-digit' })
+    // Buckets in Casablanca time, like the period itself (lib/tz).
+    const keyOf = (d: Date) => mode === 'hour' ? `${String(maParts(d).h).padStart(2, '0')}h`
+      : mode === 'day' ? fmtDate(d, { day: '2-digit', month: '2-digit' })
+      : fmtDate(d, { month: 'short', year: '2-digit' })
     const buckets = new Map<string, number>()
-    const step = (d: Date) => mode === 'hour' ? new Date(d.getTime() + 3_600_000) : mode === 'day' ? new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1) : new Date(d.getFullYear(), d.getMonth() + 1, 1)
+    const step = (d: Date) => { const p = maParts(d); return mode === 'hour' ? new Date(d.getTime() + 3_600_000) : mode === 'day' ? maMidnight(p.y, p.m, p.d + 1) : maMidnight(p.y, p.m + 1, 1) }
     for (let d = new Date(period.from); d < period.to; d = step(d)) buckets.set(keyOf(d), 0)
     for (const o of orders) { const k = keyOf(new Date(o.created_at)); if (buckets.has(k)) buckets.set(k, (buckets.get(k) ?? 0) + 1) }
     return [...buckets.entries()].map(([date, count]) => ({ date, count }))
