@@ -4,6 +4,9 @@
 import { Banknote, ChevronDown, CircleCheck, ImageIcon, Loader2, MapPin, MessageCircle, Plus, Search, ShoppingBag, Truck } from 'lucide-react'
 import { fontCss, type Category, type Colors, type Product, type SiteType, type ThemeId } from '@/lib/store-api'
 import { tx } from '@/lib/i18n'
+import { THEME, readable } from '@/lib/store-theme'
+
+export { readable }
 
 export interface PreviewData {
   name: string; logoUrl: string | null; siteType: SiteType; theme: ThemeId; colors: Colors; font: string | null
@@ -245,21 +248,4 @@ export default function PhonePreview({ d, products, categories, edit }: { d: Pre
       </div>
     </div>
   )
-}
-
-const THEME: Record<ThemeId, {
-  radius: number; imgRadius: number; btnWeight: number; btnSize: number; btnPad: string; upper: boolean; heroPad: string; h1: number
-}> = {
-  impact: { radius: 10, imgRadius: 10, btnWeight: 900, btnSize: 13, btnPad: '13px 10px', upper: true, heroPad: '18px 14px 20px', h1: 24 },
-  essentiel: { radius: 8, imgRadius: 6, btnWeight: 600, btnSize: 12, btnPad: '10px 10px', upper: false, heroPad: '16px 14px', h1: 18 },
-  elegance: { radius: 0, imgRadius: 0, btnWeight: 400, btnSize: 11, btnPad: '11px 10px', upper: true, heroPad: '14px 16px 22px', h1: 21 },
-}
-
-/** Black or white text on a colour, whichever reads better. */
-export function readable(hex: string): string {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '')
-  if (!m) return '#fff'
-  const n = parseInt(m[1], 16)
-  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
-  return (0.299 * r + 0.587 * g + 0.114 * b) > 160 ? '#111' : '#fff'
 }
