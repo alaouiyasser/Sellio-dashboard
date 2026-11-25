@@ -221,7 +221,7 @@ export default function IntegrationsManager({ scope = 'stores' }: { scope?: 'sto
   return (
     <div>
       <PageHeader
-        title={scope === 'carriers' ? tx("Livraison") : tx("Boutiques")}
+        title={scope === 'carriers' ? tx("Livraison") : tx("Intégrations")}
         subtitle={scope === 'carriers' ? tx("Connectez vos transporteurs pour expédier vos commandes.") : tx("Connectez votre boutique YouCan, Shopify ou WooCommerce.")}
       />
       <div style={{ padding: '20px 24px 64px', maxWidth: 900, margin: '0 auto' }}>
