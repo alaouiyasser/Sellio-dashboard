@@ -1,13 +1,20 @@
 'use client'
 // Live phone preview of the store while the merchant fills the wizard. It only shows what the
 // merchant entered (no invented products, reviews or counters): empty parts show a placeholder.
-import { Banknote, ChevronDown, CircleCheck, ImageIcon, Loader2, MapPin, MessageCircle, Plus, Search, ShoppingBag, Truck } from 'lucide-react'
-import { fontCss, type Category, type Colors, type Product, type SiteType, type ThemeId } from '@/lib/store-api'
+import { Banknote, ChevronDown, CircleCheck, House, ImageIcon, Loader2, MapPin, MessageCircle, Plus, Ruler, Search, ShoppingBag, Sparkles, Truck } from 'lucide-react'
+import { fontCss, type Category, type Colors, type Product, type SiteType, type StoreProfile, type ThemeId } from '@/lib/store-api'
+import { BLOCK_TITLES, benefitItems, howToUseTips, sizeGuideHelp, sizeGuideIntro, type BenefitKey } from '@/lib/store-blocks'
+import { featuredProducts, isSizeOption, newArrivals } from '@/lib/storefront'
 import { tx } from '@/lib/i18n'
+import { THEME, readable } from '@/lib/store-theme'
+
+export { readable }
 
 export interface PreviewData {
   name: string; logoUrl: string | null; siteType: SiteType; theme: ThemeId; colors: Colors; font: string | null
   city: string; deliveryText: string; returnText: string; sections: Record<string, boolean>; whatsapp: string
+  /** Niche: picks the wording of the generic blocks (size guide, how to use), as on the public store. */
+  profile?: StoreProfile
 }
 
 /** Edit mode of the « Vos catégories » row (categories step): tiles are buttons, a + tile adds one,
@@ -20,6 +27,7 @@ export interface CategoryEdit {
 }
 
 const fmt = (n: number) => `${Math.round(Number(n) || 0)} DH`
+const BENEFIT_ICON: Record<BenefitKey, typeof Banknote> = { cod: Banknote, whatsapp: CircleCheck, delivery: House }
 
 export default function PhonePreview({ d, products, categories, edit }: { d: PreviewData; products: Product[]; categories: Category[]; edit?: CategoryEdit }) {
   const c = d.colors
@@ -29,6 +37,13 @@ export default function PhonePreview({ d, products, categories, edit }: { d: Pre
   const first = products[0]
   const landing = d.siteType === 'landing'
   const tops = categories.filter((x) => !x.parent_id).sort((a, b) => a.position - b.position)
+  const niche = d.profile ?? 'autre'
+  const hasWa = !!d.whatsapp.trim()
+  // Same rules as the public store (lib/storefront.ts): featured = the merchant's first products,
+  // shown once there are more than that; new arrivals = newest first, from the creation dates.
+  const featured = featuredProducts(products)
+  const fresh = newArrivals(products)
+  const sizeValues = [...new Set(products.flatMap((p) => (p.option_defs ?? []).filter((o) => isSizeOption(o.name)).flatMap((o) => o.values)))].slice(0, 10)
 
   const btnEl = (children: React.ReactNode) => (
     <div style={{
@@ -37,6 +52,35 @@ export default function PhonePreview({ d, products, categories, edit }: { d: Pre
       boxShadow: d.theme === 'impact' ? `0 6px 16px ${c.button}55` : 'none',
       border: d.theme === 'elegance' ? `1px solid ${c.text}` : 'none',
     }}>{children}</div>
+  )
+
+  const title = (text: string, Icon?: typeof Banknote) => (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 5, marginBottom: 8, fontSize: d.theme === 'impact' ? 12.5 : 12,
+      fontWeight: d.theme === 'elegance' ? 400 : 800, textTransform: d.theme === 'essentiel' ? 'none' : 'uppercase',
+      letterSpacing: d.theme === 'elegance' ? 1.5 : d.theme === 'impact' ? 0.3 : 0,
+      justifyContent: d.theme === 'elegance' ? 'center' : 'flex-start',
+    }}>{Icon && <Icon size={13} strokeWidth={1.8} />}{text}</div>
+  )
+  // Where a section has nothing to show yet: what will appear there, never invented content.
+  const placeholder = (text: string) => (
+    <div style={{ fontSize: 10.5, opacity: 0.6, textAlign: 'center', padding: 14, border: `1px dashed ${c.text}44`, borderRadius: t.radius }}>{text}</div>
+  )
+  const productRow = (id: 'featured' | 'new_arrivals', list: Product[], empty: string) => (
+    <div style={{ padding: '12px 12px 4px' }}>
+      {title(tx(BLOCK_TITLES[id]))}
+      {list.length > 0 ? (
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+          {list.map((p) => (
+            <div key={p.id} style={{ flexShrink: 0, width: 96, textAlign: d.theme === 'elegance' ? 'center' : 'left' }}>
+              {img(p.images?.[0], 84)}
+              <div style={{ fontSize: 10, fontWeight: d.theme === 'elegance' ? 400 : 600, marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: c.primary }}>{fmt(p.price)}</div>
+            </div>
+          ))}
+        </div>
+      ) : placeholder(empty)}
+    </div>
   )
 
   const img = (src: string | null | undefined, h: number, key?: string) => src
@@ -154,6 +198,9 @@ export default function PhonePreview({ d, products, categories, edit }: { d: Pre
             </div>
           )}
 
+          {on('featured') && !landing && productRow('featured', featured, tx('Vos 4 premiers produits s’afficheront ici, à partir de 5 produits'))}
+          {on('new_arrivals') && !landing && productRow('new_arrivals', fresh, tx('Vos derniers produits ajoutés s’afficheront ici'))}
+
           {!landing && Object.keys(d.sections).some((k) => k.startsWith('filter_') && d.sections[k]) && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', fontSize: 10, opacity: 0.8 }}>
               <Search size={11} /> {tx('Filtres')}
@@ -193,12 +240,61 @@ export default function PhonePreview({ d, products, categories, edit }: { d: Pre
             </div>
           )}
 
+          {on('benefits') && (
+            <div style={{ margin: '8px 0', padding: 12, background: c.secondary }}>
+              {title(tx(BLOCK_TITLES.benefits))}
+              <div style={{ display: 'grid', gap: 6 }}>
+                {benefitItems(d.deliveryText).map((b) => {
+                  const Icon = BENEFIT_ICON[b.key]
+                  return (
+                    <div key={b.key} style={{
+                      display: 'flex', gap: 8, alignItems: 'flex-start', padding: 8, borderRadius: t.radius, background: c.background,
+                      border: d.theme === 'elegance' ? `1px solid ${c.text}22` : 'none',
+                    }}>
+                      <span style={{
+                        flexShrink: 0, width: 24, height: 24, borderRadius: d.theme === 'elegance' ? 0 : 999, display: 'grid', placeItems: 'center',
+                        background: d.theme === 'impact' ? c.primary : 'transparent', color: d.theme === 'impact' ? readable(c.primary) : c.primary,
+                      }}><Icon size={13} strokeWidth={1.8} /></span>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 10.5, fontWeight: d.theme === 'elegance' ? 600 : 700 }}>{tx(b.title)}</div>
+                        <div style={{ fontSize: 9.5, opacity: 0.75, lineHeight: 1.4, marginTop: 1 }}>{b.key === 'delivery' && d.deliveryText.trim() ? b.text : tx(b.text)}</div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {on('how_it_works') && (
             <div style={{ padding: 12, fontSize: 11 }}>
               <div style={{ fontWeight: 700, marginBottom: 6 }}>{tx('Comment ça marche')}</div>
               {[tx('1. Vous commandez en 30 secondes'), tx('2. Nous confirmons sur WhatsApp'), tx('3. Vous payez à la livraison')].map((s) => (
                 <div key={s} style={{ opacity: 0.85, marginBottom: 3 }}>{s}</div>
               ))}
+            </div>
+          )}
+
+          {on('size_guide') && (
+            <div style={{ padding: 12, fontSize: 10.5, lineHeight: 1.45 }}>
+              {title(tx(BLOCK_TITLES.size_guide), Ruler)}
+              <div style={{ opacity: 0.85 }}>{tx(sizeGuideIntro(niche))} {tx(sizeGuideHelp(hasWa))}</div>
+              {sizeValues.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+                  {sizeValues.map((v) => (
+                    <span key={v} style={{ fontSize: 9.5, padding: '3px 7px', borderRadius: t.radius, border: `1px solid ${c.text}33` }}>{v}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {on('how_to_use') && (
+            <div style={{ padding: 12, fontSize: 10.5, lineHeight: 1.45 }}>
+              {title(tx(BLOCK_TITLES.how_to_use), Sparkles)}
+              <ul style={{ margin: 0, paddingInlineStart: 16, opacity: 0.85 }}>
+                {howToUseTips(niche, hasWa).map((x) => <li key={x} style={{ marginBottom: 3 }}>{tx(x)}</li>)}
+              </ul>
             </div>
           )}
 
@@ -245,21 +341,4 @@ export default function PhonePreview({ d, products, categories, edit }: { d: Pre
       </div>
     </div>
   )
-}
-
-const THEME: Record<ThemeId, {
-  radius: number; imgRadius: number; btnWeight: number; btnSize: number; btnPad: string; upper: boolean; heroPad: string; h1: number
-}> = {
-  impact: { radius: 10, imgRadius: 10, btnWeight: 900, btnSize: 13, btnPad: '13px 10px', upper: true, heroPad: '18px 14px 20px', h1: 24 },
-  essentiel: { radius: 8, imgRadius: 6, btnWeight: 600, btnSize: 12, btnPad: '10px 10px', upper: false, heroPad: '16px 14px', h1: 18 },
-  elegance: { radius: 0, imgRadius: 0, btnWeight: 400, btnSize: 11, btnPad: '11px 10px', upper: true, heroPad: '14px 16px 22px', h1: 21 },
-}
-
-/** Black or white text on a colour, whichever reads better. */
-export function readable(hex: string): string {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '')
-  if (!m) return '#fff'
-  const n = parseInt(m[1], 16)
-  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
-  return (0.299 * r + 0.587 * g + 0.114 * b) > 160 ? '#111' : '#fff'
 }
