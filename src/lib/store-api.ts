@@ -5,6 +5,7 @@ import { Baby, Car, Droplets, Headphones, House, Leaf, Package, ShoppingBag, Shi
 import { tx } from './i18n'
 import { authFetch } from './api-fetch'
 import { API_BASE } from './auth-client'
+import { STORE_ROOT_DOMAIN } from './storefront-host'
 
 // ─── Types (API rows) ────────────────────────────────────────────────────────
 
@@ -136,19 +137,22 @@ export async function compressImage(file: File): Promise<Blob> {
 }
 
 // ─── Public links ────────────────────────────────────────────────────────────
-// NEXT_PUBLIC_STORE_BASE_URL is the short public address of the stores, never the dashboard's
-// or Vercel's host: "https://{slug}.sellio.ma" (sub-domain) or "https://sellio.ma" (→ /<slug>).
-// Not set yet → the current origin and /s/<slug> (served by the Sellio storefront).
+// NEXT_PUBLIC_STORE_BASE_URL can override the public address of the stores: "https://{slug}.example.com"
+// (sub-domain template) or "https://example.com" (→ /<slug>). Not set → https://<slug>.<STORE_ROOT_DOMAIN>,
+// the wildcard domain that src/proxy.ts rewrites to /storefront/<slug>. Never the dashboard host + /s/<slug>:
+// the dashboard has no /s route (that path is the API's), it answered 404.
 
 const STORE_BASE = (process.env.NEXT_PUBLIC_STORE_BASE_URL ?? '').trim().replace(/\/+$/, '')
 const origin = () => (typeof window !== 'undefined' ? window.location.origin : '')
 
-/** Store link for a base: {slug} template, plain base (→ /<slug>), or origin + /s/<slug>. */
-export function storeUrlFor(base: string, slug: string, fallbackOrigin: string): string {
-  if (!base) return `${fallbackOrigin}/s/${slug}`
+/** Public store link for a base: {slug} template, plain base (→ /<slug>), or <slug>.<root domain>. */
+export function storeUrlFor(base: string, slug: string, root: string = STORE_ROOT_DOMAIN): string {
+  if (!base) return `https://${slug}.${root}`
   return base.includes('{slug}') ? base.replace('{slug}', slug) : `${base}/${slug}`
 }
-export const storeUrl = (slug: string) => storeUrlFor(STORE_BASE, slug, origin())
+export const storeUrl = (slug: string) => storeUrlFor(STORE_BASE, slug)
+/** The owner's preview on the dashboard host (works while the store is draft/pending: it uses his session). */
+export const storePreviewUrl = (slug: string) => `${origin()}/storefront/${slug}`
 /** One link per product, for WhatsApp quick replies and ads. */
 export const productUrl = (storeSlug: string, productSlug: string) => `${storeUrl(storeSlug)}/products/${productSlug}`
 /** What is around the slug in the address, for the "Adresse de la boutique" field (no https://). */

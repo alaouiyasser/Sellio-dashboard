@@ -15,7 +15,7 @@ import { createClient } from '@/lib/supabase'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import {
   COLOR_LABELS, FONTS, FONTS_HREF, PALETTES, PROFILES, SETUP_DONE_KEY, SITE_TYPES, STATUS_LABEL, THEMES,
-  filtersFor, presetSections, profileOf, sectionsFor, storeApi, storeUrl, storeUrlParts, type ProfilePreset,
+  filtersFor, presetSections, profileOf, sectionsFor, storeApi, storePreviewUrl, storeUrl, storeUrlParts, type ProfilePreset,
   type Category, type ColorKey, type Colors, type Product, type SiteType, type Store, type StoreProfile, type StoreStatus, type ThemeId,
 } from '@/lib/store-api'
 import { tx } from '@/lib/i18n'
@@ -503,7 +503,7 @@ export default function StoreWizard() {
           <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 999, color: STATUS_LABEL[status].color, border: `1px solid ${STATUS_LABEL[status].color}` }}>
             {tx(STATUS_LABEL[status].label)}
           </span>
-          <a href={storeUrl(store.slug)} target="_blank" rel="noreferrer" dir="ltr" style={{ fontSize: 12, color: 'var(--brand)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <a href={status === 'online' ? storeUrl(store.slug) : storePreviewUrl(store.slug)} target="_blank" rel="noreferrer" dir="ltr" style={{ fontSize: 12, color: 'var(--brand)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
             {storeUrl(store.slug).replace(/^https?:\/\//, '')} <ExternalLink size={12} />
           </a>
           {mode === 'manage' && <CopyButton text={storeUrl(store.slug)} label={tx('Copier le lien')} />}
@@ -523,7 +523,7 @@ export default function StoreWizard() {
               <p style={muted}>{status === 'online' ? tx('Elle est en ligne : partagez son lien.') : tx('Regardez-la comme vos clients, puis mettez-la en ligne quand vous voulez.')}</p>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <a href={storeUrl(store.slug)} target="_blank" rel="noreferrer" style={{ ...btn('ghost'), textDecoration: 'none' }}><ExternalLink size={14} /> {tx('Voir ma boutique')}</a>
+              <a href={status === 'online' ? storeUrl(store.slug) : storePreviewUrl(store.slug)} target="_blank" rel="noreferrer" style={{ ...btn('ghost'), textDecoration: 'none' }}><ExternalLink size={14} /> {tx('Voir ma boutique')}</a>
               {status === 'draft' && <button type="button" onClick={goLive} style={btn('primary')}><Rocket size={14} /> {tx('Mettre en ligne')}</button>}
               <button type="button" onClick={() => setJustDone(false)} style={btn('ghost')} aria-label={tx('Fermer')}><X size={14} /></button>
             </div>
