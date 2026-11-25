@@ -102,8 +102,10 @@ export default function OrderDetailPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [tenantId, setTenantId] = useState<string | null>(null)
 
-  async function deliveryAction(action: 'delivered' | 'returned' | 'refused' | 'in_delivery') {
-    const labels: Record<string, string> = { delivered: 'Livré', returned: 'Retourné', refused: 'Refusé', in_delivery: 'Pris par le courrier' }
+  // Only for « À valider » (J+7, customer never answered the J+4 question): the merchant settles it,
+  // which charges (Livré) or refunds (Retourné). Every other status is driven by the carrier API or the J+4 flow.
+  async function deliveryAction(action: 'delivered' | 'returned' | 'refused') {
+    const labels: Record<string, string> = { delivered: 'Livré', returned: 'Retourné', refused: 'Refusé' }
     if (!confirm(tx("Confirmer: {0} ?", [labels[action]]))) return
     setActionLoading(action)
     try {
@@ -304,14 +306,15 @@ export default function OrderDetailPage() {
                     {order.delivery_status && <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{order.delivery_status}</div>}
                     {tx("Mis à jour automatiquement depuis")} {carrierName(order.delivery_provider)}.
                   </div>
+                ) : order.status !== 'needs_merchant_confirm' ? (
+                  <div style={{ padding: '10px 12px', borderRadius: 10, background: 'var(--bg)', border: '1px solid var(--border)', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                    {tx("Statut mis à jour automatiquement : 4 jours après la confirmation (ou la remise au transporteur en envoi programmé/manuel), Sellio demande au client sur WhatsApp s'il a reçu sa commande. Sans réponse après 7 jours, la commande passe « À valider ».")}
+                  </div>
                 ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {order.status !== 'in_delivery' && (
-                    <button onClick={() => deliveryAction('in_delivery')} disabled={actionLoading !== null}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', cursor: actionLoading ? 'wait' : 'pointer', background: 'var(--card)', color: '#3B82F6', fontSize: 13, fontWeight: 700, opacity: actionLoading && actionLoading !== 'in_delivery' ? 0.5 : 1 }}>
-                      <Truck size={16} strokeWidth={1.8} /> {actionLoading === 'in_delivery' ? '...' : tx("Pris par le courrier")}
-                    </button>
-                  )}
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                    {tx("Le client n'a pas répondu. Confirmez le statut de livraison.")}
+                  </div>
                   <button onClick={() => deliveryAction('delivered')} disabled={actionLoading !== null}
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '11px 14px', borderRadius: 10, border: 'none', cursor: actionLoading ? 'wait' : 'pointer', background: 'var(--brand)', color: '#fff', fontSize: 13, fontWeight: 700, opacity: actionLoading && actionLoading !== 'delivered' ? 0.5 : 1 }}>
                     <Home size={15} strokeWidth={2.4} /> {actionLoading === 'delivered' ? '...' : tx("Livré")}

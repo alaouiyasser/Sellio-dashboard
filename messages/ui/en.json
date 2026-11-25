@@ -1079,5 +1079,7 @@
  "Le thème clair est utilisé par défaut.": "The light theme is used by default.",
  "Boutiques": "Stores",
  "Connectez vos transporteurs pour expédier vos commandes.": "Connect your carriers to ship your orders.",
- "Connectez votre boutique YouCan, Shopify ou WooCommerce.": "Connect your YouCan, Shopify or WooCommerce store."
+ "Connectez votre boutique YouCan, Shopify ou WooCommerce.": "Connect your YouCan, Shopify or WooCommerce store.",
+ "Statut mis à jour automatiquement : 4 jours après la confirmation (ou la remise au transporteur en envoi programmé/manuel), Sellio demande au client sur WhatsApp s'il a reçu sa commande. Sans réponse après 7 jours, la commande passe « À valider ».": "Status updated automatically: 4 days after confirmation (or after hand-over to the carrier in scheduled/manual shipping), Sellio asks the customer on WhatsApp whether they received their order. With no reply after 7 days, the order moves to « To confirm ».",
+ "Le client n'a pas répondu. Confirmez le statut de livraison.": "The customer didn't reply. Confirm the delivery status."
 }
