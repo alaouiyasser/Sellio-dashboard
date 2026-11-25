@@ -1080,7 +1080,7 @@
  "Clair": "Claro",
  "Sombre": "Oscuro",
  "Le thème clair est utilisé par défaut.": "El tema claro se usa por defecto.",
- "Boutiques": "Tiendas",
+ "Intégrations": "Integraciones",
  "Connectez vos transporteurs pour expédier vos commandes.": "Conecta tus transportistas para enviar tus pedidos.",
  "Connectez votre boutique YouCan, Shopify ou WooCommerce.": "Conecta tu tienda YouCan, Shopify o WooCommerce.",
  "Notre sélection": "Nuestra selección",
@@ -1104,5 +1104,7 @@
  "Une question avant ou après la commande ? Écrivez-nous sur WhatsApp.": "¿Una pregunta antes o después del pedido? Escríbenos por WhatsApp.",
  "Une question ? Posez-la lors de la confirmation de votre commande.": "¿Una pregunta? Hazla al confirmar tu pedido.",
  "Vos 4 premiers produits s’afficheront ici, à partir de 5 produits": "Tus 4 primeros productos aparecerán aquí, a partir de 5 productos",
- "Vos derniers produits ajoutés s’afficheront ici": "Tus últimos productos añadidos aparecerán aquí"
+ "Vos derniers produits ajoutés s’afficheront ici": "Tus últimos productos añadidos aparecerán aquí",
+ "Statut mis à jour automatiquement : 4 jours après la confirmation (ou la remise au transporteur en envoi programmé/manuel), Sellio demande au client sur WhatsApp s'il a reçu sa commande. Sans réponse après 7 jours, la commande passe « À valider ».": "Estado actualizado automáticamente: 4 días después de la confirmación (o de la entrega al transportista en envío programado/manual), Sellio pregunta al cliente por WhatsApp si recibió su pedido. Sin respuesta tras 7 días, el pedido pasa a « Por confirmar ».",
+ "Le client n'a pas répondu. Confirmez le statut de livraison.": "El cliente no respondió. Confirma el estado de entrega."
 }
