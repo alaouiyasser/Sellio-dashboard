@@ -140,7 +140,7 @@ export default function SignupPage() {
             <Store className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
             <span>
               <span className="block text-sm font-semibold text-foreground">{tx("Non, je crée ma boutique Sellio")}</span>
-              <span className="block text-xs text-muted-foreground">{tx("Plan Démarrage proposé : {0} DH par commande livrée. Mise en ligne après un virement d’activation, ajouté à votre solde en crédits.", [PLAN_PRICE_DH])}</span>
+              <span className="block text-xs text-muted-foreground">{tx("Plan Démarrage proposé : inscription gratuite, 0 crédit au départ. Compte activé manuellement après un abonnement à notre Instagram et l’envoi de la capture sur WhatsApp, sans paiement. Ensuite {0} DH par commande livrée.", [PLAN_PRICE_DH])}</span>
             </span>
           </button>
         </div>
@@ -153,6 +153,9 @@ export default function SignupPage() {
               </span>
               <button type="button" onClick={() => setAsking(true)} className="shrink-0 font-medium text-brand hover:underline">{tx("Changer")}</button>
             </div>
+          )}
+          {plan === 'demarrage' && (
+            <p className="text-xs text-muted-foreground">{tx("Inscription gratuite, 0 crédit au départ. Pour activer votre compte : abonnez-vous à notre Instagram et envoyez la capture sur WhatsApp. Aucun paiement.")}</p>
           )}
           <input autoComplete="name" placeholder={tx("Nom et prenom")} value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
           <input autoComplete="organization" placeholder={tx("Nom de la boutique")} value={store} onChange={(e) => setStore(e.target.value)} className={inputCls} />

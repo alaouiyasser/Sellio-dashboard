@@ -1,10 +1,11 @@
 'use client'
-// "Activer" (plan Démarrage): amount, beneficiary, RIB and support WhatsApp all come from the API
-// (GET /api/store/activation). When the founder has not configured them yet, nothing is shown
-// but "bientôt disponible": no number or RIB lives in this code.
+// "Activer" (plan Démarrage): follow Sellio on Instagram, send the screenshot on WhatsApp, the founder
+// activates by hand. No payment. The Instagram account, the support WhatsApp and the links all come
+// from the API (GET /api/store/activation). When the founder has not configured them yet, nothing is
+// shown but "bientôt disponible": no account or number lives in this code.
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { CheckCircle2, Clock, ExternalLink, Loader2, MessageCircle, XCircle } from 'lucide-react'
+import { AtSign, CheckCircle2, Clock, ExternalLink, Loader2, MessageCircle, XCircle } from 'lucide-react'
 import { storeApi, storeUrl, type Activation } from '@/lib/store-api'
 import { tx } from '@/lib/i18n'
 import { CopyButton, btn, card, h2, muted } from './ui'
@@ -57,7 +58,7 @@ export default function ActivateStep({ slug, activeProducts, onStatus }: {
       {a.status === 'pending' && (
         <div style={{ ...card, borderColor: 'var(--warning)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--warning)', fontWeight: 700 }}><Clock size={18} /> {tx('Demande en attente de vérification')}</div>
-          <p style={{ ...muted, marginTop: 6 }}>{tx('Nous vérifions votre virement. Vous recevrez une notification dès que la boutique est en ligne.')}</p>
+          <p style={{ ...muted, marginTop: 6 }}>{tx('Nous vérifions votre capture. Vous recevrez une notification dès que votre compte est activé.')}</p>
         </div>
       )}
 
@@ -77,27 +78,32 @@ export default function ActivateStep({ slug, activeProducts, onStatus }: {
           </div>
         ) : (
           <div style={card}>
-            <strong style={{ fontSize: 14, color: 'var(--text)' }}>{tx('Plan Démarrage : virement de {0} DH', [a.amount])}</strong>
-            <p style={{ ...muted, marginTop: 4 }}>{tx('Les {0} DH sont ajoutés à votre solde en crédits dès la validation.', [a.amount])}</p>
+            <strong style={{ fontSize: 14, color: 'var(--text)' }}>{tx('Activez votre compte')}</strong>
+            <p style={{ ...muted, marginTop: 4 }}>{tx('Aucun paiement : notre équipe active votre compte après vérification.')}</p>
             <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
-              <Line k={tx('Montant')} v={`${a.amount} DH`} />
-              {a.beneficiary && <Line k={tx('Bénéficiaire')} v={a.beneficiary} copy />}
-              {a.rib && <Line k={tx('RIB')} v={a.rib} copy mono />}
+              {a.instagramHandle && <Line k={tx('Compte Instagram')} v={`@${a.instagramHandle}`} />}
+              {a.supportWhatsapp && <Line k={tx('Support WhatsApp')} v={`+${a.supportWhatsapp}`} copy />}
             </div>
-            <ol style={{ margin: '14px 0 0', paddingInlineStart: 20, fontSize: 13, lineHeight: 1.7, color: 'var(--text)' }}>
-              <li>{tx('Faites le virement de {0} DH sur ce RIB.', [a.amount])}</li>
-              <li>{tx('Envoyez le reçu au support Sellio sur WhatsApp.')}</li>
-              <li>{tx('Cliquez « J’ai fait le virement » : nous vérifions et mettons la boutique en ligne.')}</li>
+            <ol style={{ listStyle: 'decimal', margin: '14px 0 0', paddingInlineStart: 20,fontSize: 13, lineHeight: 1.7, color: 'var(--text)' }}>
+              <li>{tx('Abonnez-vous à @{0} sur Instagram.', [a.instagramHandle])}</li>
+              <li>{tx('Faites une capture d’écran de votre abonnement.')}</li>
+              <li>{tx('Envoyez la capture au support Sellio sur WhatsApp.')}</li>
+              {a.status === 'draft' && <li>{tx('Cliquez « J’ai envoyé la capture » pour demander l’activation.')}</li>}
             </ol>
             <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
+              {a.instagramUrl && (
+                <a href={a.instagramUrl} target="_blank" rel="noreferrer" style={{ ...btn('ghost'), textDecoration: 'none' }}>
+                  <AtSign size={14} /> {tx('Suivre sur Instagram')}
+                </a>
+              )}
               {a.whatsappLink && (
                 <a href={a.whatsappLink} target="_blank" rel="noreferrer" style={{ ...btn('ghost'), textDecoration: 'none', color: '#128c7e', borderColor: '#25d366' }}>
-                  <MessageCircle size={14} /> {tx('Envoyer le reçu sur WhatsApp')}
+                  <MessageCircle size={14} /> {tx('Envoyer la capture sur WhatsApp')}
                 </a>
               )}
               {a.status === 'draft' && (
                 <button type="button" onClick={request} disabled={sending || activeProducts < 1} style={btn('primary', sending || activeProducts < 1)}>
-                  {sending && <Loader2 size={14} className="animate-spin" />} {tx('J’ai fait le virement')}
+                  {sending && <Loader2 size={14} className="animate-spin" />} {tx('J’ai envoyé la capture')}
                 </button>
               )}
             </div>
@@ -109,12 +115,12 @@ export default function ActivateStep({ slug, activeProducts, onStatus }: {
   )
 }
 
-function Line({ k, v, copy, mono }: { k: string; v: string; copy?: boolean; mono?: boolean }) {
+function Line({ k, v, copy }: { k: string; v: string; copy?: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '8px 12px', borderRadius: 10, background: 'var(--bg)', border: '1px solid var(--border)', flexWrap: 'wrap' }}>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{k}</div>
-        <div dir="ltr" style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', fontFamily: mono ? 'ui-monospace, monospace' : undefined, wordBreak: 'break-all' }}>{v}</div>
+        <div dir="ltr" style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', wordBreak: 'break-all' }}>{v}</div>
       </div>
       {copy && <CopyButton text={v} />}
     </div>

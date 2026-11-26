@@ -47,9 +47,11 @@ export interface ProductInput {
   compareAtPrice?: number | null; reference?: string | null; status?: 'draft' | 'active'; categoryId?: string | null
 }
 
+/** GET/POST /store/activation (activationInfo() of the API): Instagram follow + screenshot on WhatsApp, no payment. */
 export interface Activation {
-  status: StoreStatus; configured: boolean; amount: number
-  beneficiary: string | null; rib: string | null; supportWhatsapp: string | null; whatsappLink: string | null; message: string
+  status: StoreStatus; configured: boolean
+  instagramHandle: string | null; instagramUrl: string | null
+  supportWhatsapp: string | null; whatsappLink: string | null; message: string
   request: { id: string; status: 'pending' | 'approved' | 'rejected'; reason: string | null; created_at: string; decided_at: string | null } | null
 }
 
