@@ -92,6 +92,9 @@ export const adminApi = {
   me: () => call<{ founder: boolean }>('/me'),
   activations: () => call<{ requests: ActivationRequest[] }>('/stores/activations?status=pending'),
   approveActivation: (id: string) => call<{ ok: true }>(`/stores/activations/${encodeURIComponent(id)}/approve`, { method: 'POST' }),
+  /** The reason (3 characters at least, cut at 500) is shown to the merchant; the store goes back to draft. */
+  rejectActivation: (id: string, reason: string) =>
+    call<{ ok: true }>(`/stores/activations/${encodeURIComponent(id)}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }),
   overview: (days: number) => call<Overview>(`/overview?days=${days}`),
   merchants: (days: number) => call<{ period: Overview['period']; merchants: MerchantLine[] }>(`/merchants?days=${days}`),
   merchant: (id: string, days: number) => call<MerchantDetail>(`/merchants/${encodeURIComponent(id)}?days=${days}`),
