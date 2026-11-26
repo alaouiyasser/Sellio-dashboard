@@ -80,8 +80,21 @@ export interface MarketingOverview {
 
 export interface DevProposal { id: number; title: string; category: string; what: string; benefit: string; effort: 'S' | 'M' | 'L'; risk: string | null; sources: string[]; status: 'new' | 'approved' | 'rejected' | 'done'; issue_url: string | null; created_at: string }
 
+/** Plan Démarrage activation requests (listActivationRequests() of the API, with the store and the account). */
+export interface ActivationRequest {
+  id: string; tenant_id: string; store_id: string; status: 'pending' | 'approved' | 'rejected'
+  reason: string | null; created_at: string; decided_at: string | null
+  stores: { name: string; slug: string; status: string; whatsapp: string | null; city: string | null } | null
+  tenants: { name: string | null; owner_phone: string | null } | null
+}
+
 export const adminApi = {
   me: () => call<{ founder: boolean }>('/me'),
+  activations: () => call<{ requests: ActivationRequest[] }>('/stores/activations?status=pending'),
+  approveActivation: (id: string) => call<{ ok: true }>(`/stores/activations/${encodeURIComponent(id)}/approve`, { method: 'POST' }),
+  /** The reason (3 characters at least, cut at 500) is shown to the merchant; the store goes back to draft. */
+  rejectActivation: (id: string, reason: string) =>
+    call<{ ok: true }>(`/stores/activations/${encodeURIComponent(id)}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }),
   overview: (days: number) => call<Overview>(`/overview?days=${days}`),
   merchants: (days: number) => call<{ period: Overview['period']; merchants: MerchantLine[] }>(`/merchants?days=${days}`),
   merchant: (id: string, days: number) => call<MerchantDetail>(`/merchants/${encodeURIComponent(id)}?days=${days}`),

@@ -20,6 +20,7 @@ import Wordmark from './Wordmark'
 import NotificationBell from './NotificationBell'
 import LangSwitcher from './LangSwitcher'
 import InstallAppButton from '@/components/pwa/InstallAppButton'
+import CapacityBanner from '@/components/credits/CapacityBanner'
 
 type NavItem = { href: string; icon: LucideIcon; label: string; soon?: boolean; badge?: 'orders' }
 
@@ -204,7 +205,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </aside>
-        <main className="shell-main"><Suspense fallback={null}>{children}</Suspense></main>
+        <main className="shell-main"><CapacityBanner /><Suspense fallback={null}>{children}</Suspense></main>
       </div>
     </div>
   )
