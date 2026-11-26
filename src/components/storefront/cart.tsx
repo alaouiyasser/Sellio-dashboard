@@ -238,9 +238,7 @@ export function OrderForm({ l, preview, lines, total, onDone, slug }: {
           {err(f.key) && <span id={`sf-err-${f.key}`} style={{ color: '#dc2626', fontWeight: 500, fontSize: 13 }}>{err(f.key)}</span>}
         </label>
       ))}
-      {/* Honeypot (same name as the API checks): hidden from people, left empty by browsers. */}
-      <input type="text" name="sellio_hp" value={hp} onChange={(e) => setHp(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden
-        style={{ position: 'absolute', left: -10000, width: 1, height: 1, opacity: 0 }} />
+      <Honeypot value={hp} onChange={setHp} />
       {errors.items && <div role="alert" style={{ color: '#dc2626', fontSize: 14 }}>{errors.items}</div>}
       {errors.form && <div role="alert" style={{ color: '#dc2626', fontSize: 14 }}>{errors.form}</div>}
       <button type="submit" disabled={busy || preview || lines.length === 0} style={btnStyle(l, { width: '100%', marginTop: 4 })}>
@@ -249,6 +247,24 @@ export function OrderForm({ l, preview, lines, total, onDone, slug }: {
       </button>
       <div style={{ fontSize: 12.5, opacity: 0.7, textAlign: 'center' }}>Paiement à la livraison. Confirmation sur WhatsApp.</div>
     </form>
+  )
+}
+
+/**
+ * Anti-bot field: no person sees it, and nothing may fill it for them.
+ * - Browsers and password managers guess a field from its name, id and label: it has no id, no label
+ *   and a meaningless name (`sellio_hp` is only the key of the request body).
+ * - autoComplete="off" is not always obeyed, so it is also read-only until focused: autofill skips
+ *   read-only fields, and a person never focuses it (off screen, tabIndex -1).
+ * - The data-* attributes opt out of LastPass, 1Password, Bitwarden and Dashlane.
+ */
+function Honeypot({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [locked, setLocked] = useState(true)
+  return (
+    <input type="text" name="sf_x7q" value={value} onChange={(e) => onChange(e.target.value)}
+      readOnly={locked} onFocus={() => setLocked(false)} tabIndex={-1} autoComplete="off" aria-hidden
+      data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other"
+      style={{ position: 'absolute', left: -10000, width: 1, height: 1, opacity: 0 }} />
   )
 }
 
