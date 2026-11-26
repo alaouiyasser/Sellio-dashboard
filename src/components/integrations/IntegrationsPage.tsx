@@ -48,6 +48,7 @@ export default function IntegrationsPage({ scope }: { scope: 'stores' | 'carrier
   return (
     <div style={{ padding: '28px 16px 64px' }}>
       <WizardOnboarding
+        carrierOnly={scope === 'carriers'}
         tenantId={tenantId}
         onComplete={() => { toast.success(tx("Configuration terminée")); setDone(true) }}
       />
