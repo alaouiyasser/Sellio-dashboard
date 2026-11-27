@@ -49,10 +49,11 @@ const backBtn: React.CSSProperties = {
 const h2: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 9, fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }
 const fieldLabel: React.CSSProperties = { fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 8 }
 
-interface Props { tenantId: string; onComplete: () => void }
+/** carrierOnly (/livraison): carrier → WhatsApp. Profile and store platform stay in the full wizard. */
+interface Props { tenantId: string; onComplete: () => void; carrierOnly?: boolean }
 
-export default function WizardOnboarding({ tenantId, onComplete }: Props) {
-  const [step, setStep] = useState(1)
+export default function WizardOnboarding({ tenantId, onComplete, carrierOnly = false }: Props) {
+  const [step, setStep] = useState(carrierOnly ? 4 : 1)
 
   const [source, setSource] = useState<string | null>(null)
   const [city, setCity] = useState('')
@@ -74,6 +75,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
 
   // Back from YouCan / WooCommerce approval: resume at the carrier step (or retry the store).
   useEffect(() => {
+    if (carrierOnly) return                       // no store step to resume
     const r = readStoreReturn()
     if (!r) return
     setStoreType(r.store)
@@ -84,7 +86,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
       toast.error(r.message ?? 'Connexion de la boutique echouee')
       setStep(3)
     }
-  }, [])
+  }, [carrierOnly])
 
   const [waPhone, setWaPhone] = useState('')
   const [waAge, setWaAge] = useState<string | null>(null)
@@ -197,7 +199,9 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
     } catch (e: any) { toast.error(e.message) } finally { setLoading(false) }
   }
 
-  const TOTAL = 5
+  const TOTAL = carrierOnly ? 2 : 5
+  // Filled segments of the progress bar.
+  const progress = !carrierOnly ? step : step >= 6 ? 2 : 1
 
   if (step === 7 && qrCode) return (
     <div style={card}>
@@ -225,7 +229,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
     <div style={card}>
       <div style={{ display: 'flex', gap: 6, marginBottom: 28 }}>
         {Array.from({ length: TOTAL }).map((_, i) => (
-          <div key={i} style={{ flex: 1, height: 4, borderRadius: 4, background: i < step ? 'var(--brand)' : 'var(--border)', transition: 'background 0.3s' }} />
+          <div key={i} style={{ flex: 1, height: 4, borderRadius: 4, background: i < progress ? 'var(--brand)' : 'var(--border)', transition: 'background 0.3s' }} />
         ))}
       </div>
 
@@ -333,7 +337,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
 
       {step === 4 && (
         <div>
-          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>{tx("ETAPE 4 /")} {TOTAL}</div>
+          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>{carrierOnly ? tx("ETAPE 1 /") : tx("ETAPE 4 /")} {TOTAL}</div>
           <h2 style={h2}><Truck size={20} strokeWidth={2.2} color="var(--brand)" /> {tx("Societe de livraison")}</h2>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>{tx("Choisissez votre partenaire de livraison")}</p>
           <select
@@ -376,7 +380,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
           })()}
 
           <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-            <button onClick={() => setStep(3)} style={backBtn}><ArrowLeft size={15} /> {tx("Retour")}</button>
+            {!carrierOnly && <button onClick={() => setStep(3)} style={backBtn}><ArrowLeft size={15} /> {tx("Retour")}</button>}
             <button onClick={handleSaveDelivery} disabled={loading || !deliveryProvider} style={nextBtn(!!deliveryProvider && !loading)}>
               {loading ? tx("Enregistrement...") : <>{tx("Suivant")} <ArrowRight size={15} /></>}
             </button>
@@ -386,7 +390,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
 
       {step === 6 && waMode?.provider === 'cloud' && (
         <div>
-          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>{tx("ETAPE 5 /")} {TOTAL}</div>
+          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>{carrierOnly ? tx("ETAPE 2 /") : tx("ETAPE 5 /")} {TOTAL}</div>
           <h2 style={h2}><Smartphone size={20} strokeWidth={2.2} color="var(--brand)" /> {tx("WhatsApp")}</h2>
           <div style={{ margin: '12px 0 16px' }}><OfficialNumberCard displayNumber={waMode.displayNumber} /></div>
           {alertPhone && (
@@ -405,7 +409,7 @@ export default function WizardOnboarding({ tenantId, onComplete }: Props) {
 
       {step === 6 && waMode?.provider !== 'cloud' && (
         <div>
-          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>{tx("ETAPE 5 /")} {TOTAL}</div>
+          <div style={{ fontSize: 13, color: 'var(--brand)', fontWeight: 600, marginBottom: 6 }}>{carrierOnly ? tx("ETAPE 2 /") : tx("ETAPE 5 /")} {TOTAL}</div>
           <h2 style={h2}><Smartphone size={20} strokeWidth={2.2} color="var(--brand)" /> {tx("Connexion WhatsApp")}</h2>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{tx("Numero WhatsApp dedie a votre boutique")}</p>
 
