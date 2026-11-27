@@ -8,6 +8,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { API_BASE } from '@/lib/auth-client'
 import ShipPanel from '@/components/orders/ShipPanel'
+import ChangeRequestPanel from '@/components/orders/ChangeRequestPanel'
+import { AWAITING_MERCHANT_CHANGE, SOURCE_LABEL } from '@/lib/order-change-api'
 import { shipFailed, SHIPPABLE_STATUSES, carrierName, carrierTracked } from '@/lib/shipping-api'
 import {
   ArrowLeft, User, Phone, Package, PackageCheck, Truck, Store, ShoppingBag,
@@ -30,6 +32,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   // Customer said yes; Sellio is confirming the exact city/address with them on WhatsApp.
   awaiting_upsell: { label: 'Offre proposée', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)' },
   awaiting_shipping_info: { label: 'Adresse en vérification', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)' },
+  [AWAITING_MERCHANT_CHANGE]: { label: 'Modification à valider', color: 'var(--warning)', bg: 'color-mix(in srgb, var(--warning) 20%, transparent)' },
 }
 
 function deliveryStatusToStep(ds: string | null): number {
@@ -161,6 +164,8 @@ export default function OrderDetailPage() {
   const timeline = buildTimeline(order)
   const items    = parseItems(order.items)
   const isCanceled = order.status === 'canceled' || order.status === 'cancelled'
+  // A number the customer asked to be called on (their WhatsApp number stays the same).
+  const deliveryPhone = (() => { try { const a = typeof order.shipping_address === 'string' ? JSON.parse(order.shipping_address) : order.shipping_address; return a?.delivery_phone ?? null } catch { return null } })()
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -178,6 +183,10 @@ export default function OrderDetailPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
+            {tenantId && order.status === AWAITING_MERCHANT_CHANGE && (
+              <ChangeRequestPanel key={order.pending_modification?.requestedAt ?? order.id} tenantId={tenantId} order={order} items={items} onDecided={fetchOrder} />
+            )}
+
             <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 24 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
@@ -191,7 +200,7 @@ export default function OrderDetailPage() {
               <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
                 {order.source && (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 5, fontSize: 11, fontWeight: 600, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                    {order.source === 'shopify' ? <><ShoppingBag size={12} strokeWidth={2.2} /> {tx("Shopify")}</> : <><Store size={12} strokeWidth={2.2} /> {tx("YouCan")}</>}
+                    {order.source === 'shopify' ? <ShoppingBag size={12} strokeWidth={2.2} /> : <Store size={12} strokeWidth={2.2} />} {tx(SOURCE_LABEL[order.source] ?? order.source)}
                   </span>
                 )}
                 {order.delivery_provider && (
@@ -223,6 +232,7 @@ export default function OrderDetailPage() {
                 {[
                   { label: tx("Nom"),       value: order.customer_name ?? '—' },
                   { label: tx("Téléphone"), value: order.customer_phone ?? '—' },
+                  ...(deliveryPhone ? [{ label: tx("Téléphone de livraison"), value: deliveryPhone }] : []),
                   { label: tx("Ville"), value: (() => { try { const a = typeof order.shipping_address === 'string' ? JSON.parse(order.shipping_address) : order.shipping_address; return a?.city ?? a?.address ?? '—' } catch { return '—' } })() },
                   { label: tx("Adresse"), value: (() => { try { const a = typeof order.shipping_address === 'string' ? JSON.parse(order.shipping_address) : order.shipping_address; return a?.address ?? '—' } catch { return '—' } })() },
                   { label: tx("Montant"),   value: order.total_price ? tx("{0} MAD", [Number(order.total_price).toLocaleString()]) : '—' },
