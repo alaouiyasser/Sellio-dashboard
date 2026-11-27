@@ -69,7 +69,7 @@ export default function OrdersPage() {
     const [rows, { data: todo }] = await Promise.all([
       ordersInPeriod(supabase, user.id, p).catch(() => []),
       supabase.from('orders').select('id, external_id, status, customer_name, customer_phone, delivery_status, delivery_tracking_code')
-        .eq('tenant_id', user.id).in('status', ['needs_merchant_confirm', 'confirmed']).order('created_at', { ascending: false }).limit(200),
+        .eq('tenant_id', user.id).in('status', ['needs_merchant_confirm', 'confirmed', 'awaiting_merchant_change']).order('created_at', { ascending: false }).limit(200),
     ])
     setOrders(rows)
     setAlerts(todo ?? [])
@@ -102,6 +102,7 @@ export default function OrdersPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const notShipped = alerts.filter((o) => shipFailed(o))
   const needsConfirm = alerts.filter((o) => o.status === 'needs_merchant_confirm')
+  const toChange = alerts.filter((o) => o.status === 'awaiting_merchant_change')
   const th: React.CSSProperties = { padding: '11px 16px', textAlign: 'start', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }
   const td: React.CSSProperties = { padding: '12px 16px', fontSize: 13, color: 'var(--text)' }
 
@@ -134,6 +135,10 @@ export default function OrdersPage() {
             onToggleErrorFilter={() => { setShipErrorOnly((v) => !v); setPage(1) }} onSent={() => fetchOrders(period, true)} />
         )}
 
+        {toChange.length > 0 && banner('var(--warning)',
+          toChange.length === 1 ? tx("1 modification demandée à valider") : tx("{0} modifications demandées à valider", [toChange.length]),
+          tx("La commande attend votre décision : elle n'est ni confirmée ni expédiée."),
+          toChange, tx("Traiter →"), () => '')}
         {notShipped.length > 0 && banner('var(--destructive)',
           notShipped.length === 1 ? tx("1 commande confirmée non envoyée au transporteur") : tx("{0} commandes confirmées non envoyées au transporteur", [notShipped.length]),
           tx("L'envoi automatique a échoué (ville, numéro…). Ouvrez la commande, corrigez puis « Renvoyer »."),

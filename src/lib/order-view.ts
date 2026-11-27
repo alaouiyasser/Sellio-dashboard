@@ -29,6 +29,7 @@ export const ORDER_STATUS: Record<string, { label: Record<string, string>; bg: s
  awaiting_delivery_check: { label: { fr: 'En attente confirmation', en: 'Awaiting confirmation', ar: 'في انتظار التأكيد', es: 'Esperando confirmación' }, bg: 'rgba(99,102,241,0.15)', color: '#6366F1' },
  delivery_issue: { label: { fr: 'Problème livraison', en: 'Delivery issue', ar: 'مشكل التوصيل', es: 'Problema entrega' }, bg: 'rgba(239,68,68,0.15)', color: '#EF4444' },
   needs_merchant_confirm: { label: { fr: 'À confirmer', en: 'To confirm', ar: 'خاص تأكيد', es: 'Por confirmar' }, bg: 'rgba(245,158,11,0.2)', color: '#F59E0B' },
+  awaiting_merchant_change: { label: { fr: 'Modification à valider', en: 'Change to review', ar: 'تعديل خاص المراجعة', es: 'Cambio por validar' }, bg: 'rgba(245,158,11,0.2)', color: '#F59E0B' },
   awaiting_upsell: { label: { fr: 'Offre proposée', en: 'Offer sent', ar: 'عرض مقترح', es: 'Oferta enviada' }, bg: 'rgba(139,92,246,0.15)', color: '#8B5CF6' },
   awaiting_shipping_info: { label: { fr: 'Adresse en vérification', en: 'Checking address', ar: 'كنتأكدو من العنوان', es: 'Verificando dirección' }, bg: 'rgba(59,130,246,0.15)', color: '#3B82F6' },
   modified:  { label: { fr: 'Modifié',    en: 'Modified',  ar: 'معدل',         es: 'Modificado'  }, bg: 'rgba(99,102,241,0.15)', color: '#6366F1' },
@@ -47,7 +48,7 @@ export const statusLabel = (status: string, locale: string = txLocale()) => {
 
 /** Status groups the merchant thinks in (filters, dashboard, KPIs). */
 export const STATUS_GROUPS: Record<string, string[]> = {
-  pending: ['pending', 'sent', 'awaiting_upsell', 'awaiting_shipping_info', 'awaiting_cancel_reason', 'awaiting_modify_choice', 'awaiting_modification', 'awaiting_modify_confirmation', 'modified'],
+  pending: ['pending', 'sent', 'awaiting_upsell', 'awaiting_shipping_info', 'awaiting_cancel_reason', 'awaiting_modify_choice', 'awaiting_modification', 'awaiting_modify_confirmation', 'awaiting_merchant_change', 'modified'],
   confirmed: ['confirmed'],
   shipping: ['in_delivery', 'awaiting_delivery_check', 'needs_merchant_confirm', 'delivery_issue', 'delivery_unconfirmed'],
   delivered: ['delivered'],

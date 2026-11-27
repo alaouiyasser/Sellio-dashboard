@@ -97,7 +97,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         supabase.from('credits').select('balance').eq('tenant_id', user.id).maybeSingle(),
         supabase.from('tenants').select('company_name, name').eq('id', user.id).maybeSingle(),
         supabase.from('credit_transactions').select('amount, type').eq('tenant_id', user.id).gte('created_at', since).limit(5000),
-        supabase.from('orders').select('id', { count: 'exact', head: true }).eq('tenant_id', user.id).eq('status', 'needs_merchant_confirm'),
+        supabase.from('orders').select('id', { count: 'exact', head: true }).eq('tenant_id', user.id).in('status', ['needs_merchant_confirm', 'awaiting_merchant_change']),
       ])
       if (!alive) return
       const bal = typeof cr?.balance === 'number' ? cr.balance : null
